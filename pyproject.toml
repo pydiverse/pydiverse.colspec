@@ -33,7 +33,7 @@ packages = ["src/pydiverse"]
 
 [tool.ruff]
 select = ["F", "E", "UP", "W", "I001", "I002", "B", "A"]
-ignore = ["B028"]
+ignore = ["B028", "A002"]
 extend-exclude = ["docs/*"]
 ignore-init-module-imports = true
 fix = true

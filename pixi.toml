@@ -17,10 +17,12 @@ hatchling = "*"
 
 [dependencies]
 python = ">=3.9"
+pydiverse-common = ">=0.1.0"
 polars = ">=0.19, <2"
 pandas = ">=2"
 SQLAlchemy = ">=1.4.39, <3"
 pyarrow = ">=11.0.0"
+structlog = ">=22.1.0"
 
 [feature.dev.dependencies]
 ruff = ">=0.5.6"

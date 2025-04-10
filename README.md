@@ -5,10 +5,18 @@
 [![pypi-version](https://img.shields.io/pypi/v/pydiverse-colspec.svg?logo=pypi&logoColor=white&style=flat-square)](https://pypi.org/project/pydiverse-colspec)
 [![conda-forge](https://img.shields.io/conda/pn/conda-forge/pydiverse-colspec?logoColor=white&logo=conda-forge&style=flat-square)](https://prefix.dev/channels/conda-forge/packages/pydiverse-colspec)
 
-A base package for different libraries in the pydiverse library collection.
-This includes functionality like a type-system for tabular data (SQL and DataFrame).
-This type-system is used for ensuring reliable operation of the pydiverse library
-with various execution backends like Pandas, Polars, and various SQL dialects.
+A data validation library that ensures type conformity of columns in SQL tables and polars data frames.
+It can also validate constraints regarding the data as defined in a so-called column specification provided
+by the user.
+
+The purpose is to make data pipelines more robust by ensuring that data meets expectations and more readable by adding
+type hints when working with tables and data frames.
+
+ColSpec is founded on the ideas of DataFramely which does exactly the same but limited to polars data frames.
+It will still use DataFramely in the back especially for features like sampling random input data conforming
+to a given column specification. DataFramely uses the term schema as it is also used in the polars community.
+Since ColSpec also works with SQL databases where the term schema is used for a collection of tables, the term
+is avoided as much as possible. The term column specification means exactly the same but avoids the confusion.
 
 ## Installation
 
@@ -46,7 +54,8 @@ a few hours until the new package version is available on https://conda-forge.or
 
 Packages are first released on test.pypi.org:
 
-- bump version number in [pyproject.toml](pyproject.toml) (check consistency with [changelog.md](docs/source/changelog.md))
+- bump version number in [pyproject.toml](pyproject.toml) (check consistency
+  with [changelog.md](docs/source/changelog.md))
 - push increased version number to `main` branch
 - `pixi run -e release hatch build`
 - `pixi run -e release twine upload --repository testpypi dist/*`
