@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from pydiverse.common import (
+from pydiverse.colspec import (
     Bool,
     Date,
     Datetime,

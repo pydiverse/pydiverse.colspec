@@ -2,7 +2,7 @@
 hide-toc: true
 ---
 
-# pydiverse.common
+# pydiverse.colspec
 
 A base package for different libraries in the pydiverse library collection.
 This includes functionality like a type-system for tabular data (SQL and DataFrame).

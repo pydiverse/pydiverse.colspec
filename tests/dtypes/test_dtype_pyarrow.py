@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pyarrow as pa
 
-from pydiverse.common import (
+from pydiverse.colspec import (
     Bool,
     Date,
     Datetime,

@@ -1,6 +1,6 @@
-# pydiverse.common
+# pydiverse.colspec
 
-[![CI](https://github.com/pydiverse/pydiverse.common/actions/workflows/tests.yml/badge.svg)](https://github.com/pydiverse/pydiverse.common/actions/workflows/tests.yml)
+[![CI](https://github.com/pydiverse/pydiverse.colspec/actions/workflows/tests.yml/badge.svg)](https://github.com/pydiverse/pydiverse.colspec/actions/workflows/tests.yml)
 
 A base package for different libraries in the pydiverse library collection.
 This includes functionality like a type-system for tabular data (SQL and DataFrame).
@@ -9,5 +9,5 @@ with various execution backends like Pandas, Polars, and various SQL dialects.
 
 ## Usage
 
-pydiverse.common can either be installed via pypi with `pip install pydiverse-common` or via
-conda-forge with `conda install pydiverse-common -c conda-forge`.
+pydiverse.colspec can either be installed via pypi with `pip install pydiverse-colspec` or via
+conda-forge with `conda install pydiverse-colspec -c conda-forge`.

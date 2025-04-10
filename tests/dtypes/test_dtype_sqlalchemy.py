@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import sqlalchemy as sa
 
-from pydiverse.common import (
+from pydiverse.colspec import (
     Bool,
     Date,
     Datetime,

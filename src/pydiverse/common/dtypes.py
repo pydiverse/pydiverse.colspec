@@ -55,7 +55,7 @@ class Dtype:
         if isinstance(sql_type, sqa.Numeric | sqa.DECIMAL):
             # Just to be safe, we always use FLOAT64 for fixpoint numbers.
             # Databases are obsessed about fixpoint. However, in dataframes, it
-            # is more common to just work with double precision floating point.
+            # is more colspec to just work with double precision floating point.
             return Float64()
         if isinstance(sql_type, sqa.String):
             return String()
@@ -83,8 +83,8 @@ class Dtype:
             return Dtype.from_arrow(pandas_type.pyarrow_dtype)
 
         def is_np_dtype(type_, np_dtype):
-            return pd.core.dtypes.common._is_dtype_type(
-                type_, pd.core.dtypes.common.classes(np_dtype)
+            return pd.core.dtypes.colspec._is_dtype_type(
+                type_, pd.core.dtypes.colspec.classes(np_dtype)
             )
 
         if pd.api.types.is_signed_integer_dtype(pandas_type):

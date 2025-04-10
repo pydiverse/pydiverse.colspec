@@ -1,9 +1,9 @@
-# pydiverse.common
+# pydiverse.colspec
 
-[![CI](https://img.shields.io/github/actions/workflow/status/pydiverse/pydiverse.common/tests.yml?style=flat-square&branch=main&label=tests)](https://github.com/pydiverse/pydiverse.common/actions/workflows/tests.yml)
-[![Docs](https://readthedocs.org/projects/pydiversecommon/badge/?version=latest&style=flat-square)](https://pydiversecommon.readthedocs.io/en/latest)
-[![pypi-version](https://img.shields.io/pypi/v/pydiverse-common.svg?logo=pypi&logoColor=white&style=flat-square)](https://pypi.org/project/pydiverse-common)
-[![conda-forge](https://img.shields.io/conda/pn/conda-forge/pydiverse-common?logoColor=white&logo=conda-forge&style=flat-square)](https://prefix.dev/channels/conda-forge/packages/pydiverse-common)
+[![CI](https://img.shields.io/github/actions/workflow/status/pydiverse/pydiverse.colspec/tests.yml?style=flat-square&branch=main&label=tests)](https://github.com/pydiverse/pydiverse.colspec/actions/workflows/tests.yml)
+[![Docs](https://readthedocs.org/projects/pydiversecolspec/badge/?version=latest&style=flat-square)](https://pydiversecolspec.readthedocs.io/en/latest)
+[![pypi-version](https://img.shields.io/pypi/v/pydiverse-colspec.svg?logo=pypi&logoColor=white&style=flat-square)](https://pypi.org/project/pydiverse-colspec)
+[![conda-forge](https://img.shields.io/conda/pn/conda-forge/pydiverse-colspec?logoColor=white&logo=conda-forge&style=flat-square)](https://prefix.dev/channels/conda-forge/packages/pydiverse-colspec)
 
 A base package for different libraries in the pydiverse library collection.
 This includes functionality like a type-system for tabular data (SQL and DataFrame).
@@ -12,11 +12,11 @@ with various execution backends like Pandas, Polars, and various SQL dialects.
 
 ## Installation
 
-To install pydiverse common try this:
+To install pydiverse colspec try this:
 
 ```bash
-git clone https://github.com/pydiverse/pydiverse.common.git
-cd pydiverse.common
+git clone https://github.com/pydiverse/pydiverse.colspec.git
+cd pydiverse.colspec
 
 # Create the environment, activate it and install the pre-commit hooks
 pixi install
@@ -39,7 +39,7 @@ pixi run pytest
 - tag commit with `git tag <version>`, e.g. `git tag 0.7.0`
 - `git push --tags`
 
-The package should appear on https://pypi.org/project/pydiverse-common/ in a timely manner. It is normal that it takes
+The package should appear on https://pypi.org/project/pydiverse-colspec/ in a timely manner. It is normal that it takes
 a few hours until the new package version is available on https://conda-forge.org/packages/.
 
 ### Packaging and publishing to Pypi manually
@@ -50,7 +50,7 @@ Packages are first released on test.pypi.org:
 - push increased version number to `main` branch
 - `pixi run -e release hatch build`
 - `pixi run -e release twine upload --repository testpypi dist/*`
-- verify with https://test.pypi.org/search/?q=pydiverse.common
+- verify with https://test.pypi.org/search/?q=pydiverse.colspec
 
 Finally, they are published via:
 
@@ -65,7 +65,7 @@ Finally, they are published via:
 Conda-forge packages are updated via:
 
 - Attention: Please, only continue here, if automatic conda-forge publishing fails for longer than 24h!
-- https://github.com/conda-forge/pydiverse-common-feedstock#updating-pydiverse-common-feedstock
+- https://github.com/conda-forge/pydiverse-colspec-feedstock#updating-pydiverse-colspec-feedstock
 - update `recipe/meta.yaml`
-- test meta.yaml in pydiverse common repo: `conda-build build ../pydiverse-common-feedstock/recipe/meta.yaml`
+- test meta.yaml in pydiverse colspec repo: `conda-build build ../pydiverse-colspec-feedstock/recipe/meta.yaml`
 - commit `recipe/meta.yaml` to branch of fork and submit PR

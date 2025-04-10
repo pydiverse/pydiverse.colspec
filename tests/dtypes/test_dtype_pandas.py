@@ -7,7 +7,7 @@ import pandas as pd
 import pyarrow as pa
 import pytest
 
-from pydiverse.common import (
+from pydiverse.colspec import (
     Bool,
     Date,
     Datetime,

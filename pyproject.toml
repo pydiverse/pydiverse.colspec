@@ -1,7 +1,7 @@
 [project]
-name = "pydiverse-common"
+name = "pydiverse-colspec"
 version = "0.1.0"
-description = "Common functionality shared between pydiverse libraries"
+description = "Validate column specifications and constraints for SQL tables and polars data frames."
 authors = [
   { name = "QuantCo, Inc." },
   { name = "Martin Trautmann", email = "windiana@users.sf.net" },

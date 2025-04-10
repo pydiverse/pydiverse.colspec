@@ -5,7 +5,7 @@ API
 Public
 ======
 
-.. py:module:: pydiverse.common
+.. py:module:: pydiverse.colspec
 
 .. autoclass:: Dtype
 .. autoclass:: Bool
