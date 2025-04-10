@@ -8,8 +8,6 @@ from typing import TYPE_CHECKING, Any
 
 import structlog
 
-from src.pydiverse.colspec import Column
-
 if TYPE_CHECKING:
     import polars as pl
 
@@ -25,21 +23,26 @@ try:
     # colspec has optional dependency to pydiverse.transform
     import pydiverse.transform as pdt
 except ImportError:
+    class Table:
+        pass
     # Create a new module with the given name.
     pdt = types.ModuleType("pydiverse.transform")
-    pdt.Table = None
+    pdt.Table = Table
 
 
 try:
     # colspec has optional dependency to pydiverse.pipedag
     import pydiverse.pipedag as dag
 except ImportError:
+    class Table:
+        pass
     # Create a new module with the given name.
     dag = types.ModuleType("pydiverse.pipedag")
-    dag.Table = None
+    dag.Table = Table
 
 
 def convert_to_dy_col_spec(base_class):
+    from src.pydiverse.colspec import Column
     if base_class == ColSpec:
         # stop base class iteration
         return {}
@@ -69,6 +72,7 @@ def convert_to_dy_anno_dict(annotations: dict[str, typing.Any]):
 
 
 def convert_to_dy(annotations):
+    from src.pydiverse.colspec import Column
     if isinstance(annotations, Column) and hasattr(dy, annotations.__class__.__name__):
         return getattr(dy, annotations.__class__.__name__)(**annotations.__dict__)
     else:
@@ -85,6 +89,7 @@ class ColSpec(ABC, pdt.Table, dag.Table):
         Returns:
             list[str]: Names of columns that are primary keys
         """
+        from src.pydiverse.colspec import Column
         result = [
             member
             for member in dir(cls)
@@ -95,6 +100,7 @@ class ColSpec(ABC, pdt.Table, dag.Table):
 
     @classmethod
     def column_names(cls):
+        from src.pydiverse.colspec import Column
         result = [
             member for member in dir(cls) if isinstance(getattr(cls, member), Column)
         ]

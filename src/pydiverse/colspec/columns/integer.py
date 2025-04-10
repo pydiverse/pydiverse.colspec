@@ -175,7 +175,7 @@ class Int64(_BaseInteger):
         return False
 
 
-class Uint8(_BaseInteger):
+class UInt8(_BaseInteger):
     """A column of uint8 values."""
 
     def dtype(self) -> pdc.Uint8:
@@ -190,7 +190,7 @@ class Uint8(_BaseInteger):
         return True
 
 
-class Uint16(_BaseInteger):
+class UInt16(_BaseInteger):
     """A column of uint16 values."""
 
     def dtype(self) -> pdc.Uint16:
@@ -205,7 +205,7 @@ class Uint16(_BaseInteger):
         return True
 
 
-class Uint32(_BaseInteger):
+class UInt32(_BaseInteger):
     """A column of uint32 values."""
 
     def dtype(self) -> pdc.Uint32:
@@ -220,7 +220,7 @@ class Uint32(_BaseInteger):
         return True
 
 
-class Uint64(_BaseInteger):
+class UInt64(_BaseInteger):
     """A column of uint64 values."""
 
     def dtype(self) -> pdc.Uint64:
