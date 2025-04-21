@@ -533,12 +533,16 @@ class Collection:
             the lazy frames' schemas but also means that a call to :meth:`collect`
             further down the line might fail because of the cast and/or missing columns.
         """
+        import polars.exceptions as plexc
         cls._validate_polars_input_keys(data)
         result: dict[str, FrameType] = {}
         for member_name, member in cls.members().items():
             if member.is_optional and member_name not in data:
                 continue
-            result[member_name] = member.col_spec.cast_polars(data[member_name])
+            try:
+                result[member_name] = member.col_spec.cast_polars(data[member_name])
+            except plexc.PolarsError as e:
+                raise ValidationError(str(e)) from e
         return cls._init_polars_data(result)
 
     # ---------------------------------- COLLECTION ---------------------------------- #
@@ -557,7 +561,11 @@ class Collection:
             collection's members are still "lazy". However, they are "shallow-lazy",
             meaning they are obtained by calling ``.collect().lazy()``.
         """
-        dfs = pl.collect_all([lf for lf in self.to_dict().values()])
+        import polars.exceptions as plexc
+        try:
+            dfs = pl.collect_all([lf for lf in self.to_dict().values()])
+        except plexc.PolarsError as e:
+            raise ValidationError(str(e)) from e
         return self._init_polars_data(
             {key: dfs[i].lazy() for i, key in enumerate(self.to_dict().keys())}
         )

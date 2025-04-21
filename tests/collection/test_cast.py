@@ -2,40 +2,40 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import polars as pl
-import polars.exceptions as plexc
 import pytest
 
-import dataframely as dy
+import pydiverse.colspec as cs
+from pydiverse.colspec.exc import ValidationError
 
 
-class FirstSchema(cs.ColSpec):
-    a = dy.Float64()
+class FirstColSpec(cs.ColSpec):
+    a = cs.Float64()
 
 
-class SecondSchema(cs.ColSpec):
-    a = dy.String()
+class SecondColSpec(cs.ColSpec):
+    a = cs.String()
 
 
-class Collection(dy.Collection):
-    first: dy.LazyFrame[FirstSchema]
-    second: dy.LazyFrame[SecondSchema] | None
+class Collection(cs.Collection):
+    first: FirstColSpec
+    second: SecondColSpec | None
 
 
 @pytest.mark.parametrize("df_type", [pl.DataFrame, pl.LazyFrame])
 def test_cast_valid(df_type: type[pl.DataFrame] | type[pl.LazyFrame]):
     first = df_type({"a": [3]})
     second = df_type({"a": [1]})
-    out = Collection.cast({"first": first, "second": second})  # type: ignore
-    assert out.first.collect_schema() == FirstSchema.polars_schema()
+    out = Collection.cast_polars_data({"first": first, "second": second})  # type: ignore
+    assert out.first.collect_schema() == FirstColSpec.create_empty_polars().collect_schema()
     assert out.second is not None
-    assert out.second.collect_schema() == SecondSchema.polars_schema()
+    assert out.second.collect_schema() == SecondColSpec.create_empty_polars().collect_schema()
 
 
 @pytest.mark.parametrize("df_type", [pl.DataFrame, pl.LazyFrame])
 def test_cast_valid_optional(df_type: type[pl.DataFrame] | type[pl.LazyFrame]):
     first = df_type({"a": [3]})
-    out = Collection.cast({"first": first})  # type: ignore
-    assert out.first.collect_schema() == FirstSchema.polars_schema()
+    out = Collection.cast_polars_data({"first": first})  # type: ignore
+    assert out.first.collect_schema() == FirstColSpec.create_empty_polars().collect_schema()
     assert out.second is None
 
 
@@ -43,17 +43,17 @@ def test_cast_valid_optional(df_type: type[pl.DataFrame] | type[pl.LazyFrame]):
 def test_cast_invalid_members(df_type: type[pl.DataFrame] | type[pl.LazyFrame]):
     first = df_type({"a": [3]})
     with pytest.raises(ValueError):
-        Collection.cast({"third": first})  # type: ignore
+        Collection.cast_polars_data({"third": first})  # type: ignore
 
 
 def test_cast_invalid_member_schema_eager():
     first = pl.DataFrame({"b": [3]})
-    with pytest.raises(plexc.ColumnNotFoundError):
-        Collection.cast({"first": first})
+    with pytest.raises(ValidationError):
+        Collection.cast_polars_data({"first": first})
 
 
 def test_cast_invalid_member_schema_lazy():
     first = pl.LazyFrame({"b": [3]})
-    collection = Collection.cast({"first": first})
-    with pytest.raises(plexc.ColumnNotFoundError):
-        collection.collect_all()
+    collection = Collection.cast_polars_data({"first": first})
+    with pytest.raises(ValidationError):
+        collection.collect_all_polars()
