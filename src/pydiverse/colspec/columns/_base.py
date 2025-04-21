@@ -9,18 +9,10 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 from pydiverse.common import Dtype
-from src.pydiverse.colspec.columns import Expr
+from pydiverse.colspec.columns import ColExpr
 
 if TYPE_CHECKING:
-    try:
-        import polars as pl
-        from polars.datatypes import DataTypeClass
-
-        from colspec.colspec import Generator
-
-        PolarsDataType = pl.DataType | DataTypeClass
-    except ImportError:
-        PolarsDataType = None
+    from ..colspec import pl, Generator, PolarsDataType
 
 EPOCH_DATETIME = dt.datetime(1970, 1, 1)
 SECONDS_PER_DAY = 86400
@@ -30,7 +22,7 @@ SECONDS_PER_DAY = 86400
 # ------------------------------------------------------------------------------------ #
 
 
-class Column(ABC, Expr):
+class Column(ABC, ColExpr):
     """Abstract base class for data frame column definitions.
 
     This class is merely supposed to be used in :class:`~colspec.Schema`
@@ -42,7 +34,7 @@ class Column(ABC, Expr):
         *,
         nullable: bool = True,
         primary_key: bool = False,
-        check: Callable[[Expr], Expr] | None = None,
+        check: Callable[[ColExpr], ColExpr] | None = None,
         alias: str | None = None,
     ):
         """
@@ -80,7 +72,7 @@ class Column(ABC, Expr):
 
     # ---------------------------------- VALIDATION ---------------------------------- #
 
-    def validation_rules(self, expr: Expr) -> dict[str, Expr]:
+    def validation_rules(self, expr: ColExpr) -> dict[str, ColExpr]:
         """A set of rules evaluating whether a data frame column satisfies the column's
         constraints.
 

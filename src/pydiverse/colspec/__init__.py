@@ -4,6 +4,8 @@ from .colspec import (
     Collection,
     ColSpec,
 )
+from ._filter import Filter
+from ._rule import rule, Rule
 from .columns import (
     Any,
     Bool,
@@ -34,6 +36,9 @@ from .columns import (
 __all__ = [
     "ColSpec",
     "Collection",
+    "Filter",
+    "rule",
+    "Rule",
     "Column",
     "Any",
     "Bool",

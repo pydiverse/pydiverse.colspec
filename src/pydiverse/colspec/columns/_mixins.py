@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, Generic, Protocol, Self, TypeVar
 
-from src.pydiverse.colspec.columns import Expr
+from pydiverse.colspec.columns import ColExpr
 
 if TYPE_CHECKING:  # pragma: no cover
     from ._base import Column
@@ -63,7 +63,7 @@ class OrdinalMixin(Generic[T], Base):
         self.max = max
         self.max_exclusive = max_exclusive
 
-    def validation_rules(self, expr: Expr) -> dict[str, Expr]:
+    def validation_rules(self, expr: ColExpr) -> dict[str, ColExpr]:
         result = super().validation_rules(expr)
         if self.min is not None:
             result["min"] = expr >= self.min  # type: ignore
@@ -88,7 +88,7 @@ class IsInMixin(Generic[U], Base):
         super().__init__(**kwargs)
         self.is_in = is_in
 
-    def validation_rules(self, expr: Expr) -> dict[str, Expr]:
+    def validation_rules(self, expr: ColExpr) -> dict[str, ColExpr]:
         result = super().validation_rules(expr)
         if self.is_in is not None:
             result["is_in"] = expr.is_in(self.is_in)

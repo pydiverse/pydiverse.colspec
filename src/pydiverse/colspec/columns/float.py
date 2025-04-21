@@ -16,7 +16,7 @@ from ._mixins import OrdinalMixin
 from ._utils import classproperty
 
 if TYPE_CHECKING:
-    from src.pydiverse.colspec.columns import Expr
+    from pydiverse.colspec.columns import ColExpr
 
 
 class _BaseFloat(OrdinalMixin[float], Column):
@@ -29,7 +29,7 @@ class _BaseFloat(OrdinalMixin[float], Column):
         min_exclusive: float | None = None,
         max: float | None = None,
         max_exclusive: float | None = None,
-        check: Callable[[Expr], Expr] | None = None,
+        check: Callable[[ColExpr], ColExpr] | None = None,
         alias: str | None = None,
     ):
         """

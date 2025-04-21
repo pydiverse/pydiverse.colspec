@@ -13,7 +13,7 @@ import pydiverse.common as pdc
 from ._base import Column
 
 if TYPE_CHECKING:
-    from src.pydiverse.colspec.columns import Expr
+    from pydiverse.colspec.columns import ColExpr
 
 
 class Struct(Column):
@@ -25,7 +25,7 @@ class Struct(Column):
         *,
         nullable: bool = True,
         primary_key: bool = False,
-        check: Callable[[Expr], Expr] | None = None,
+        check: Callable[[ColExpr], ColExpr] | None = None,
         alias: str | None = None,
     ):
         """
@@ -51,7 +51,7 @@ class Struct(Column):
     def dtype(self) -> pdc.Struct:
         return pdc.Struct()
 
-    def validation_rules(self, expr: Expr) -> dict[str, Expr]:
+    def validation_rules(self, expr: ColExpr) -> dict[str, ColExpr]:
         inner_rules = {
             f"inner_{name}_{rule_name}": (
                 pl.when(expr.is_null()).then(pl.lit(True)).otherwise(inner_expr)

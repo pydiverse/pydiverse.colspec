@@ -14,7 +14,7 @@ from ._mixins import IsInMixin, OrdinalMixin
 from ._utils import classproperty
 
 if TYPE_CHECKING:
-    from src.pydiverse.colspec.columns import Expr
+    from pydiverse.colspec.columns import ColExpr
 
 
 class _BaseInteger(IsInMixin[int], OrdinalMixin[int], Column):
@@ -28,7 +28,7 @@ class _BaseInteger(IsInMixin[int], OrdinalMixin[int], Column):
         max: int | None = None,
         max_exclusive: int | None = None,
         is_in: Sequence[int] | None = None,
-        check: Callable[[Expr], Expr] | None = None,
+        check: Callable[[ColExpr], ColExpr] | None = None,
         alias: str | None = None,
     ):
         """

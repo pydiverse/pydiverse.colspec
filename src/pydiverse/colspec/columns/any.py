@@ -11,7 +11,7 @@ import pydiverse.common as pdc
 from ._base import Column
 
 if TYPE_CHECKING:
-    from src.pydiverse.colspec.columns import Expr
+    from pydiverse.colspec.columns import ColExpr
 
 
 class Any(Column):
@@ -20,7 +20,7 @@ class Any(Column):
     def __init__(
         self,
         *,
-        check: Callable[[Expr], Expr] | None = None,
+        check: Callable[[ColExpr], ColExpr] | None = None,
         alias: str | None = None,
     ):
         """

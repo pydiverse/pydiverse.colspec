@@ -16,7 +16,7 @@ from ._base import (
 from ._mixins import OrdinalMixin
 
 if TYPE_CHECKING:
-    from src.pydiverse.colspec.columns import Expr
+    from pydiverse.colspec.columns import ColExpr
 
 try:
     import pydiverse.transform as pdt
@@ -39,7 +39,7 @@ class Date(OrdinalMixin[dt.date], Column):
         max: dt.date | None = None,
         max_exclusive: dt.date | None = None,
         resolution: str | None = None,
-        check: Callable[[Expr], Expr] | None = None,
+        check: Callable[[ColExpr], ColExpr] | None = None,
         alias: str | None = None,
     ):
         """
@@ -99,7 +99,7 @@ class Date(OrdinalMixin[dt.date], Column):
     def dtype(self) -> pdc.Date:
         return pdc.Date()
 
-    def validation_rules(self, expr: Expr) -> dict[str, Expr]:
+    def validation_rules(self, expr: ColExpr) -> dict[str, ColExpr]:
         result = super().validation_rules(expr)
         if self.resolution is not None:
             result["resolution"] = expr.dt.truncate(self.resolution) == expr
@@ -119,7 +119,7 @@ class Time(OrdinalMixin[dt.time], Column):
         max: dt.time | None = None,
         max_exclusive: dt.time | None = None,
         resolution: str | None = None,
-        check: Callable[[Expr], Expr] | None = None,
+        check: Callable[[ColExpr], ColExpr] | None = None,
         alias: str | None = None,
     ):
         """
@@ -178,7 +178,7 @@ class Time(OrdinalMixin[dt.time], Column):
     def dtype(self) -> pdc.Time:
         return pdc.Time()
 
-    def validation_rules(self, expr: Expr) -> dict[str, Expr]:
+    def validation_rules(self, expr: ColExpr) -> dict[str, ColExpr]:
         result = super().validation_rules(expr)
         if self.resolution is not None:
             rounded_expr = (
@@ -204,7 +204,7 @@ class Datetime(OrdinalMixin[dt.datetime], Column):
         max: dt.datetime | None = None,
         max_exclusive: dt.datetime | None = None,
         resolution: str | None = None,
-        check: Callable[[Expr], Expr] | None = None,
+        check: Callable[[ColExpr], ColExpr] | None = None,
         alias: str | None = None,
     ):
         """
@@ -258,7 +258,7 @@ class Datetime(OrdinalMixin[dt.datetime], Column):
     def dtype(self) -> pdc.Datetime:
         return pdc.Datetime()
 
-    def validation_rules(self, expr: Expr) -> dict[str, Expr]:
+    def validation_rules(self, expr: ColExpr) -> dict[str, ColExpr]:
         result = super().validation_rules(expr)
         if self.resolution is not None:
             result["resolution"] = expr.dt.truncate(self.resolution) == expr
@@ -278,7 +278,7 @@ class Duration(OrdinalMixin[dt.timedelta], Column):
         max: dt.timedelta | None = None,
         max_exclusive: dt.timedelta | None = None,
         resolution: str | None = None,
-        check: Callable[[Expr], Expr] | None = None,
+        check: Callable[[ColExpr], ColExpr] | None = None,
         alias: str | None = None,
     ):
         """
@@ -332,7 +332,7 @@ class Duration(OrdinalMixin[dt.timedelta], Column):
     def dtype(self) -> pdc.Duration:
         return pdc.Duration()
 
-    def validation_rules(self, expr: Expr) -> dict[str, Expr]:
+    def validation_rules(self, expr: ColExpr) -> dict[str, ColExpr]:
         result = super().validation_rules(expr)
         if self.resolution is not None:
             datetime = pdt.lit(EPOCH_DATETIME) + expr

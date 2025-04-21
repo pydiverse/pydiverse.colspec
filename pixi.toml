@@ -16,12 +16,8 @@ pip = "*"
 hatchling = "*"
 
 [dependencies]
-python = ">=3.9"
+python = ">=3.11"
 pydiverse-common = ">=0.1.0"
-polars = ">=0.19, <2"
-pandas = ">=2"
-SQLAlchemy = ">=1.4.39, <3"
-pyarrow = ">=11.0.0"
 structlog = ">=22.1.0"
 
 [feature.dev.dependencies]
@@ -33,6 +29,23 @@ typos = "*"
 pixi-pycharm = ">=0.0.6"
 pytest = ">=7.1.2"
 pytest-xdist = ">=2.5.0"
+
+[feature.pl.dependencies]
+polars = ">=0.19, <2"
+
+[feature.sa.dependencies]
+SQLAlchemy = ">=1.4.39, <3"
+
+[feature.pdt.dependencies]
+pydiverse-transform = ">=0.2.3" #">=0.3.0"
+
+[feature.dag.dependencies]
+pydiverse-pipedag = ">=0.9.9" #">=0.10.0"
+
+[feature.dy.dependencies]
+# for editable pip install of dataframely (conda-forge still missing)
+maturin = ">=1.8.3,<2"
+rust = ">=1.85.1,<1.86"
 
 [feature.release.dependencies]
 hatch = ">=1.12.0"
@@ -48,13 +61,10 @@ sphinx-click = ">=4.4.0"
 sphinx-autobuild = ">=2021.3.14"
 sphinx-copybutton = ">=0.5.2"
 
-
 [feature.docs.tasks]
 docs = "cd docs && make html "
 readthedocs = "rm -rf $READTHEDOCS_OUTPUT/html && cp -r docs/build/html $READTHEDOCS_OUTPUT/html"
 
-[feature.py310.dependencies]
-python = "3.10.*"
 [feature.py311.dependencies]
 python = "3.11.*"
 [feature.py312.dependencies]
@@ -64,9 +74,20 @@ python = "3.13.*"
 
 [environments]
 default = ["py312", "dev"]
-py310 = ["py310", "dev"]
 py311 = ["py311", "dev"]
 py312 = ["py312", "dev"]
 py313 = ["py313", "dev"]
+py311pl = ["py311", "dev", "pl"]
+py313pl = ["py313", "dev", "pl"]
+py311sa = ["py311", "dev", "sa"]
+py313sa = ["py313", "dev", "sa"]
+py311pdt = ["py311", "dev", "pdt"]
+py313pdt = ["py313", "dev", "pdt"]
+py311dag = ["py311", "dev", "dag"]
+py313dag = ["py313", "dev", "dag"]
+py311dy = ["py311", "dev", "dy"]
+py313dy = ["py313", "dev", "dy"]
+py311all = ["py311", "dev", "pdt", "dag", "dy"]
+py313all = ["py313", "dev", "pdt", "dag", "dy"]
 docs = ["docs"]
 release = { features = ["release"], no-default-feature = true }

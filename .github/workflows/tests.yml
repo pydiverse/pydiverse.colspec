@@ -36,6 +36,18 @@ jobs:
           - py311
           - py312
           - py313
+          - py310pl
+          - py313pl
+          - py310sa
+          - py313sa
+          - py310pdt
+          - py313pdt
+          - py310dag
+          - py313dag
+          - py310dy
+          - py313dy
+          - py310all
+          - py313all
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4

@@ -12,7 +12,7 @@ from ._base import Column
 from .struct import Struct
 
 if TYPE_CHECKING:
-    from src.pydiverse.colspec.columns import Expr
+    from pydiverse.colspec.columns import ColExpr
 
 
 class List(Column):
@@ -24,7 +24,7 @@ class List(Column):
         *,
         nullable: bool = True,
         primary_key: bool = False,
-        check: Callable[[Expr], Expr] | None = None,
+        check: Callable[[ColExpr], ColExpr] | None = None,
         alias: str | None = None,
         min_length: int | None = None,
         max_length: int | None = None,
@@ -55,7 +55,7 @@ class List(Column):
     def dtype(self) -> pdc.List:
         return pdc.List()
 
-    def validation_rules(self, expr: Expr) -> dict[str, Expr]:
+    def validation_rules(self, expr: ColExpr) -> dict[str, ColExpr]:
         import polars as pl  # needs to be replaced with pydiverse.transform
 
         inner_rules = {
@@ -65,7 +65,7 @@ class List(Column):
             ).items()
         }
 
-        list_rules: dict[str, Expr] = {}
+        list_rules: dict[str, ColExpr] = {}
         if self.inner.primary_key:
             list_rules["primary_key"] = ~expr.list.eval(
                 pl.element().is_duplicated()

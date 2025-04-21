@@ -14,7 +14,7 @@ from ._base import Column
 from ._mixins import OrdinalMixin
 
 if TYPE_CHECKING:
-    from src.pydiverse.colspec.columns import Expr
+    from pydiverse.colspec.columns import ColExpr
 
 
 class Decimal(OrdinalMixin[decimal.Decimal], Column):
@@ -31,7 +31,7 @@ class Decimal(OrdinalMixin[decimal.Decimal], Column):
         min_exclusive: decimal.Decimal | None = None,
         max: decimal.Decimal | None = None,
         max_exclusive: decimal.Decimal | None = None,
-        check: Callable[[Expr], Expr] | None = None,
+        check: Callable[[ColExpr], ColExpr] | None = None,
         alias: str | None = None,
     ):
         """

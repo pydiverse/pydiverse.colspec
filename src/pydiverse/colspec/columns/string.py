@@ -11,7 +11,7 @@ import pydiverse.common as pdc
 from ._base import Column
 
 if TYPE_CHECKING:
-    from src.pydiverse.colspec.columns import Expr
+    from pydiverse.colspec.columns import ColExpr
 
 # ------------------------------------------------------------------------------------ #
 
@@ -27,7 +27,7 @@ class String(Column):
         min_length: int | None = None,
         max_length: int | None = None,
         regex: str | None = None,
-        check: Callable[[Expr], Expr] | None = None,
+        check: Callable[[ColExpr], ColExpr] | None = None,
         alias: str | None = None,
     ):
         """
@@ -56,7 +56,7 @@ class String(Column):
     def dtype(self) -> pdc.String:
         return pdc.String()
 
-    def validation_rules(self, expr: Expr) -> dict[str, Expr]:
+    def validation_rules(self, expr: ColExpr) -> dict[str, ColExpr]:
         result = super().validation_rules(expr)
         if self.min_length is not None:
             result["min_length"] = expr.str.len_bytes() >= self.min_length

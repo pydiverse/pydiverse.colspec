@@ -5,10 +5,10 @@ from __future__ import annotations
 try:
     import pydiverse.transform as pdt
 
-    Expr = pdt.Expr
+    ColExpr = pdt.ColExpr
 except ImportError:
     # Only serves as type hint
-    class Expr:
+    class ColExpr:
         str = None
         dt = None
         dur = None
