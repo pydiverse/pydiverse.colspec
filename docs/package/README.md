@@ -19,7 +19,7 @@ term is avoided as much as possible. The term column specification means exactly
 
 ColSpec is the brain child of [dataframely](https://github.com/Quantco/dataframely). Large parts of the codebase is code
 duplicated from it. Unfortunately, integrating the SQL native validation into dataframely would have made it a less clean 
-solution for people who just focus on Polars. Thus the decision was made replicate the same functionality in the 
+solution for people who just focus on Polars. Thus the decision was made to replicate the same functionality in the 
 pydiverse library collection also with the benefit to enable smoother integration with other pydiverse libraries.
 
 ## Usage
