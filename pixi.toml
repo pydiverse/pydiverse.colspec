@@ -43,9 +43,7 @@ pydiverse-transform = ">=0.2.3" #">=0.3.0"
 pydiverse-pipedag = ">=0.9.9" #">=0.10.0"
 
 [feature.dy.dependencies]
-# for editable pip install of dataframely (conda-forge still missing)
-maturin = ">=1.8.3,<2"
-rust = ">=1.85.1,<1.86"
+dataframely = ">=1.1.0"
 
 [feature.release.dependencies]
 hatch = ">=1.12.0"

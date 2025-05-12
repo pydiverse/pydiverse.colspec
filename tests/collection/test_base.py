@@ -8,6 +8,7 @@ import polars as pl
 import pytest
 from polars.testing import assert_frame_equal
 import pydiverse.colspec as cs
+from pydiverse.colspec.colspec import dy
 
 class MyFirstColSpec(cs.ColSpec):
     a = cs.UInt8(primary_key=True)
@@ -48,6 +49,7 @@ def test_optional_members():
     assert optional_members == {"second"}
 
 
+@pytest.mark.skipif(dy is None, reason="dataframely not installed")
 def test_cast():
     collection = MyCollection.cast_polars_data(
         {
@@ -60,6 +62,7 @@ def test_cast():
     assert collection.second.collect_schema() == MySecondColSpec.create_empty_polars().collect_schema()
 
 
+@pytest.mark.skipif(dy is None, reason="dataframely not installed")
 def test_cast2():
     collection = MyCollection._init_polars_data(
         {
@@ -73,6 +76,7 @@ def test_cast2():
     assert collection.second.collect_schema() == MySecondColSpec.create_empty_polars().collect_schema()
 
 
+@pytest.mark.skipif(dy is None, reason="dataframely not installed")
 @pytest.mark.parametrize(
     "expected",
     [
@@ -98,6 +102,7 @@ def test_to_dict(expected: dict[str, pl.LazyFrame]):
     assert MyCollection.is_valid_polars_data(observed)
 
 
+@pytest.mark.skipif(dy is None, reason="dataframely not installed")
 def test_collect_all():
     collection = MyCollection.cast_polars_data(
         {
@@ -117,6 +122,7 @@ def test_collect_all():
     assert len(out.second.collect()) == 2
 
 
+@pytest.mark.skipif(dy is None, reason="dataframely not installed")
 def test_collect_all_optional():
     collection = MyCollection.cast_polars_data({"first": pl.LazyFrame({"a": [1, 2, 3]})})
     out = collection.collect_all_polars()
@@ -126,6 +132,7 @@ def test_collect_all_optional():
     assert out.second is None
 
 
+@pytest.mark.skipif(dy is None, reason="dataframely not installed")
 @pytest.mark.parametrize(
     "read_fn", [MyCollection.scan_parquet, MyCollection.read_parquet]
 )
@@ -145,6 +152,7 @@ def test_read_write_parquet(tmp_path: Path, read_fn: Callable[[Path], MyCollecti
     assert_frame_equal(collection.second, read.second)
 
 
+@pytest.mark.skipif(dy is None, reason="dataframely not installed")
 @pytest.mark.parametrize(
     "read_fn", [MyCollection.scan_parquet, MyCollection.read_parquet]
 )

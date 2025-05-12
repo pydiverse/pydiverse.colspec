@@ -1,0 +1,118 @@
+# Copyright (c) QuantCo 2024-2025
+# SPDX-License-Identifier: LicenseRef-QuantCo
+
+import json
+from functools import cached_property
+from pathlib import Path
+from typing import IO, Self
+
+from .colspec import pdt
+from .columns import ColExpr
+
+
+class FailureInfo:
+    """A container carrying information about rows failing validation in
+    :meth:`ColSpec.filter`."""
+
+    #: The subset of the input data frame containing the *invalid* rows along with
+    #: all boolean columns used for validation. Each of these boolean columns describes
+    #: a single rule where a value of ``False``` indicates unsuccessful validation.
+    #: Thus, at least one value per row is ``False``.
+    tbl: pdt.Table
+    _invalid_rows: pdt.Table
+    #: The columns in `_tbl` which are used for validation.
+    rule_columns: dict[str, pdt.ColExpr]
+
+    def __init__(self, tbl: pdt.Table, invalid_rows: pdt.Table, rule_columns: dict[str, pdt.ColExpr]):
+        self.tbl = tbl
+        self._invalid_rows = invalid_rows
+        self.rule_columns = rule_columns
+
+    @property
+    def invalid_rows(self) -> pdt.Table:
+        from pydiverse.transform.extended import select
+        return self._invalid_rows >> select(self.tbl)
+
+    @property
+    def debug_invalid_rows(self) -> pdt.Table:
+        return self._invalid_rows
+
+    def counts(self) -> dict[str, int]:
+        """The number of validation failures for each individual rule.
+
+        Returns:
+            A mapping from rule name to counts. If a rule's failure count is 0, it is
+            not included here.
+        """
+        from pydiverse.transform.extended import summarize, export, Polars
+        agg = self._invalid_rows >> summarize(**{k:c.sum() for k, c in self.rule_columns}) >> export(Polars)
+        return agg.to_dict()
+
+    def __len__(self) -> int:
+        from pydiverse.transform.extended import collect
+        return len(self._invalid_rows >> collect())  # this can be implemented more efficiently
+
+    # ---------------------------------- PERSISTENCE --------------------------------- #
+
+    def write_parquet(self, file: str | Path | IO[bytes]):
+        """Write the failure info to a Parquet file.
+
+        Args:
+            file: The file path or writable file-like object to write to.
+        """
+        # NOTE: We add a dummy column with metadata in the column name to allow writing
+        #  the rule columns to the same file.
+        rule_columns_json = json.dumps({"rule_columns": self._rule_columns})
+        self._df.with_columns(
+            pl.lit(None).alias(rule_columns_json),
+        ).write_parquet(file)
+
+    @classmethod
+    def scan_parquet(cls, source: str | Path | IO[bytes]) -> Self:
+        """Lazily read the parquet file with the failure info.
+
+        Args:
+            source: The file path or readable file-like object to read from.
+
+        Returns:
+            The failure info object.
+        """
+        lf = pl.scan_parquet(source)
+        # NOTE: In `write_parquet`, the rule columns are added as the name of the last
+        #  column.
+        last_column = lf.collect_schema().names()[-1]
+        rule_columns = json.loads(last_column)["rule_columns"]
+        return cls(lf.drop(last_column), rule_columns)
+
+
+# ------------------------------------ COMPUTATION ----------------------------------- #
+
+
+def _compute_counts(df: pl.DataFrame, rule_columns: list[str]) -> dict[str, int]:
+    if len(rule_columns) == 0:
+        return {}
+
+    counts = df.select((~pl.col(rule_columns)).sum())
+    return {
+        name: count for name, count in (counts.row(0, named=True).items()) if count > 0
+    }
+
+
+def _compute_cooccurrence_counts(
+    df: pl.DataFrame, rule_columns: list[str]
+) -> dict[frozenset[str], int]:
+    if len(rule_columns) == 0:
+        return {}
+
+    group_lengths = df.group_by(pl.col(rule_columns).fill_null(True)).len()
+    if len(group_lengths) == 0:
+        return {}
+
+    groups = group_lengths.drop("len")
+    counts = group_lengths.get_column("len")
+    return {
+        frozenset(
+            name for name, success in zip(rule_columns, row) if not success
+        ): count
+        for row, count in zip(groups.iter_rows(), counts)
+    }

@@ -4,7 +4,7 @@ from .colspec import (
     Collection,
     ColSpec,
 )
-from ._filter import Filter
+from ._filter import filter, filter_polars, Filter, FilterPolars
 from ._rule import rule, Rule
 from .columns import (
     Any,
@@ -36,7 +36,10 @@ from .columns import (
 __all__ = [
     "ColSpec",
     "Collection",
+    "filter",
     "Filter",
+    "filter_polars",
+    "FilterPolars",
     "rule",
     "Rule",
     "Column",

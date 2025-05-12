@@ -6,7 +6,7 @@ import polars as pl
 from pydiverse.colspec import Rule
 
 
-def rules_from_exprs(exprs: dict[str, pl.Expr]) -> dict[str, Rule]:
+def rules_from_exprs_polars(exprs: dict[str, pl.Expr]) -> dict[str, Rule]:
     """Turn a set of expressions into simple rules.
 
     Args:
@@ -18,7 +18,7 @@ def rules_from_exprs(exprs: dict[str, pl.Expr]) -> dict[str, Rule]:
     return {name: Rule(expr) for name, expr in exprs.items()}
 
 
-def evaluate_rules(lf: pl.LazyFrame, rules: dict[str, Rule]) -> pl.LazyFrame:
+def evaluate_rules_polars(lf: pl.LazyFrame, rules: dict[str, Rule]) -> pl.LazyFrame:
     """Evaluate the provided rules and return the rules' evaluation.
 
     Args:
