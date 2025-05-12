@@ -6,8 +6,7 @@ import polars as pl
 import pytest
 from polars.testing import assert_frame_equal
 
-import dataframely as dy
-from dataframely.exc import MemberValidationError
+import pydiverse.colspec as cs
 
 # ------------------------------------------------------------------------------------ #
 #                                        SCHEMA                                        #
@@ -15,31 +14,31 @@ from dataframely.exc import MemberValidationError
 
 
 class MyFirstColSpec(cs.ColSpec):
-    a = dy.Integer(primary_key=True)
-    b = dy.Integer()
+    a = cs.Integer(primary_key=True)
+    b = cs.Integer()
 
 
 class MySecondColSpec(cs.ColSpec):
-    a = dy.Integer(primary_key=True)
-    b = dy.Integer(min=1)
+    a = cs.Integer(primary_key=True)
+    b = cs.Integer(min=1)
 
 
-class MyCollection(dy.Collection):
+class MyCollection(cs.Collection):
     first: MyFirstColSpec
     second: MySecondColSpec
 
-    @dy.filter()
+    @cs.filter_polars()
     def equal_primary_keys(self) -> pl.LazyFrame:
         return self.first.join(self.second, on=self.common_primary_keys())
 
-    @dy.filter()
+    @cs.filter_polars()
     def first_b_greater_second_b(self) -> pl.LazyFrame:
         return self.first.join(
             self.second, on=self.common_primary_keys(), how="full", coalesce=True
         ).filter((pl.col("b") > pl.col("b_right")).fill_null(True))
 
 
-class SimpleCollection(dy.Collection):
+class SimpleCollection(cs.Collection):
     first: MyFirstColSpec
     second: MySecondColSpec
 

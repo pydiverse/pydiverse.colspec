@@ -4,16 +4,16 @@
 import polars as pl
 import pytest
 
-import dataframely as dy
+import pydiverse.colspec as cs
 
 
-class TestSchema(cs.ColSpec):
-    a = dy.Integer()
+class TestColSpec(cs.ColSpec):
+    a = cs.Integer()
 
 
-class MyCollection(dy.Collection):
-    first: dy.LazyFrame[TestSchema]
-    second: dy.LazyFrame[TestSchema] | None
+class MyCollection(cs.Collection):
+    first: TestColSpec
+    second: TestColSpec | None
 
 
 def test_collection_missing_required_member():
