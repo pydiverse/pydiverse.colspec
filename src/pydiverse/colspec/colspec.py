@@ -10,59 +10,11 @@ from typing import TYPE_CHECKING, Any, Self, overload, Mapping, Iterable
 
 import structlog
 
-from pydiverse.colspec import exc
-from pydiverse.colspec.columns import ColExpr
-from pydiverse.colspec.exc import ValidationError, ImplementationError
-from pydiverse.colspec.failure import FailureInfo
-
-try:
-    import polars as pl
-    from polars.datatypes import DataTypeClass
-    PolarsDataType = pl.DataType | DataTypeClass
-except ImportError:
-    PolarsDataType = None
-    # Create a new module with the given name.
-    pl = types.ModuleType("polars")
-    pl.DataFrame = None
-    pl.LazyFrame = None
-    pl.DataType = None
-    pl.Series = None
-    pl.Expr = None
-
-try:
-    # colspec has optional dependency to dataframely
-    import dataframely as dy
-    from dataframely.random import Generator
-    from dataframely._polars import FrameType
-except ImportError:
-    Generator = None
-    FrameType = None
-    dy = types.ModuleType("dataframely")
-    dy.DataFrame = None
-    dy.LazyFrame = None
-    dy.FailureInfo = None
-
-try:
-    # colspec has optional dependency to pydiverse.transform
-    import pydiverse.transform as pdt
-except ImportError:
-    class Table:
-        pass
-    # Create a new module with the given name.
-    pdt = types.ModuleType("pydiverse.transform")
-    pdt.Table = Table
-
-
-try:
-    # colspec has optional dependency to pydiverse.pipedag
-    import pydiverse.pipedag as dag
-except ImportError:
-    class Table:
-        pass
-    # Create a new module with the given name.
-    dag = types.ModuleType("pydiverse.pipedag")
-    dag.Table = Table
-
+from . import exc
+from .columns import ColExpr
+from .exc import ValidationError, ImplementationError
+from .failure import FailureInfo
+from .optional_dependency import pl, dy, pdt, dag, Generator, FrameType
 
 if TYPE_CHECKING:
     from pydiverse.colspec import FilterPolars
@@ -513,7 +465,7 @@ class Collection:
         join_subquery_pk: dict[str, list[str]] = {name:[] for name in members}
         extra_rules: dict[str, dict[str, ColExpr]] = {name: {} for name in members}
         for name, col_expr in self.filter_rules().items():
-            expr_tbl_names = [tbl_name for tbl_name in members.keys() if getattr(self, tbl_name) in col_expr]
+            expr_tbl_names = [tbl_name for tbl_name in members.keys() if col_expr.uses_table(getattr(self, tbl_name)) ]
             expr_col_specs = [members[tbl_name].col_spec for tbl_name in expr_tbl_names]
             group_subqueries: dict[tuple, pdt.Table] = {}
             for tbl_name in self.members().keys():
@@ -530,6 +482,8 @@ class Collection:
                     else:
                         join_members[tbl_name] |= expr_tbl_names
                         extra_rules[tbl_name] += [col_expr]
+
+        # TODO: fill join dictionary with self.get_join(tbl_name, join_members[tbl_name], ...subqueries...)
 
         new_coll = self.__class__.build()
         fail_coll = self.__class__.build()

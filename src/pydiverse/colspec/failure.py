@@ -6,7 +6,7 @@ from functools import cached_property
 from pathlib import Path
 from typing import IO, Self
 
-from .colspec import pdt
+from .optional_dependency import pdt, pl
 from .columns import ColExpr
 
 
