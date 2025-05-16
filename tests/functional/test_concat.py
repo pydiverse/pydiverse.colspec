@@ -1,20 +1,22 @@
 # Copyright (c) QuantCo 2024-2025
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
 
+import dataframely as dy
 import polars as pl
 import pytest
 
-import dataframely as dy
+import pydiverse.colspec as cs
 
 
 class MySchema(cs.ColSpec):
-    a = dy.Int64()
+    a = cs.Int64()
 
 
-class SimpleCollection(dy.Collection):
-    first: dy.LazyFrame[MySchema]
-    second: dy.LazyFrame[MySchema] | None
-    third: dy.LazyFrame[MySchema] | None
+class SimpleCollection(cs.Collection):
+    first: MySchema
+    second: MySchema | None
+    third: MySchema | None
 
 
 def test_concat():

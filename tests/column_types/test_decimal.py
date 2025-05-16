@@ -1,21 +1,22 @@
 # Copyright (c) QuantCo 2024-2025
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
 
 import decimal
 from typing import Any
 
 import polars as pl
 import pytest
+from dataframely.testing import evaluate_rules, rules_from_exprs
 from polars.datatypes import DataTypeClass
 from polars.datatypes.group import FLOAT_DTYPES, INTEGER_DTYPES
 from polars.testing import assert_frame_equal
 
-import dataframely as dy
-from dataframely.testing import evaluate_rules, rules_from_exprs
+import pydiverse.colspec as cs
 
 
 class DecimalSchema(cs.ColSpec):
-    a = dy.Decimal()
+    a = cs.Decimal()
 
 
 @pytest.mark.parametrize(
@@ -31,7 +32,7 @@ class DecimalSchema(cs.ColSpec):
 )
 def test_args_consistency_min_max(kwargs: dict[str, Any]):
     with pytest.raises(ValueError):
-        dy.Decimal(**kwargs)
+        cs.Decimal(**kwargs)
 
 
 @pytest.mark.parametrize(
@@ -49,7 +50,7 @@ def test_args_consistency_min_max(kwargs: dict[str, Any]):
 )
 def test_invalid_args(kwargs: dict[str, Any]):
     with pytest.raises(ValueError):
-        dy.Decimal(**kwargs)
+        cs.Decimal(**kwargs)
 
 
 @pytest.mark.parametrize(
@@ -77,7 +78,7 @@ def test_non_decimal_dtype_fails(dtype: DataTypeClass):
 )
 def test_validate_min(inclusive: bool, valid: dict[str, list[bool]]):
     kwargs = {("min" if inclusive else "min_exclusive"): decimal.Decimal(3)}
-    column = dy.Decimal(**kwargs)  # type: ignore
+    column = cs.Decimal(**kwargs)  # type: ignore
     lf = pl.LazyFrame({"a": [1, 2, 3, 4, 5]})
     actual = evaluate_rules(lf, rules_from_exprs(column.validation_rules(pl.col("a"))))
     expected = pl.LazyFrame(valid)
@@ -93,7 +94,7 @@ def test_validate_min(inclusive: bool, valid: dict[str, list[bool]]):
 )
 def test_validate_max(inclusive: bool, valid: dict[str, list[bool]]):
     kwargs = {("max" if inclusive else "max_exclusive"): decimal.Decimal(3)}
-    column = dy.Decimal(**kwargs)  # type: ignore
+    column = cs.Decimal(**kwargs)  # type: ignore
     lf = pl.LazyFrame({"a": [1, 2, 3, 4, 5]})
     actual = evaluate_rules(lf, rules_from_exprs(column.validation_rules(pl.col("a"))))
     expected = pl.LazyFrame(valid)
@@ -146,7 +147,7 @@ def test_validate_range(
         ("min" if min_inclusive else "min_exclusive"): decimal.Decimal(2),
         ("max" if max_inclusive else "max_exclusive"): decimal.Decimal(4),
     }
-    column = dy.Decimal(**kwargs)  # type: ignore
+    column = cs.Decimal(**kwargs)  # type: ignore
     lf = pl.LazyFrame({"a": [1, 2, 3, 4, 5]})
     actual = evaluate_rules(lf, rules_from_exprs(column.validation_rules(pl.col("a"))))
     expected = pl.LazyFrame(valid)

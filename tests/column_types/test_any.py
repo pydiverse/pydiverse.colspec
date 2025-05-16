@@ -1,16 +1,17 @@
 # Copyright (c) QuantCo 2024-2024
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
 
 from typing import Any
 
 import polars as pl
 import pytest
 
-import dataframely as dy
+import pydiverse.colspec as cs
 
 
 class AnySchema(cs.ColSpec):
-    a = dy.Any()
+    a = cs.Any()
 
 
 @pytest.mark.parametrize(

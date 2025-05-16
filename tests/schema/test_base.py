@@ -1,14 +1,15 @@
 # Copyright (c) QuantCo 2024-2025
 # SPDX-License-Identifier: BSD-3-Clause
-
-
-import polars as pl
-import pytest
+from __future__ import annotations
 
 import dataframely as dy
+import polars as pl
+import pytest
 from dataframely._rule import Rule
 from dataframely.exc import ImplementationError
 from dataframely.testing import create_schema
+
+import pydiverse.colspec as cs
 
 
 class MySchema(cs.ColSpec):
@@ -65,7 +66,7 @@ def test_col_raise_if_none():
     # Manually override alias to be ``None``.
     InvalidSchema.a.alias = None
     with pytest.raises(ValueError):
-        InvalidSchema.a.col
+        _ = InvalidSchema.a.col
 
 
 def test_col_in_polars_expression():

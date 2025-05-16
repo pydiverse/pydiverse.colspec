@@ -1,16 +1,18 @@
 # Copyright (c) QuantCo 2024-2025
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
 
 import random
 
+import dataframely as dy
 import polars as pl
 import pytest
+from dataframely.exc import DtypeValidationError, ValidationError
+from dataframely.testing import create_schema, validation_mask
 from polars.datatypes import DataTypeClass
 from polars.testing import assert_frame_equal
 
-import dataframely as dy
-from dataframely.exc import DtypeValidationError, ValidationError
-from dataframely.testing import create_schema, validation_mask
+import pydiverse.colspec as cs
 
 
 class MySchema(cs.ColSpec):
@@ -37,7 +39,7 @@ def test_filter_extra_columns(
     except ValidationError:
         assert expected_columns is None
     except:  # noqa: E722
-        assert False
+        raise AssertionError() from ...
 
 
 @pytest.mark.parametrize(
@@ -55,7 +57,7 @@ def test_filter_dtypes(schema: dict[str, DataTypeClass], cast: bool, success: bo
     except DtypeValidationError:
         assert not success
     except:  # noqa: E722
-        assert False
+        raise AssertionError() from ...
 
 
 @pytest.mark.parametrize("df_type", [pl.DataFrame, pl.LazyFrame])
@@ -141,8 +143,8 @@ def test_filter_cast(df_type: type[pl.DataFrame] | type[pl.LazyFrame]):
         "a|dtype": 3,
         "a|nullability": 1,
         "b|max_length": 1,
-        # NOTE: primary key constraint is violated as failing dtype casts results in multiple
-        #  null values.
+        # NOTE: primary key constraint is violated as failing dtype casts results in
+        # multiple null values.
         "primary_key": 1,
     }
     assert failures.cooccurrence_counts() == {

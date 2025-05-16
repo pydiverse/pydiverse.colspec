@@ -1,27 +1,29 @@
 # Copyright (c) QuantCo 2024-2025
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
 
+import dataframely as dy
 import polars as pl
 import pytest
 
-import dataframely as dy
+import pydiverse.colspec as cs
 
 # -------------------------------------- SCHEMA -------------------------------------- #
 
 
 class DepartmentSchema(cs.ColSpec):
-    department_id = dy.Int64(primary_key=True)
+    department_id = cs.Int64(primary_key=True)
 
 
 class ManagerSchema(cs.ColSpec):
-    department_id = dy.Int64(primary_key=True)
-    name = dy.String(nullable=False)
+    department_id = cs.Int64(primary_key=True)
+    name = cs.String(nullable=False)
 
 
 class EmployeeSchema(cs.ColSpec):
-    department_id = dy.Int64(primary_key=True)
-    employee_number = dy.Int64(primary_key=True)
-    name = dy.String(nullable=False)
+    department_id = cs.Int64(primary_key=True)
+    employee_number = cs.Int64(primary_key=True)
+    name = cs.String(nullable=False)
 
 
 # ------------------------------------- FIXTURES ------------------------------------- #

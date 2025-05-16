@@ -1,13 +1,15 @@
 # Copyright (c) QuantCo 2024-2025
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
 
 from typing import Any
 
+import dataframely as dy
 import polars as pl
 import polars.exceptions as plexc
 import pytest
 
-import dataframely as dy
+import pydiverse.colspec as cs
 
 
 class MySchema(cs.ColSpec):

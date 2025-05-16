@@ -1,13 +1,15 @@
 # Copyright (c) QuantCo 2025-2025
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
 
+import dataframely as dy
 import numpy as np
 import polars as pl
 import pytest
+from dataframely.random import Generator
 from polars.testing import assert_frame_equal
 
-import dataframely as dy
-from dataframely.random import Generator
+import pydiverse.colspec as cs
 
 
 class MySimpleSchema(cs.ColSpec):

@@ -1,14 +1,15 @@
 # Copyright (c) QuantCo 2024-2024
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
 
 import polars as pl
 
-import dataframely as dy
+import pydiverse.colspec as cs
 
 
 class MySchema(cs.ColSpec):
-    a = dy.Int64()
-    b = dy.String()
+    a = cs.Int64()
+    b = cs.String()
 
 
 def test_create_empty():

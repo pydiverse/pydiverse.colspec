@@ -1,15 +1,16 @@
 # Copyright (c) QuantCo 2024-2025
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
 
 import polars as pl
-
-import dataframely as dy
 from dataframely.testing import validation_mask
+
+import pydiverse.colspec as cs
 
 
 class CheckSchema(cs.ColSpec):
-    a = dy.Int64(check=lambda col: (col < 5) | (col > 10))
-    b = dy.String(min_length=3, check=lambda col: col.str.contains("x"))
+    a = cs.Int64(check=lambda col: (col < 5) | (col > 10))
+    b = cs.String(min_length=3, check=lambda col: col.str.contains("x"))
 
 
 def test_check():

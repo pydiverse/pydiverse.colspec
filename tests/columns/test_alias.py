@@ -1,9 +1,11 @@
 # Copyright (c) QuantCo 2024-2024
 # SPDX-License-Identifier: BSD-3-Clause
-
-import polars as pl
+from __future__ import annotations
 
 import dataframely as dy
+import polars as pl
+
+import pydiverse.colspec as cs
 
 
 class AliasSchema(cs.ColSpec):

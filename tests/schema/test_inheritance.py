@@ -1,19 +1,20 @@
 # Copyright (c) QuantCo 2024-2024
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
 
-import dataframely as dy
+import pydiverse.colspec as cs
 
 
 class ParentSchema(cs.ColSpec):
-    a = dy.Integer()
+    a = cs.Integer()
 
 
 class ChildSchema(ParentSchema):
-    b = dy.Integer()
+    b = cs.Integer()
 
 
 class GrandchildSchema(ChildSchema):
-    c = dy.Integer()
+    c = cs.Integer()
 
 
 def test_columns():

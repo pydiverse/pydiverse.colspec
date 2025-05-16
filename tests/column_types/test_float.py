@@ -1,22 +1,24 @@
 # Copyright (c) QuantCo 2024-2025
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
 
 import sys
 from typing import Any
 
+import dataframely as dy
 import polars as pl
 import pytest
+from dataframely.columns.float import _BaseFloat
+from dataframely.testing import FLOAT_COLUMN_TYPES, evaluate_rules, rules_from_exprs
 from polars.datatypes import DataTypeClass
 from polars.datatypes.group import FLOAT_DTYPES, INTEGER_DTYPES
 from polars.testing import assert_frame_equal
 
-import dataframely as dy
-from dataframely.columns.float import _BaseFloat
-from dataframely.testing import FLOAT_COLUMN_TYPES, evaluate_rules, rules_from_exprs
+import pydiverse.colspec as cs
 
 
 class IntegerSchema(cs.ColSpec):
-    a = dy.Float()
+    a = cs.Float()
 
 
 @pytest.mark.parametrize("column_type", FLOAT_COLUMN_TYPES)

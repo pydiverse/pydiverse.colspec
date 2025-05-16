@@ -1,17 +1,17 @@
 # Copyright (c) QuantCo 2024-2025
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
 
 import re
 
+import dataframely as dy
 import polars as pl
 import polars.exceptions as plexc
 import pytest
-from polars.testing import assert_frame_equal
-
-import dataframely as dy
 from dataframely._validation import DtypeCasting, validate_dtypes
 from dataframely.columns import Column
 from dataframely.exc import DtypeValidationError
+from polars.testing import assert_frame_equal
 
 
 @pytest.mark.parametrize(
@@ -67,7 +67,7 @@ def test_failure(
     df = pl.DataFrame(schema=actual)
     try:
         validate_dtypes(df.lazy(), actual=df.schema, expected=expected, casting="none")
-        assert False  # above should raise
+        raise AssertionError()  # above should raise
     except DtypeValidationError as exc:
         assert set(exc.errors.keys()) == fail_columns
         assert re.match(error, str(exc))
