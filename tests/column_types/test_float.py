@@ -59,13 +59,13 @@ def test_invalid_args(column_type: type[_BaseFloat], kwargs: dict[str, Any]):
 @pytest.mark.parametrize("dtype", FLOAT_DTYPES)
 def test_any_integer_dtype_passes(dtype: DataTypeClass):
     df = pl.DataFrame(schema={"a": dtype})
-    assert IntegerSchema.is_valid(df)
+    assert IntegerSchema.is_valid_polars(df)
 
 
 @pytest.mark.parametrize("dtype", [pl.Boolean, pl.String] + list(INTEGER_DTYPES))
 def test_non_integer_dtype_fails(dtype: DataTypeClass):
     df = pl.DataFrame(schema={"a": dtype})
-    assert not IntegerSchema.is_valid(df)
+    assert not IntegerSchema.is_valid_polars(df)
 
 
 @pytest.mark.parametrize("column_type", FLOAT_COLUMN_TYPES)

@@ -1,8 +1,11 @@
 # Copyright (c) QuantCo 2023-2025
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
 
 from collections import defaultdict
+
 from pydiverse.common import Dtype
+
 
 class ValidationError(Exception):
     """Error raised when :mod:`dataframely` validation encounters an issue."""
