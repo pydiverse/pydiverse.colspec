@@ -6,15 +6,15 @@ import typing
 from dataclasses import dataclass
 from functools import reduce
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Self, overload, Mapping, Iterable
+from typing import TYPE_CHECKING, Any, Iterable, Mapping, Self, overload
 
 import structlog
 
 from . import exc
 from .columns import ColExpr
-from .exc import ValidationError, ImplementationError
+from .exc import ImplementationError, ValidationError
 from .failure import FailureInfo
-from .optional_dependency import pl, dy, pdt, dag, Generator, FrameType
+from .optional_dependency import FrameType, Generator, dag, dy, pdt, pl
 
 if TYPE_CHECKING:
     from pydiverse.colspec import FilterPolars
@@ -22,6 +22,7 @@ if TYPE_CHECKING:
 
 def convert_to_dy_col_spec(base_class):
     from pydiverse.colspec import Column
+
     if base_class == ColSpec:
         # stop base class iteration
         return {}
@@ -59,6 +60,7 @@ def convert_to_dy_anno_dict(annotations: dict[str, typing.Any]):
 
 def convert_to_dy(value):
     from pydiverse.colspec import Column
+
     if isinstance(value, Column) and hasattr(dy, value.__class__.__name__):
         DyColClass = getattr(dy, value.__class__.__name__)
         param_keys = set(inspect.signature(DyColClass.__init__).parameters.keys())
@@ -66,11 +68,11 @@ def convert_to_dy(value):
         if "inner" in fields:
             if isinstance(value.inner, dict):
                 # this case handles struct definitions
-                fields["inner"] = {k: convert_to_dy(v) for k,v in value.inner.items()}
+                fields["inner"] = {k: convert_to_dy(v) for k, v in value.inner.items()}
             else:
                 # this case handles lists with inner types
                 fields["inner"] = convert_to_dy(value.inner)
-        return DyColClass(**{k:v for k,v in fields.items() if k in param_keys})
+        return DyColClass(**{k: v for k, v in fields.items() if k in param_keys})
     else:
         return value
 
@@ -82,13 +84,21 @@ class ColSpecMeta(type):
         return super().__new__(cls, clsname, bases, attribs)
 
 
-class ColSpec(object, FailureInfo, pdt.Table, dag.Table, pl.LazyFrame, pl.DataFrame, metaclass=ColSpecMeta):
+class ColSpec(
+    FailureInfo,
+    pdt.Table,
+    dag.Table,
+    pl.LazyFrame,
+    pl.DataFrame,
+    metaclass=ColSpecMeta,
+):
     """Base class for all column specifications.
 
     The base classes here are just for code completion support when working with
     Collection objects that store actual data or table references. They are removed
     at runtime by a metaclass.
     """
+
     def __init__(self):
         pass
 
@@ -100,6 +110,7 @@ class ColSpec(object, FailureInfo, pdt.Table, dag.Table, pl.LazyFrame, pl.DataFr
             list[str]: Names of columns that are primary keys
         """
         from pydiverse.colspec import Column
+
         result = [
             member
             for member in dir(cls)
@@ -111,6 +122,7 @@ class ColSpec(object, FailureInfo, pdt.Table, dag.Table, pl.LazyFrame, pl.DataFr
     @classmethod
     def column_names(cls):
         from pydiverse.colspec import Column
+
         result = [
             member for member in dir(cls) if isinstance(getattr(cls, member), Column)
         ]
@@ -143,6 +155,7 @@ class ColSpec(object, FailureInfo, pdt.Table, dag.Table, pl.LazyFrame, pl.DataFr
             Whether the provided dataframe can be validated with this schema.
         """
         import polars.exceptions as plexc
+
         try:
             cls.validate_polars(df, cast=cast)
             return True
@@ -173,11 +186,15 @@ class ColSpec(object, FailureInfo, pdt.Table, dag.Table, pl.LazyFrame, pl.DataFr
 
     @overload
     @classmethod
-    def cast_polars(cls, df: pl.DataFrame) -> dy.DataFrame[Self]: ...  # pragma: no cover
+    def cast_polars(
+        cls, df: pl.DataFrame
+    ) -> dy.DataFrame[Self]: ...  # pragma: no cover
 
     @overload
     @classmethod
-    def cast_polars(cls, df: pl.LazyFrame) -> dy.LazyFrame[Self]: ...  # pragma: no cover
+    def cast_polars(
+        cls, df: pl.LazyFrame
+    ) -> dy.LazyFrame[Self]: ...  # pragma: no cover
 
     @classmethod
     def cast_polars(
@@ -190,9 +207,7 @@ class ColSpec(object, FailureInfo, pdt.Table, dag.Table, pl.LazyFrame, pl.DataFr
     # ----------------------------------- FILTERING ---------------------------------- #
 
     @classmethod
-    def filter(
-        cls, tbl: pdt.Table, *, cast: bool = False
-    ) -> tuple[Self, FailureInfo]:
+    def filter(cls, tbl: pdt.Table, *, cast: bool = False) -> tuple[Self, FailureInfo]:
         """Filter the table by the rules of this column specification.
 
         This method can be thought of as a "soft alternative" to :meth:`validate`.
@@ -222,10 +237,16 @@ class ColSpec(object, FailureInfo, pdt.Table, dag.Table, pl.LazyFrame, pl.DataFr
             This method preserves the ordering of the input data frame.
         """
         from pydiverse.transform.extended import filter
+
         # rules = cls._validation_rules()
         # tbl_ok_rows, tbl_invalid_rows = cls._filter_raw(tbl, rules, cast)
-        tbl_ok_rows, tbl_invalid_rows = tbl, tbl >> filter(False)  # dummy implementation
-        return tbl_ok_rows, FailureInfo(tbl=tbl, invalid_rows=tbl_invalid_rows, rule_columns={})
+        tbl_ok_rows, tbl_invalid_rows = (
+            tbl,
+            tbl >> filter(False),
+        )  # dummy implementation
+        return tbl_ok_rows, FailureInfo(
+            tbl=tbl, invalid_rows=tbl_invalid_rows, rule_columns={}
+        )
 
     @classmethod
     def filter_polars(
@@ -268,10 +289,17 @@ def convert_filter_to_dy(f: FilterPolars):
     return dy._filter.Filter(f.logic)
 
 
-def convert_collection_to_dy(collection: Collection | type[Collection]) -> type[dy.Collection]:
+def convert_collection_to_dy(
+    collection: Collection | type[Collection],
+) -> type[dy.Collection]:
     from pydiverse.colspec import FilterPolars
+
     cls = collection.__class__ if isinstance(collection, Collection) else collection
-    filters = {k:convert_filter_to_dy(v) for k,v in collection.__dict__.items() if isinstance(v, FilterPolars)}
+    filters = {
+        k: convert_filter_to_dy(v)
+        for k, v in collection.__dict__.items()
+        if isinstance(v, FilterPolars)
+    }
     DynCollection = type[dy.Collection](
         cls.__name__,
         (dy.Collection,),
@@ -293,14 +321,28 @@ class MemberInfo:
     def is_member(anno: type):
         if isinstance(anno, types.UnionType):
             union_types = typing.get_args(anno)
-            return 1 <= len(union_types) <= 2 and sum(1 if (inspect.isclass(t) and issubclass(t, ColSpec)) else 0 for t in union_types) == 1 and all(t == type(None) for t in union_types if not (inspect.isclass(t) and issubclass(t, ColSpec)))
+            return (
+                1 <= len(union_types) <= 2
+                and sum(
+                    1 if (inspect.isclass(t) and issubclass(t, ColSpec)) else 0
+                    for t in union_types
+                )
+                == 1
+                and all(
+                    t == type(None)
+                    for t in union_types
+                    if not (inspect.isclass(t) and issubclass(t, ColSpec))
+                )
+            )
         return inspect.isclass(anno) and issubclass(anno, ColSpec)
 
     @staticmethod
     def new(anno: type):
         if isinstance(anno, types.UnionType):
             union_types = typing.get_args(anno)
-            col_spec = [t for t in union_types if inspect.isclass(t) and issubclass(t, ColSpec)][0]
+            col_spec = [
+                t for t in union_types if inspect.isclass(t) and issubclass(t, ColSpec)
+            ][0]
             is_optional = any(t == type(None) for t in union_types)
         else:
             col_spec = anno
@@ -309,7 +351,9 @@ class MemberInfo:
 
     @staticmethod
     def common_primary_keys(col_specs: Iterable[type[ColSpec]]) -> set[str]:
-        return set.intersection(*[set(col_spec.primary_keys()) for col_spec in col_specs])
+        return set.intersection(
+            *[set(col_spec.primary_keys()) for col_spec in col_specs]
+        )
 
 
 class Collection:
@@ -359,10 +403,18 @@ class Collection:
 
     def validate_polars(self, *, cast: bool = False, fault_tolerant: bool = False):
         self.finalize()
-        return self.validate_polars_data(self.__dict__, cast=cast, fault_tolerant=fault_tolerant)
+        return self.validate_polars_data(
+            self.__dict__, cast=cast, fault_tolerant=fault_tolerant
+        )
 
     @classmethod
-    def validate_polars_data(cls, data: Mapping[str, FrameType], *, cast: bool = False, fault_tolerant: bool = False) -> Self:
+    def validate_polars_data(
+        cls,
+        data: Mapping[str, FrameType],
+        *,
+        cast: bool = False,
+        fault_tolerant: bool = False,
+    ) -> Self:
         """Validate that a set of data frames satisfy the collection's invariants.
 
         Args:
@@ -386,13 +438,16 @@ class Collection:
         """
         import dataframely.exc as dy_exc
         import polars.exceptions as plexc
+
         DynCollection = convert_collection_to_dy(cls)
         logger_name = __name__ + "." + cls.__name__ + ".validate_polars"
         try:
             return DynCollection.validate(data, cast=True)
         except dy_exc.ImplementationError as e:
             logger = structlog.getLogger(logger_name)
-            logger.exception("Dataframely raised column specification implementation error")
+            logger.exception(
+                "Dataframely raised column specification implementation error"
+            )
             if not fault_tolerant:
                 raise exc.ImplementationError(e.message)
         except plexc.InvalidOperationError as e:
@@ -420,10 +475,18 @@ class Collection:
 
     def is_valid_polars(self, *, cast: bool = False, fault_tolerant: bool = False):
         self.finalize()
-        return self.is_valid_polars_data(self.__dict__, cast=cast, fault_tolerant=fault_tolerant)
+        return self.is_valid_polars_data(
+            self.__dict__, cast=cast, fault_tolerant=fault_tolerant
+        )
 
     @classmethod
-    def is_valid_polars_data(cls, data: Mapping[str, FrameType], *, cast: bool = False, fault_tolerant: bool = False) -> bool:
+    def is_valid_polars_data(
+        cls,
+        data: Mapping[str, FrameType],
+        *,
+        cast: bool = False,
+        fault_tolerant: bool = False,
+    ) -> bool:
         """Utility method to check whether :meth:`validate` raises an exception.
 
         Args:
@@ -447,25 +510,28 @@ class Collection:
         except ValidationError:
             return False
 
-    def filter(
-        self, *, cast: bool = False
-    ) -> tuple[Self, Self]:
+    def filter(self, *, cast: bool = False) -> tuple[Self, Self]:
         """Filter rows which conform to column specifications and collections rules.
 
         Returns a tuple of two new collections one with the filtered tables as member
         variables and one with FailureInfo objects as member variables.
         """
         from pydiverse.transform.extended import summarize
+
         self.finalize(assert_pdt=True)
 
         members = self.members()
-        join: dict[str, None | pdt.Table] = {name:None for name in members}
-        join_members: dict[str, set[str]] = {name:set() for name in members}
-        join_subqueries: dict[str, list[pdt.Table]] = {name:[] for name in members}
-        join_subquery_pk: dict[str, list[str]] = {name:[] for name in members}
+        join: dict[str, None | pdt.Table] = {name: None for name in members}
+        join_members: dict[str, set[str]] = {name: set() for name in members}
+        join_subqueries: dict[str, list[pdt.Table]] = {name: [] for name in members}
+        join_subquery_pk: dict[str, list[str]] = {name: [] for name in members}
         extra_rules: dict[str, dict[str, ColExpr]] = {name: {} for name in members}
         for name, col_expr in self.filter_rules().items():
-            expr_tbl_names = [tbl_name for tbl_name in members.keys() if col_expr.uses_table(getattr(self, tbl_name)) ]
+            expr_tbl_names = [
+                tbl_name
+                for tbl_name in members.keys()
+                if col_expr.uses_table(getattr(self, tbl_name))
+            ]
             expr_col_specs = [members[tbl_name].col_spec for tbl_name in expr_tbl_names]
             group_subqueries: dict[tuple, pdt.Table] = {}
             for tbl_name in self.members().keys():
@@ -475,7 +541,9 @@ class Collection:
                     if requires_grouping:
                         key = tuple(pk_overlap)
                         if key not in group_subqueries:
-                            group_subqueries[key] = self._get_join(expr_tbl_names, group_by=pk_overlap) >> summarize(filter=col_expr)
+                            group_subqueries[key] = self._get_join(
+                                expr_tbl_names, group_by=pk_overlap
+                            ) >> summarize(filter=col_expr)
                         join_subqueries[tbl_name] += [group_subqueries[key]]
                         join_subquery_pk[tbl_name] += [pk_overlap]
                         extra_rules[tbl_name] += [group_subqueries[key].filter]
@@ -488,7 +556,11 @@ class Collection:
         new_coll = self.__class__.build()
         fail_coll = self.__class__.build()
         for tbl_name in self.members().keys():
-            tbl, fail = getattr(self, tbl_name).filter(cast=cast, join=join.get(tbl_name), extra_rules=extra_rules.get(tbl_name))
+            tbl, fail = getattr(self, tbl_name).filter(
+                cast=cast,
+                join=join.get(tbl_name),
+                extra_rules=extra_rules.get(tbl_name),
+            )
             setattr(new_coll, tbl_name, tbl)
             setattr(fail_coll, tbl_name, fail)
         return new_coll, fail_coll
@@ -499,7 +571,6 @@ class Collection:
         self.finalize()
         return self.filter_polars_data(self.__dict__, cast=cast)
 
-
     @classmethod
     def filter_polars_data(
         cls, data: Mapping[str, FrameType], *, cast: bool = False
@@ -507,11 +578,9 @@ class Collection:
         DynCollection = convert_collection_to_dy(cls)
         return DynCollection.filter(data, cast=cast)
 
-
     def cast_polars(self) -> Self:
         self.finalize()
         return self.cast_polars_data(self.__dict__)
-
 
     @classmethod
     def cast_polars_data(cls, data: Mapping[str, FrameType]) -> Self:
@@ -523,22 +592,38 @@ class Collection:
     @classmethod
     def members(cls) -> dict[str, MemberInfo]:
         """Information about the members of the collection."""
-        return {k:MemberInfo.new(v) for k,v in cls.__annotations__.items() if MemberInfo.is_member(v)}
+        return {
+            k: MemberInfo.new(v)
+            for k, v in cls.__annotations__.items()
+            if MemberInfo.is_member(v)
+        }
 
     @classmethod
     def member_col_specs(cls) -> dict[str, type[ColSpec]]:
         """The column specifications of all members of the collection."""
-        return {k:MemberInfo.new(v).col_spec for k,v in cls.__annotations__.items() if MemberInfo.is_member(v)}
+        return {
+            k: MemberInfo.new(v).col_spec
+            for k, v in cls.__annotations__.items()
+            if MemberInfo.is_member(v)
+        }
 
     @classmethod
     def required_members(cls) -> set[str]:
         """The names of all required members of the collection."""
-        return {k for k,v in cls.__annotations__.items() if MemberInfo.is_member(v) and not MemberInfo.new(v).is_optional}
+        return {
+            k
+            for k, v in cls.__annotations__.items()
+            if MemberInfo.is_member(v) and not MemberInfo.new(v).is_optional
+        }
 
     @classmethod
     def optional_members(cls) -> set[str]:
         """The names of all optional members of the collection."""
-        return {k for k,v in cls.__annotations__.items() if MemberInfo.is_member(v) and MemberInfo.new(v).is_optional}
+        return {
+            k
+            for k, v in cls.__annotations__.items()
+            if MemberInfo.is_member(v) and MemberInfo.new(v).is_optional
+        }
 
     @classmethod
     def common_primary_keys(cls) -> list[str]:
@@ -584,6 +669,7 @@ class Collection:
             further down the line might fail because of the cast and/or missing columns.
         """
         import polars.exceptions as plexc
+
         cls._validate_polars_input_keys(data)
         result: dict[str, FrameType] = {}
         for member_name, member in cls.members().items():
@@ -612,6 +698,7 @@ class Collection:
             meaning they are obtained by calling ``.collect().lazy()``.
         """
         import polars.exceptions as plexc
+
         try:
             dfs = pl.collect_all([lf for lf in self.to_dict().values()])
         except plexc.PolarsError as e:
@@ -625,7 +712,9 @@ class Collection:
     def write_parquet(self, directory: Path):
         self.finalize()
         DynCollection = convert_collection_to_dy(self.__class__)
-        coll = DynCollection._init({k:v for k,v in self.__dict__.items() if v is not None})
+        coll = DynCollection._init(
+            {k: v for k, v in self.__dict__.items() if v is not None}
+        )
         coll.write_parquet(directory)
 
     @classmethod
@@ -654,15 +743,15 @@ class Collection:
                     raise ImplementationError(
                         "Failed constructing collection with empty members. Try adding"
                         " @dataclasses.dataclass annotation to a collection class you"
-                        " like to build.")
-
+                        " like to build."
+                    )
 
     def finalize(self, assert_pdt=False):
         # finalize builder stage and ensure that all dataclass members have been set
         errors = {
-            member: getattr(self, member)
+            member
             for member, info in self.members().items()
-            if not info.is_optional
+            if not info.is_optional and getattr(self, member) is None
         }
         assert len(errors) == 0, (
             f"Dataclass building was not finalized before usage. "
@@ -673,7 +762,8 @@ class Collection:
             errors = {
                 member: type(getattr(self, member))
                 for member, info in self.members().items()
-                if getattr(self, member) is not None and not isinstance(getattr(self, member), pdt.Table)
+                if getattr(self, member) is not None
+                and not isinstance(getattr(self, member), pdt.Table)
             }
             assert len(errors) == 0, (
                 f"Collection includes other member type than expected. "
@@ -705,9 +795,7 @@ class Collection:
 
         superfluous = actual - set(cls.members())
         if len(superfluous) > 0:
-            logger = structlog.getLogger(
-                __name__ + "." + cls.__name__ + ".cast"
-            )
+            logger = structlog.getLogger(__name__ + "." + cls.__name__ + ".cast")
             logger.warning(
                 f"Input provides {len(superfluous)} superfluous members that are "
                 f"ignored: {', '.join(superfluous)}."

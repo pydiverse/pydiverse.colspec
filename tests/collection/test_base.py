@@ -1,5 +1,6 @@
 # Copyright (c) QuantCo 2024-2025
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
 
 from collections.abc import Callable
 from pathlib import Path
@@ -7,8 +8,10 @@ from pathlib import Path
 import polars as pl
 import pytest
 from polars.testing import assert_frame_equal
+
 import pydiverse.colspec as cs
 from pydiverse.colspec.colspec import dy
+
 
 class MyFirstColSpec(cs.ColSpec):
     a = cs.UInt8(primary_key=True)
@@ -57,9 +60,15 @@ def test_cast():
             "second": pl.LazyFrame({"a": [1, 2, 3], "b": [4, 5, 6]}),
         },
     )
-    assert collection.first.collect_schema() == MyFirstColSpec.create_empty_polars().collect_schema()
+    assert (
+        collection.first.collect_schema()
+        == MyFirstColSpec.create_empty_polars().collect_schema()
+    )
     assert collection.second is not None
-    assert collection.second.collect_schema() == MySecondColSpec.create_empty_polars().collect_schema()
+    assert (
+        collection.second.collect_schema()
+        == MySecondColSpec.create_empty_polars().collect_schema()
+    )
 
 
 @pytest.mark.skipif(dy is None, reason="dataframely not installed")
@@ -71,9 +80,15 @@ def test_cast2():
         },
     )
     collection = collection.cast_polars()
-    assert collection.first.collect_schema() == MyFirstColSpec.create_empty_polars().collect_schema()
+    assert (
+        collection.first.collect_schema()
+        == MyFirstColSpec.create_empty_polars().collect_schema()
+    )
     assert collection.second is not None
-    assert collection.second.collect_schema() == MySecondColSpec.create_empty_polars().collect_schema()
+    assert (
+        collection.second.collect_schema()
+        == MySecondColSpec.create_empty_polars().collect_schema()
+    )
 
 
 @pytest.mark.skipif(dy is None, reason="dataframely not installed")
@@ -124,7 +139,9 @@ def test_collect_all():
 
 @pytest.mark.skipif(dy is None, reason="dataframely not installed")
 def test_collect_all_optional():
-    collection = MyCollection.cast_polars_data({"first": pl.LazyFrame({"a": [1, 2, 3]})})
+    collection = MyCollection.cast_polars_data(
+        {"first": pl.LazyFrame({"a": [1, 2, 3]})}
+    )
     out = collection.collect_all_polars()
 
     assert isinstance(out, MyCollection)
@@ -159,7 +176,9 @@ def test_read_write_parquet(tmp_path: Path, read_fn: Callable[[Path], MyCollecti
 def test_read_write_parquet_optional(
     tmp_path: Path, read_fn: Callable[[Path], MyCollection]
 ):
-    collection = MyCollection.cast_polars_data({"first": pl.LazyFrame({"a": [1, 2, 3]})})
+    collection = MyCollection.cast_polars_data(
+        {"first": pl.LazyFrame({"a": [1, 2, 3]})}
+    )
     collection.write_parquet(tmp_path)
 
     read = read_fn(tmp_path)
