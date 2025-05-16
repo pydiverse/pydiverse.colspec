@@ -309,7 +309,10 @@ def convert_collection_to_dy(
     DynCollection = type[dy.Collection](
         cls.__name__,
         (dy.Collection,),
-        {"__annotations__": convert_to_dy_anno_dict(cls.__annotations__), **filters},
+        {
+            "__annotations__": convert_to_dy_anno_dict(typing.get_type_hints(cls)),
+            **filters,
+        },
     )  # type:type[dy.Collection]
     return DynCollection
 
@@ -600,7 +603,7 @@ class Collection:
         """Information about the members of the collection."""
         return {
             k: MemberInfo.new(v)
-            for k, v in cls.__annotations__.items()
+            for k, v in typing.get_type_hints(cls).items()
             if MemberInfo.is_member(v)
         }
 
@@ -609,7 +612,7 @@ class Collection:
         """The column specifications of all members of the collection."""
         return {
             k: MemberInfo.new(v).col_spec
-            for k, v in cls.__annotations__.items()
+            for k, v in typing.get_type_hints(cls).items()
             if MemberInfo.is_member(v)
         }
 
@@ -618,7 +621,7 @@ class Collection:
         """The names of all required members of the collection."""
         return {
             k
-            for k, v in cls.__annotations__.items()
+            for k, v in typing.get_type_hints(cls).items()
             if MemberInfo.is_member(v) and not MemberInfo.new(v).is_optional
         }
 
@@ -627,7 +630,7 @@ class Collection:
         """The names of all optional members of the collection."""
         return {
             k
-            for k, v in cls.__annotations__.items()
+            for k, v in typing.get_type_hints(cls).items()
             if MemberInfo.is_member(v) and MemberInfo.new(v).is_optional
         }
 
