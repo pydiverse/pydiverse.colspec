@@ -298,7 +298,14 @@ class ColSpec(
         return dy_schema.filter(df, cast=cast)
 
 
-def _pk_overlap(tbl: ColSpec, *more_tbls: ColSpec) -> list[str]: ...
+def _pk_overlap(tbl: ColSpec, *more_tbls: ColSpec) -> set[str]:
+    return set(tbl.primary_keys()).intersection(
+        other.primary_keys() for other in more_tbls
+    )
+
+
+def _pk_union(tbl: ColSpec, *more_tbls: ColSpec) -> set[str]:
+    return set(tbl.primary_keys()).union(other.primary_keys() for other in more_tbls)
 
 
 def convert_filter_to_dy(f: FilterPolars):
@@ -541,9 +548,11 @@ class Collection:
 
         members: dict[str, MemberInfo] = self.members()
         join_members: dict[str, set[str]] = {name: set() for name in members}
-        join_subqueries: dict[str, list[pdt.Table]] = {name: [] for name in members}
-        join_subquery_pk: dict[str, set[str]] = {name: set() for name in members}
+        join_subqueries: dict[str, list[tuple[pdt.Table, set[str]]]] = {
+            name: [] for name in members
+        }
         extra_rules: dict[str, list[pdt.ColExpr]] = {name: {} for name in members}
+
         for pred in self.filter_rules().values():
             expr_tbl_names = [
                 tbl_name
@@ -555,7 +564,9 @@ class Collection:
                     members[tbl_name].col_spec for tbl_name in expr_tbl_names
                 )
             )
+
             expr_pks = _pk_overlap(*expr_col_specs)
+            expr_pk_union = _pk_union(*expr_col_specs)
             group_subqueries: dict[tuple[str], pdt.Table] = {}
 
             for tbl_name in self.members().keys():
@@ -575,19 +586,26 @@ class Collection:
                             group_subqueries[key] = self._get_join(
                                 expr_tbl_names
                             ) >> summarize(__keep_this__=pred.logic.any())
-                        join_subqueries[tbl_name].append(group_subqueries[key])
-                        join_subquery_pk[tbl_name] &= set(pk_overlap)
+                        join_subqueries[tbl_name].append(
+                            (group_subqueries[key], expr_pk_union)
+                        )
                         extra_rules[tbl_name] += [group_subqueries[key].__keep_this__]
                     else:
                         join_members[tbl_name] |= expr_tbl_names
                         extra_rules[tbl_name] += [pred.logic]
 
-        join: dict[str, None | pdt.Table] = {
-            name: self._get_join(
-                *join_members[name], *join_subqueries[tbl_name], group_by=_pk_overlap()
+        join: dict[str, pdt.Table] = dict()
+        for name in self.members().keys():
+            join[name] = self._get_join(name, *join_members[name])
+            pk_union = _pk_union(
+                getattr(self, name),
+                *(getattr(self, member_name) for member_name in join_members[name]),
             )
-            for name in self.members().keys()
-        }
+            for subquery, subquery_pk_union in join_subqueries[name]:
+                join[name] >>= pdt.inner_join(
+                    subquery, on=subquery_pk_union.intersection(pk_union)
+                )
+                pk_union |= subquery_pk_union
 
         new_coll = self.__class__.build()
         fail_coll = self.__class__.build()
@@ -611,12 +629,17 @@ class Collection:
             if isinstance(getattr(self, pred), Filter)
         }
 
-    def _get_join(self, *tbls: Iterable[str | pdt.Table], group_by: list[str]):
-        assert all(isinstance(tbl, str | pdt.Table) for tbl in tbls)
-        tbls = [getattr(self, tbl).tbl for tbl in tbls if isinstance(tbl, str)]
-        result = tbls[0]
-        for tbl in tbls[1:]:
-            result = result >> pdt.inner_join(tbl, on=group_by)
+    def _get_join(self, *tbls: Iterable[str]) -> pdt.Table:
+        result = getattr(self, tbls[0]).tbl
+        pk_union = getattr(self, tbls[0]).primary_keys()
+        for name in tbls[1:]:
+            col_spec: ColSpec = getattr(self, name)
+            pk_set = set(col_spec.primary_keys())
+            result = result >> pdt.inner_join(
+                col_spec.tbl,
+                on=list(pk_set.intersection(pk_union)),
+            )
+            pk_union |= pk_set
         return result
 
     def filter_polars(
