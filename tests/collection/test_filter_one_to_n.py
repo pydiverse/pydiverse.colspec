@@ -1,5 +1,7 @@
 # Copyright (c) QuantCo 2025-2025
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
+
 from dataclasses import dataclass
 from typing import Any
 
@@ -8,7 +10,6 @@ import pytest
 
 import pydiverse.colspec as cs
 from pydiverse.colspec.colspec import dy, pdt
-from pydiverse.colspec.columns import ColExpr
 
 
 class CarColSpec(cs.ColSpec):
@@ -60,13 +61,14 @@ class CarFleet(cs.Collection):
     car_parts: CarPartColSpec
 
     @cs.filter()
-    def not_car_with_vin_123(self) -> ColExpr:
+    def not_car_with_vin_123(self) -> pdt.ColExpr:
         return self.cars.vin != "123"
 
 
-@pytest.mark.skipif(pdt is None, reason="dataframely not installed")
+@pytest.mark.skipif(pdt is None, reason="pydiverse.transform not installed")
 def test_valid_failure_infos():
     from pydiverse.transform.extended import collect
+
     cars = {"vin": ["123", "456"], "manufacturer": ["BMW", "Mercedes"]}
     car_parts: dict[str, list[Any]] = {
         "vin": ["123", "123", "456"],

@@ -1,9 +1,11 @@
-import types
+from __future__ import annotations
 
+import types
 
 try:
     import polars as pl
     from polars.datatypes import DataTypeClass
+
     PolarsDataType = pl.DataType | DataTypeClass
 except ImportError:
     PolarsDataType = None
@@ -19,8 +21,8 @@ except ImportError:
 try:
     # colspec has optional dependency to dataframely
     import dataframely as dy
-    from dataframely.random import Generator
     from dataframely._polars import FrameType
+    from dataframely.random import Generator
 except ImportError:
     Generator = None
     FrameType = None
@@ -33,9 +35,12 @@ except ImportError:
 try:
     # colspec has optional dependency to pydiverse.transform
     import pydiverse.transform as pdt
+    import pydiverse.transform.common as pdt_common
 except ImportError:
+
     class Table:
         pass
+
     # Create a new module with the given name.
     pdt = types.ModuleType("pydiverse.transform")
     pdt.Table = Table
@@ -45,8 +50,10 @@ try:
     # colspec has optional dependency to pydiverse.pipedag
     import pydiverse.pipedag as dag
 except ImportError:
+
     class Table:
         pass
+
     # Create a new module with the given name.
     dag = types.ModuleType("pydiverse.pipedag")
     dag.Table = Table

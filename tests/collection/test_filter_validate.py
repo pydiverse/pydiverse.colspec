@@ -1,12 +1,13 @@
 # Copyright (c) QuantCo 2024-2025
 # SPDX-License-Identifier: BSD-3-Clause
-
+from __future__ import annotations
 
 import polars as pl
 import pytest
 from polars.testing import assert_frame_equal
 
 import pydiverse.colspec as cs
+from pydiverse.colspec.exc import MemberValidationError
 
 # ------------------------------------------------------------------------------------ #
 #                                        SCHEMA                                        #
@@ -99,12 +100,12 @@ def test_filter_without_filter_without_rule_violation(
 def test_filter_without_filter_with_rule_violation(
     data_without_filter_with_rule_violation: tuple[pl.LazyFrame, pl.LazyFrame],
 ):
-    out, failure = SimpleCollection.filter(
+    out, failure = SimpleCollection._init_polars_data(
         {
             "first": data_without_filter_with_rule_violation[0],
             "second": data_without_filter_with_rule_violation[1],
         }
-    )
+    ).filter()
 
     assert isinstance(out, SimpleCollection)
     assert len(out.first.collect()) == 1
@@ -116,12 +117,12 @@ def test_filter_without_filter_with_rule_violation(
 def test_filter_with_filter_without_rule_violation(
     data_with_filter_without_rule_violation: tuple[pl.LazyFrame, pl.LazyFrame],
 ):
-    out, failure = MyCollection.filter(
+    out, failure = MyCollection._init_polars_data(
         {
             "first": data_with_filter_without_rule_violation[0],
             "second": data_with_filter_without_rule_violation[1],
         }
-    )
+    ).filter()
 
     assert isinstance(out, MyCollection)
     assert_frame_equal(out.first, pl.LazyFrame({"a": [3], "b": [3]}))

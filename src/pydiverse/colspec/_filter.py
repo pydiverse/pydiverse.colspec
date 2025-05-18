@@ -1,8 +1,11 @@
 # Copyright (c) QuantCo 2024-2025
 # SPDX-License-Identifier: LicenseRef-QuantCo
+from __future__ import annotations
+
 from collections.abc import Callable
 from typing import Generic, TypeVar
-from .colspec import pdt, pl
+
+from .optional_dependency import pdt, pl
 
 C = TypeVar("C")
 
@@ -10,11 +13,11 @@ C = TypeVar("C")
 class Filter(Generic[C]):
     """Internal class representing logic for filtering members of a collection."""
 
-    def __init__(self, logic: Callable[[C], pdt.Table]):
-        self.logic = logic
+    def __init__(self, logic: Callable[[C], pdt.ColExpr]):
+        self.logic: pdt.ColExpr = logic()
 
 
-def filter() -> Callable[[Callable[[C], pdt.Table]], Filter[C]]:
+def filter() -> Callable[[Callable[[C], pdt.ColExpr]], Filter[C]]:
     """Mark a function as filters for rows in the members of a collection.
 
     The name of the function will be used as the name of the filter. The name must not
@@ -34,8 +37,8 @@ def filter() -> Callable[[Callable[[C], pdt.Table]], Filter[C]]:
         might introduce duplicate rows.
     """
 
-    def decorator(validation_fn: Callable[[C], pdt.Table]) -> Filter[C]:
-        return Filter(logic=validation_fn)
+    def decorator(pred: Callable[[C], pdt.ColExpr]) -> Filter[C]:
+        return Filter(logic=pred)
 
     return decorator
 

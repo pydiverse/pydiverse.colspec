@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import inspect
+import itertools
 import types
 import typing
 from dataclasses import dataclass
@@ -11,7 +12,7 @@ from typing import TYPE_CHECKING, Any, Iterable, Mapping, Self, overload
 import structlog
 
 from . import exc
-from .columns import ColExpr
+from ._filter import Filter
 from .exc import ImplementationError, ValidationError
 from .failure import FailureInfo
 from .optional_dependency import FrameType, Generator, dag, dy, pdt, pl
@@ -213,7 +214,13 @@ class ColSpec(
     # ----------------------------------- FILTERING ---------------------------------- #
 
     @classmethod
-    def filter(cls, tbl: pdt.Table, *, cast: bool = False) -> tuple[Self, FailureInfo]:
+    def filter(
+        cls,
+        tbl: pdt.Table,
+        *,
+        extra_rules: dict[str, pdt.ColExpr] | None = None,
+        cast: bool = False,
+    ) -> tuple[Self, FailureInfo]:
         """Filter the table by the rules of this column specification.
 
         This method can be thought of as a "soft alternative" to :meth:`validate`.
@@ -242,17 +249,17 @@ class ColSpec(
         Note:
             This method preserves the ordering of the input data frame.
         """
-        from pydiverse.transform.extended import filter
 
-        # rules = cls._validation_rules()
-        # tbl_ok_rows, tbl_invalid_rows = cls._filter_raw(tbl, rules, cast)
-        tbl_ok_rows, tbl_invalid_rows = (
-            tbl,
-            tbl >> filter(False),
-        )  # dummy implementation
-        return tbl_ok_rows, FailureInfo(
-            tbl=tbl, invalid_rows=tbl_invalid_rows, rule_columns={}
+        rules = cls._validation_rules() | (extra_rules or dict())
+        ok_rows = tbl >> pdt.filter(*rules.values())
+        invalid_rows = tbl >> pdt.filter(*(~rule for rule in rules.values()))
+        return ok_rows, FailureInfo(
+            tbl=tbl, invalid_rows=invalid_rows, rule_columns=rules
         )
+
+    @classmethod
+    def _validation_rules(cls) -> dict[str, pdt.ColExpr]:
+        pass
 
     @classmethod
     def filter_polars(
@@ -289,6 +296,9 @@ class ColSpec(
         dy_schema_cols = convert_to_dy_col_spec(cls)
         dy_schema = type[dy.Schema](cls.__name__, (dy.Schema,), dy_schema_cols.copy())
         return dy_schema.filter(df, cast=cast)
+
+
+def _pk_overlap(tbl: ColSpec, *more_tbls: ColSpec) -> list[str]: ...
 
 
 def convert_filter_to_dy(f: FilterPolars):
@@ -529,50 +539,85 @@ class Collection:
 
         self.finalize(assert_pdt=True)
 
-        members = self.members()
-        join: dict[str, None | pdt.Table] = {name: None for name in members}
+        members: dict[str, MemberInfo] = self.members()
         join_members: dict[str, set[str]] = {name: set() for name in members}
         join_subqueries: dict[str, list[pdt.Table]] = {name: [] for name in members}
-        join_subquery_pk: dict[str, list[str]] = {name: [] for name in members}
-        extra_rules: dict[str, dict[str, ColExpr]] = {name: {} for name in members}
-        for name, col_expr in self.filter_rules().items():
+        join_subquery_pk: dict[str, set[str]] = {name: set() for name in members}
+        extra_rules: dict[str, list[pdt.ColExpr]] = {name: {} for name in members}
+        for pred in self.filter_rules().values():
             expr_tbl_names = [
                 tbl_name
                 for tbl_name in members.keys()
-                if col_expr.uses_table(getattr(self, tbl_name))
+                if pred.logic.uses_table(getattr(self, tbl_name))
             ]
-            expr_col_specs = [members[tbl_name].col_spec for tbl_name in expr_tbl_names]
-            group_subqueries: dict[tuple, pdt.Table] = {}
+            expr_col_specs = list(
+                itertools.chain(
+                    members[tbl_name].col_spec for tbl_name in expr_tbl_names
+                )
+            )
+            expr_pks = _pk_overlap(*expr_col_specs)
+            group_subqueries: dict[tuple[str], pdt.Table] = {}
+
             for tbl_name in self.members().keys():
-                col_spec = members[tbl_name].col_spec
-                pk_overlap, requires_grouping = _pk_overlap(col_spec, expr_col_specs)
+                tbl = members[tbl_name].col_spec
+                pk_overlap = _pk_overlap(tbl, *expr_col_specs)
+                requires_grouping = set(tbl.primary_keys()).issubset(expr_pks) and len(
+                    tbl.primary_keys()
+                ) < len(expr_pks)
+
+                # TODO: is it correct to only filter on a direct overlap? Or should it
+                # rather be transitive? (If tables A and B share a key x and B and C
+                # share y, should we filter A if expr_table_names = [C]?)
                 if len(pk_overlap) > 0:
                     if requires_grouping:
-                        key = tuple(pk_overlap)
+                        key = tuple(sorted(pk_overlap))
                         if key not in group_subqueries:
                             group_subqueries[key] = self._get_join(
-                                expr_tbl_names, group_by=pk_overlap
-                            ) >> summarize(filter=col_expr)
-                        join_subqueries[tbl_name] += [group_subqueries[key]]
-                        join_subquery_pk[tbl_name] += [pk_overlap]
-                        extra_rules[tbl_name] += [group_subqueries[key].filter]
+                                expr_tbl_names
+                            ) >> summarize(__keep_this__=pred.logic.any())
+                        join_subqueries[tbl_name].append(group_subqueries[key])
+                        join_subquery_pk[tbl_name] &= set(pk_overlap)
+                        extra_rules[tbl_name] += [group_subqueries[key].__keep_this__]
                     else:
                         join_members[tbl_name] |= expr_tbl_names
-                        extra_rules[tbl_name] += [col_expr]
+                        extra_rules[tbl_name] += [pred.logic]
 
-        # TODO: fill join dictionary with self.get_join(tbl_name, join_members[tbl_name], ...subqueries...)
+        join: dict[str, None | pdt.Table] = {
+            name: self._get_join(
+                *join_members[name], *join_subqueries[tbl_name], group_by=_pk_overlap()
+            )
+            for name in self.members().keys()
+        }
 
         new_coll = self.__class__.build()
         fail_coll = self.__class__.build()
         for tbl_name in self.members().keys():
+            # We need to do a left join here against the filter table and fill the
+            # filtering columns with True if there is no match for a column. We do not
+            # want to exclude rows that simply have no match in the join.
             tbl, fail = getattr(self, tbl_name).filter(
+                join.get(tbl_name),
                 cast=cast,
-                join=join.get(tbl_name),
                 extra_rules=extra_rules.get(tbl_name),
             )
             setattr(new_coll, tbl_name, tbl)
             setattr(fail_coll, tbl_name, fail)
         return new_coll, fail_coll
+
+    def filter_rules(self) -> dict[str, Filter]:
+        return {
+            pred: getattr(self, pred)
+            for pred in dir(self)
+            if isinstance(getattr(self, pred), Filter)
+        }
+
+    def _get_join(self, *tbls: Iterable[str | pdt.Table], group_by: list[str]):
+        assert all(isinstance(tbl, str | pdt.Table) for tbl in tbls)
+        tbls = [getattr(self, tbl).tbl for tbl in tbls if isinstance(tbl, str)]
+        result = tbls[0]
+        for tbl in tbls[1:]:
+            result = result >> pdt.inner_join(tbl, on=group_by)
+        return result
 
     def filter_polars(
         self, *, cast: bool = False

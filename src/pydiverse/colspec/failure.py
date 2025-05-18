@@ -1,13 +1,12 @@
 # Copyright (c) QuantCo 2024-2025
 # SPDX-License-Identifier: LicenseRef-QuantCo
+from __future__ import annotations
 
 import json
-from functools import cached_property
 from pathlib import Path
 from typing import IO, Self
 
 from .optional_dependency import pdt, pl
-from .columns import ColExpr
 
 
 class FailureInfo:
@@ -23,7 +22,12 @@ class FailureInfo:
     #: The columns in `_tbl` which are used for validation.
     rule_columns: dict[str, pdt.ColExpr]
 
-    def __init__(self, tbl: pdt.Table, invalid_rows: pdt.Table, rule_columns: dict[str, pdt.ColExpr]):
+    def __init__(
+        self,
+        tbl: pdt.Table,
+        invalid_rows: pdt.Table,
+        rule_columns: dict[str, pdt.ColExpr],
+    ):
         self.tbl = tbl
         self._invalid_rows = invalid_rows
         self.rule_columns = rule_columns
@@ -31,6 +35,7 @@ class FailureInfo:
     @property
     def invalid_rows(self) -> pdt.Table:
         from pydiverse.transform.extended import select
+
         return self._invalid_rows >> select(self.tbl)
 
     @property
@@ -44,13 +49,21 @@ class FailureInfo:
             A mapping from rule name to counts. If a rule's failure count is 0, it is
             not included here.
         """
-        from pydiverse.transform.extended import summarize, export, Polars
-        agg = self._invalid_rows >> summarize(**{k:c.sum() for k, c in self.rule_columns}) >> export(Polars)
+        from pydiverse.transform.extended import Polars, export, summarize
+
+        agg = (
+            self._invalid_rows
+            >> summarize(**{k: c.sum() for k, c in self.rule_columns.items()})
+            >> export(Polars)
+        )
         return agg.to_dict()
 
     def __len__(self) -> int:
         from pydiverse.transform.extended import collect
-        return len(self._invalid_rows >> collect())  # this can be implemented more efficiently
+
+        return len(
+            self._invalid_rows >> collect()
+        )  # this can be implemented more efficiently
 
     # ---------------------------------- PERSISTENCE --------------------------------- #
 
