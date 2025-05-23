@@ -14,7 +14,7 @@ class Filter(Generic[C]):
     """Internal class representing logic for filtering members of a collection."""
 
     def __init__(self, logic: Callable[[C], pdt.ColExpr]):
-        self.logic: pdt.ColExpr = logic()
+        self.logic: Callable[[C], pdt.ColExpr] = logic
 
 
 def filter() -> Callable[[Callable[[C], pdt.ColExpr]], Filter[C]]:

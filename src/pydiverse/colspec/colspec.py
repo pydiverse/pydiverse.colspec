@@ -298,16 +298,6 @@ class ColSpec(
         return dy_schema.filter(df, cast=cast)
 
 
-def _pk_overlap(tbl: ColSpec, *more_tbls: ColSpec) -> set[str]:
-    return set(tbl.primary_keys()).intersection(
-        other.primary_keys() for other in more_tbls
-    )
-
-
-def _pk_union(tbl: ColSpec, *more_tbls: ColSpec) -> set[str]:
-    return set(tbl.primary_keys()).union(other.primary_keys() for other in more_tbls)
-
-
 def convert_filter_to_dy(f: FilterPolars):
     return dy._filter.Filter(f.logic)
 
@@ -547,17 +537,18 @@ class Collection:
         self.finalize(assert_pdt=True)
 
         members: dict[str, MemberInfo] = self.members()
-        join_members: dict[str, set[str]] = {name: set() for name in members}
+        join_members: dict[str, set[str]] = {name: {name} for name in members}
         join_subqueries: dict[str, list[tuple[pdt.Table, set[str]]]] = {
             name: [] for name in members
         }
-        extra_rules: dict[str, list[pdt.ColExpr]] = {name: {} for name in members}
+        extra_rules: dict[str, dict[str, pdt.ColExpr]] = {name: {} for name in members}
 
         for pred in self.filter_rules().values():
+            logic = pred.logic(self)
             expr_tbl_names = [
                 tbl_name
                 for tbl_name in members.keys()
-                if pred.logic.uses_table(getattr(self, tbl_name))
+                if logic.uses_table(getattr(self, tbl_name))
             ]
             expr_col_specs = list(
                 itertools.chain(
@@ -565,13 +556,13 @@ class Collection:
                 )
             )
 
-            expr_pks = _pk_overlap(*expr_col_specs)
-            expr_pk_union = _pk_union(*expr_col_specs)
+            expr_pks = self._pk_overlap(*expr_col_specs)
+            expr_pk_union = self._pk_union(*expr_col_specs)
             group_subqueries: dict[tuple[str], pdt.Table] = {}
 
             for tbl_name in self.members().keys():
                 tbl = members[tbl_name].col_spec
-                pk_overlap = _pk_overlap(tbl, *expr_col_specs)
+                pk_overlap = self._pk_overlap(tbl, *expr_col_specs)
                 requires_grouping = set(tbl.primary_keys()).issubset(expr_pks) and len(
                     tbl.primary_keys()
                 ) < len(expr_pks)
@@ -585,22 +576,20 @@ class Collection:
                         if key not in group_subqueries:
                             group_subqueries[key] = self._get_join(
                                 expr_tbl_names
-                            ) >> summarize(__keep_this__=pred.logic.any())
+                            ) >> summarize(__keep_this__=logic.any())
                         join_subqueries[tbl_name].append(
                             (group_subqueries[key], expr_pk_union)
                         )
                         extra_rules[tbl_name] += [group_subqueries[key].__keep_this__]
                     else:
-                        join_members[tbl_name] |= expr_tbl_names
-                        extra_rules[tbl_name] += [pred.logic]
+                        join_members[tbl_name] |= set(expr_tbl_names)
+                        extra_rules[tbl_name][pred.logic.__name__] = logic
 
         join: dict[str, pdt.Table] = dict()
         for name in self.members().keys():
-            join[name] = self._get_join(name, *join_members[name])
-            pk_union = _pk_union(
-                getattr(self, name),
-                *(getattr(self, member_name) for member_name in join_members[name]),
-            )
+            join[name] = self._get_join(*join_members[name])
+            pk_union = self._pk_union(*join_members[name])
+
             for subquery, subquery_pk_union in join_subqueries[name]:
                 join[name] >>= pdt.inner_join(
                     subquery, on=subquery_pk_union.intersection(pk_union)
@@ -610,11 +599,8 @@ class Collection:
         new_coll = self.__class__.build()
         fail_coll = self.__class__.build()
         for tbl_name in self.members().keys():
-            # We need to do a left join here against the filter table and fill the
-            # filtering columns with True if there is no match for a column. We do not
-            # want to exclude rows that simply have no match in the join.
-            tbl, fail = getattr(self, tbl_name).filter(
-                join.get(tbl_name),
+            tbl, fail = self.members()[tbl_name].col_spec.filter(
+                join[tbl_name],
                 cast=cast,
                 extra_rules=extra_rules.get(tbl_name),
             )
@@ -629,14 +615,36 @@ class Collection:
             if isinstance(getattr(self, pred), Filter)
         }
 
+    def _pk_overlap(
+        self, tbl: str | type[ColSpec], *more_tbls: str | types[ColSpec]
+    ) -> set[str]:
+        tbls: list[ColSpec] = [
+            self.member_col_specs()[t] if isinstance(t, str) else t
+            for t in (tbl, *more_tbls)
+        ]
+        return set(tbls[0].primary_keys()).intersection(
+            *(other.primary_keys() for other in tbls[1:])
+        )
+
+    def _pk_union(
+        self, tbl: str | types[ColSpec], *more_tbls: str | type[ColSpec]
+    ) -> set[str]:
+        tbls: list[ColSpec] = [
+            self.member_col_specs()[t] if isinstance(t, str) else t
+            for t in (tbl, *more_tbls)
+        ]
+        return set(tbls[0].primary_keys()).union(
+            *(other.primary_keys() for other in tbls[1:])
+        )
+
     def _get_join(self, *tbls: Iterable[str]) -> pdt.Table:
-        result = getattr(self, tbls[0]).tbl
-        pk_union = getattr(self, tbls[0]).primary_keys()
+        result = getattr(self, tbls[0])
+        pk_union = set(self.member_col_specs()[tbls[0]].primary_keys())
         for name in tbls[1:]:
-            col_spec: ColSpec = getattr(self, name)
+            col_spec: ColSpec = self.member_col_specs()[name]
             pk_set = set(col_spec.primary_keys())
             result = result >> pdt.inner_join(
-                col_spec.tbl,
+                getattr(self, name),
                 on=list(pk_set.intersection(pk_union)),
             )
             pk_union |= pk_set
