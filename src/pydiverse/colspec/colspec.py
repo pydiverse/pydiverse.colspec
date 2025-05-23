@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import functools
 import inspect
 import itertools
+import operator
 import types
 import typing
 from dataclasses import dataclass
@@ -251,8 +253,9 @@ class ColSpec(
         """
 
         rules = cls._validation_rules(tbl) | (extra_rules or dict())
-        ok_rows = tbl >> pdt.filter(*rules.values())
-        invalid_rows = tbl >> pdt.filter(*(~rule for rule in rules.values()))
+        combined = functools.reduce(operator.and_, rules.values(), True)
+        ok_rows = tbl >> pdt.filter(combined)
+        invalid_rows = tbl >> pdt.filter(~combined)
         return ok_rows, FailureInfo(
             tbl=tbl, invalid_rows=invalid_rows, rule_columns=rules
         )
