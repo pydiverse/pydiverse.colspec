@@ -65,10 +65,12 @@ class CarFleet(cs.Collection):
         return self.cars.vin != "123"
 
 
+def num_rows(tbl: pdt.Table) -> int:
+    return tbl >> pdt.summarize(num_rows=pdt.count()) >> pdt.export(pdt.Scalar)
+
+
 @pytest.mark.skipif(pdt is None, reason="pydiverse.transform not installed")
 def test_valid_failure_infos():
-    from pydiverse.transform.extended import collect
-
     cars = {"vin": ["123", "456"], "manufacturer": ["BMW", "Mercedes"]}
     car_parts: dict[str, list[Any]] = {
         "vin": ["123", "123", "456"],
@@ -81,11 +83,9 @@ def test_valid_failure_infos():
 
     car_fleet, failures = raw_fleet.filter(cast=True)
 
-    assert len(car_fleet.cars >> collect()) + len(failures.cars >> collect()) == len(
-        cars["vin"]
-    )
-    assert len(car_fleet.car_parts >> collect()) + len(
+    assert num_rows(car_fleet.cars) + num_rows(failures.cars.invalid_rows) == len(cars)
+    assert num_rows(car_fleet.car_parts) + num_rows(
         failures.car_parts.invalid_rows
-    ) == len(car_parts["vin"])
-    assert len(failures.cars.invalid_rows) == 1
-    assert len(failures.car_parts.invalid_rows) == 2
+    ) == len(car_parts)
+    assert num_rows(failures.cars.invalid_rows) == 1
+    assert num_rows(failures.car_parts.invalid_rows) == 2

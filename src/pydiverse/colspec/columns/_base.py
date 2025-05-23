@@ -8,11 +8,11 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable
 from typing import TYPE_CHECKING
 
-from pydiverse.common import Dtype
 from pydiverse.colspec.columns import ColExpr
+from pydiverse.common import Dtype
 
 if TYPE_CHECKING:
-    from ..colspec import pl, Generator, PolarsDataType
+    from ..colspec import Generator, PolarsDataType, pl
 
 EPOCH_DATETIME = dt.datetime(1970, 1, 1)
 SECONDS_PER_DAY = 86400

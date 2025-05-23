@@ -250,7 +250,7 @@ class ColSpec(
             This method preserves the ordering of the input data frame.
         """
 
-        rules = cls._validation_rules() | (extra_rules or dict())
+        rules = cls._validation_rules(tbl) | (extra_rules or dict())
         ok_rows = tbl >> pdt.filter(*rules.values())
         invalid_rows = tbl >> pdt.filter(*(~rule for rule in rules.values()))
         return ok_rows, FailureInfo(
@@ -258,8 +258,12 @@ class ColSpec(
         )
 
     @classmethod
-    def _validation_rules(cls) -> dict[str, pdt.ColExpr]:
-        pass
+    def _validation_rules(cls, tbl: pdt.Table) -> dict[str, pdt.ColExpr]:
+        return {
+            f"{col}_{rule_name}": rule
+            for col in cls.column_names()
+            for rule_name, rule in getattr(cls, col).validation_rules(tbl[col]).items()
+        }
 
     @classmethod
     def filter_polars(
@@ -587,7 +591,9 @@ class Collection:
 
         join: dict[str, pdt.Table] = dict()
         for name in self.members().keys():
-            join[name] = self._get_join(*join_members[name])
+            # It's important that 'name' goes first, so that the columns don't get
+            # suffixes.
+            join[name] = self._get_join(name, *join_members[name].difference({name}))
             pk_union = self._pk_union(*join_members[name])
 
             for subquery, subquery_pk_union in join_subqueries[name]:
@@ -644,8 +650,7 @@ class Collection:
             col_spec: ColSpec = self.member_col_specs()[name]
             pk_set = set(col_spec.primary_keys())
             result = result >> pdt.inner_join(
-                getattr(self, name),
-                on=list(pk_set.intersection(pk_union)),
+                getattr(self, name), on=list(pk_set.intersection(pk_union))
             )
             pk_union |= pk_set
         return result

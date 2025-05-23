@@ -35,7 +35,6 @@ except ImportError:
 try:
     # colspec has optional dependency to pydiverse.transform
     import pydiverse.transform as pdt
-    import pydiverse.transform.common as pdt_common
 except ImportError:
 
     class Table:
@@ -44,6 +43,7 @@ except ImportError:
     # Create a new module with the given name.
     pdt = types.ModuleType("pydiverse.transform")
     pdt.Table = Table
+    # TODO: add members that break if pdt is not there
 
 
 try:
