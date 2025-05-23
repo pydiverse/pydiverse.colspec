@@ -13,7 +13,7 @@ class MySchema(cs.ColSpec):
 
 
 def test_create_empty():
-    df = MySchema.create_empty()
+    df = MySchema.create_empty_polars()
     assert df.columns == ["a", "b"]
     assert df.dtypes == [pl.Int64, pl.String]
     assert len(df) == 0

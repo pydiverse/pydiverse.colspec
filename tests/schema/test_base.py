@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
 
-import dataframely as dy
 import polars as pl
 import pytest
 from dataframely._rule import Rule
@@ -13,26 +12,29 @@ import pydiverse.colspec as cs
 
 
 class MySchema(cs.ColSpec):
-    a = dy.Integer(primary_key=True)
-    b = dy.String(primary_key=True)
-    c = dy.Float64()
-    d = dy.Any(alias="e")
+    a = cs.Integer(primary_key=True)
+    b = cs.String(primary_key=True)
+    c = cs.Float64()
+    e = cs.Any()
 
 
 def test_column_names():
+    _ = MySchema.e
+    with pytest.raises(AttributeError):
+        _ = MySchema.d
     assert MySchema.column_names() == ["a", "b", "c", "e"]
 
 
 def test_columns():
-    columns = MySchema.columns()
-    assert isinstance(columns["a"], dy.Integer)
-    assert isinstance(columns["b"], dy.String)
-    assert isinstance(columns["c"], dy.Float64)
-    assert isinstance(columns["e"], dy.Any)
+    columns = MySchema.schema
+    assert isinstance(columns["a"], cs.Integer)
+    assert isinstance(columns["b"], cs.String)
+    assert isinstance(columns["c"], cs.Float64)
+    assert isinstance(columns["e"], cs.Any)
 
 
 def test_nullability():
-    columns = MySchema.columns()
+    columns = MySchema.get()
     assert not columns["a"].nullable
     assert not columns["b"].nullable
     assert columns["c"].nullable
@@ -47,32 +49,6 @@ def test_no_rule_named_primary_key():
     with pytest.raises(ImplementationError):
         create_schema(
             "test",
-            {"a": dy.String()},
+            {"a": cs.String()},
             {"primary_key": Rule(pl.col("a").str.len_bytes() > 1)},
         )
-
-
-def test_col():
-    assert MySchema.a.col.__dict__ == pl.col("a").__dict__
-    assert MySchema.b.col.__dict__ == pl.col("b").__dict__
-    assert MySchema.c.col.__dict__ == pl.col("c").__dict__
-    assert MySchema.d.col.__dict__ == pl.col("e").__dict__
-
-
-def test_col_raise_if_none():
-    class InvalidSchema(cs.ColSpec):
-        a = dy.Integer()
-
-    # Manually override alias to be ``None``.
-    InvalidSchema.a.alias = None
-    with pytest.raises(ValueError):
-        _ = InvalidSchema.a.col
-
-
-def test_col_in_polars_expression():
-    df = (
-        pl.DataFrame({"a": [1, 2], "b": ["a", "b"], "c": [1.0, 2.0], "e": [None, None]})
-        .filter((MySchema.b.col == "a") & (MySchema.a.col > 0))
-        .select(MySchema.a.col)
-    )
-    assert df.row(0) == (1,)

@@ -83,7 +83,7 @@ def data_with_filter_with_rule_violation() -> tuple[pl.LazyFrame, pl.LazyFrame]:
 def test_filter_without_filter_without_rule_violation(
     data_without_filter_without_rule_violation: tuple[pl.LazyFrame, pl.LazyFrame],
 ):
-    out, failure = SimpleCollection.filter(
+    out, failure = SimpleCollection.filter_polars_data(
         {
             "first": data_without_filter_without_rule_violation[0],
             "second": data_without_filter_without_rule_violation[1],
@@ -100,12 +100,12 @@ def test_filter_without_filter_without_rule_violation(
 def test_filter_without_filter_with_rule_violation(
     data_without_filter_with_rule_violation: tuple[pl.LazyFrame, pl.LazyFrame],
 ):
-    out, failure = SimpleCollection._init_polars_data(
+    out, failure = SimpleCollection.filter_polars_data(
         {
             "first": data_without_filter_with_rule_violation[0],
             "second": data_without_filter_with_rule_violation[1],
         }
-    ).filter()
+    )
 
     assert isinstance(out, SimpleCollection)
     assert len(out.first.collect()) == 1
@@ -117,12 +117,12 @@ def test_filter_without_filter_with_rule_violation(
 def test_filter_with_filter_without_rule_violation(
     data_with_filter_without_rule_violation: tuple[pl.LazyFrame, pl.LazyFrame],
 ):
-    out, failure = MyCollection._init_polars_data(
+    out, failure = MyCollection.filter_polars_data(
         {
             "first": data_with_filter_without_rule_violation[0],
             "second": data_with_filter_without_rule_violation[1],
         }
-    ).filter()
+    )
 
     assert isinstance(out, MyCollection)
     assert_frame_equal(out.first, pl.LazyFrame({"a": [3], "b": [3]}))
@@ -140,7 +140,7 @@ def test_filter_with_filter_without_rule_violation(
 def test_filter_with_filter_with_rule_violation(
     data_with_filter_with_rule_violation: tuple[pl.LazyFrame, pl.LazyFrame],
 ):
-    out, failure = MyCollection.filter(
+    out, failure = MyCollection.filter_polars_data(
         {
             "first": data_with_filter_with_rule_violation[0],
             "second": data_with_filter_with_rule_violation[1],
@@ -164,8 +164,8 @@ def test_validate_without_filter_without_rule_violation(
         "first": data_without_filter_without_rule_violation[0],
         "second": data_without_filter_without_rule_violation[1],
     }
-    assert SimpleCollection.is_valid(data)
-    out = SimpleCollection.validate(data)
+    assert SimpleCollection.is_valid_polars_data(data)
+    out = SimpleCollection.validate_polars_data(data)
 
     assert isinstance(out, SimpleCollection)
     assert_frame_equal(out.first, data_without_filter_without_rule_violation[0])
@@ -179,12 +179,12 @@ def test_validate_without_filter_with_rule_violation(
         "first": data_without_filter_with_rule_violation[0],
         "second": data_without_filter_with_rule_violation[1],
     }
-    assert not SimpleCollection.is_valid(data)
+    assert not SimpleCollection.is_valid_polars_data(data)
 
     with pytest.raises(
         MemberValidationError, match=r"2 members failed validation"
     ) as exc:
-        SimpleCollection.validate(data)
+        SimpleCollection.validate_polars_data(data)
 
     exc.match(r"Member 'first' failed validation")
     exc.match(r"'primary_key' failed validation for 2 rows")
@@ -199,12 +199,12 @@ def test_validate_with_filter_without_rule_violation(
         "first": data_with_filter_without_rule_violation[0],
         "second": data_with_filter_without_rule_violation[1],
     }
-    assert not MyCollection.is_valid(data)
+    assert not MyCollection.is_valid_polars_data(data)
 
     with pytest.raises(
         MemberValidationError, match=r"2 members failed validation"
     ) as exc:
-        MyCollection.validate(data)
+        MyCollection.validate_polars_data(data)
 
     exc.match(r"Member 'first' failed validation")
     exc.match(r"'equal_primary_keys' failed validation for 1 rows")
@@ -220,12 +220,12 @@ def test_validate_with_filter_with_rule_violation(
         "first": data_with_filter_with_rule_violation[0],
         "second": data_with_filter_with_rule_violation[1],
     }
-    assert not MyCollection.is_valid(data)
+    assert not MyCollection.is_valid_polars_data(data)
 
     with pytest.raises(
         MemberValidationError, match=r"2 members failed validation"
     ) as exc:
-        MyCollection.validate(data)
+        MyCollection.validate_polars_data(data)
 
     exc.match(r"Member 'first' failed validation")
     exc.match(r"'equal_primary_keys' failed validation for 2 rows")

@@ -4,11 +4,10 @@ from __future__ import annotations
 
 import random
 
-import dataframely as dy
 import polars as pl
 import pytest
 from dataframely.exc import DtypeValidationError, ValidationError
-from dataframely.testing import create_schema, validation_mask
+from dataframely.testing import validation_mask
 from polars.datatypes import DataTypeClass
 from polars.testing import assert_frame_equal
 
@@ -16,8 +15,8 @@ import pydiverse.colspec as cs
 
 
 class MySchema(cs.ColSpec):
-    a = dy.Int64(primary_key=True)
-    b = dy.String(max_length=3)
+    a = cs.Int64(primary_key=True)
+    b = cs.String(max_length=3)
 
 
 @pytest.mark.parametrize(
@@ -33,13 +32,13 @@ def test_filter_extra_columns(
 ):
     df = pl.DataFrame(schema=schema)
     try:
-        filtered, _ = MySchema.filter(df)
+        filtered, _ = MySchema.filter_polars(df)
         assert expected_columns is not None
         assert set(filtered.columns) == set(expected_columns)
     except ValidationError:
         assert expected_columns is None
-    except:  # noqa: E722
-        raise AssertionError() from ...
+    except Exception as e:
+        raise AssertionError() from e
 
 
 @pytest.mark.parametrize(
@@ -52,12 +51,12 @@ def test_filter_extra_columns(
 def test_filter_dtypes(schema: dict[str, DataTypeClass], cast: bool, success: bool):
     df = pl.DataFrame(schema=schema)
     try:
-        MySchema.filter(df, cast=cast)
+        MySchema.filter_polars(df, cast=cast)
         assert success
     except DtypeValidationError:
         assert not success
-    except:  # noqa: E722
-        raise AssertionError() from ...
+    except Exception as e:
+        raise AssertionError() from e
 
 
 @pytest.mark.parametrize("df_type", [pl.DataFrame, pl.LazyFrame])
@@ -93,7 +92,7 @@ def test_filter_failure(
     cooccurrence_counts: dict[frozenset[str], int],
 ):
     df = df_type({"a": data_a, "b": data_b})
-    df_valid, failures = MySchema.filter(df)
+    df_valid, failures = MySchema.filter_polars(df)
     assert isinstance(df_valid, pl.DataFrame)
     assert_frame_equal(df.filter(pl.Series(failure_mask)).lazy().collect(), df_valid)
     assert validation_mask(df, failures).to_list() == failure_mask
@@ -104,9 +103,11 @@ def test_filter_failure(
 
 @pytest.mark.parametrize("df_type", [pl.DataFrame, pl.LazyFrame])
 def test_filter_no_rules(df_type: type[pl.DataFrame] | type[pl.LazyFrame]):
-    schema = create_schema("test", {"a": dy.Int64()})
+    class TestSchema(cs.ColSpec):
+        a = cs.Int64(nullable=True)
+
     df = df_type({"a": [1, 2, 3]})
-    df_valid, failures = schema.filter(df)
+    df_valid, failures = TestSchema.filter_polars(df)
     assert isinstance(df_valid, pl.DataFrame)
     assert_frame_equal(df.lazy().collect(), df_valid)
     assert len(failures) == 0
@@ -116,9 +117,11 @@ def test_filter_no_rules(df_type: type[pl.DataFrame] | type[pl.LazyFrame]):
 
 @pytest.mark.parametrize("df_type", [pl.DataFrame, pl.LazyFrame])
 def test_filter_with_rule_all_valid(df_type: type[pl.DataFrame] | type[pl.LazyFrame]):
-    schema = create_schema("test", {"a": dy.String(min_length=3)})
+    class TestSchema(cs.ColSpec):
+        a = cs.String(min_length=3)
+
     df = df_type({"a": ["foo", "foobar"]})
-    df_valid, failures = schema.filter(df)
+    df_valid, failures = TestSchema.filter_polars(df)
     assert isinstance(df_valid, pl.DataFrame)
     assert_frame_equal(df.lazy().collect(), df_valid)
     assert len(failures) == 0
@@ -135,7 +138,7 @@ def test_filter_cast(df_type: type[pl.DataFrame] | type[pl.LazyFrame]):
         "b": [20, 2000, None, 30, 3000, 50],
     }
     df = df_type(data)
-    df_valid, failures = MySchema.filter(df, cast=True)
+    df_valid, failures = MySchema.filter_polars(df, cast=True)
     assert isinstance(df_valid, pl.DataFrame)
     assert df_valid.collect_schema().names() == MySchema.column_names()
     assert len(failures) == 5
@@ -163,5 +166,5 @@ def test_filter_nondeterministic_lazyframe():
         }
     ).select(pl.all().shuffle())
 
-    filtered, _ = MySchema.filter(lf)
+    filtered, _ = MySchema.filter_polars(lf)
     assert filtered.select(pl.col("b").n_unique()).item() == 1

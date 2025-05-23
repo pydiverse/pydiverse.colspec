@@ -1,5 +1,6 @@
 # Copyright (c) QuantCo 2024-2025
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
 
 import polars as pl
 import pytest
@@ -18,12 +19,12 @@ class MyCollection(cs.Collection):
 
 def test_collection_missing_required_member():
     with pytest.raises(ValueError):
-        MyCollection.validate({"second": pl.LazyFrame({"a": [1, 2, 3]})})
+        MyCollection.validate_polars_data({"second": pl.LazyFrame({"a": [1, 2, 3]})})
 
 
 def test_collection_superfluous_member():
     with pytest.warns(Warning):
-        MyCollection.validate(
+        MyCollection.validate_polars_data(
             {
                 "first": pl.LazyFrame({"a": [1, 2, 3]}),
                 "third": pl.LazyFrame({"a": [1, 2, 3]}),

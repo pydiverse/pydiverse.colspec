@@ -13,6 +13,8 @@ from typing import TYPE_CHECKING, Any, Iterable, Mapping, Self, overload
 
 import structlog
 
+from pydiverse.colspec.columns._base import Column
+
 from . import exc
 from ._filter import Filter
 from .exc import ImplementationError, ValidationError
@@ -133,7 +135,7 @@ class ColSpec(
 
     @classmethod
     def validate_polars(
-        cls, data: pl.DataFrame | pl.LazyFrame, cast: bool = True
+        cls, data: pl.DataFrame | pl.LazyFrame, cast: bool = False
     ) -> pl.DataFrame | pl.LazyFrame:
         dy_schema_cols = convert_to_dy_col_spec(cls)
         dy_schema = type[dy.Schema](cls.__name__, (dy.Schema,), dy_schema_cols.copy())
@@ -212,6 +214,16 @@ class ColSpec(
         dy_schema_cols = convert_to_dy_col_spec(cls)
         dy_schema = type[dy.Schema](cls.__name__, (dy.Schema,), dy_schema_cols.copy())
         return dy_schema.cast(df)
+
+    @classmethod
+    def polars_schema(cls) -> pl.Schema:
+        return pl.Schema(
+            {
+                name: getattr(cls, name).dtype().to_polars()
+                for name in dir(cls)
+                if isinstance(getattr(cls, name), Column)
+            }
+        )
 
     # ----------------------------------- FILTERING ---------------------------------- #
 
@@ -352,7 +364,7 @@ class MemberInfo:
                 )
                 == 1
                 and all(
-                    t == type(None)
+                    t is type(None)
                     for t in union_types
                     if not (inspect.isclass(t) and issubclass(t, ColSpec))
                 )
@@ -465,7 +477,7 @@ class Collection:
         DynCollection = convert_collection_to_dy(cls)
         logger_name = __name__ + "." + cls.__name__ + ".validate_polars"
         try:
-            return DynCollection.validate(data, cast=True)
+            return cls.from_dy_collection(DynCollection.validate(data, cast=True))
         except dy_exc.ImplementationError as e:
             logger = structlog.getLogger(logger_name)
             logger.exception(
@@ -669,7 +681,8 @@ class Collection:
         cls, data: Mapping[str, FrameType], *, cast: bool = False
     ) -> tuple[Self, dict[str, dy.FailureInfo]]:
         DynCollection = convert_collection_to_dy(cls)
-        return DynCollection.filter(data, cast=cast)
+        coll, failure = DynCollection.filter(data, cast=cast)
+        return cls.from_dy_collection(coll), failure
 
     def cast_polars(self) -> Self:
         self.finalize()
@@ -678,7 +691,7 @@ class Collection:
     @classmethod
     def cast_polars_data(cls, data: Mapping[str, FrameType]) -> Self:
         DynCollection = convert_collection_to_dy(cls)
-        return DynCollection.cast(data)
+        return cls.from_dy_collection(DynCollection.cast(data))
 
     # -------------------------------- Member inquiries --------------------------- #
 
@@ -870,11 +883,19 @@ class Collection:
     def _init_polars_data(cls, data: Mapping[str, FrameType]) -> Self:
         out = cls()
         for member_name, member in cls.members().items():
-            if member.is_optional and member_name not in data:
+            if member.is_optional and (
+                member_name not in data or data[member_name] is None
+            ):
                 setattr(out, member_name, None)
             else:
                 setattr(out, member_name, data[member_name].lazy())
         return out
+
+    @classmethod
+    def from_dy_collection(cls, c: dy.Collection) -> Self:
+        return cls._init_polars_data(
+            {name: getattr(c, name) for name in c.members().keys()}
+        )
 
     @classmethod
     def _validate_polars_input_keys(cls, data: Mapping[str, FrameType]):

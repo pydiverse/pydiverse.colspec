@@ -13,46 +13,46 @@ import pydiverse.colspec as cs
 
 
 class MySimpleSchema(cs.ColSpec):
-    a = dy.Int64()
-    b = dy.String()
+    a = cs.Int64()
+    b = cs.String()
 
 
 class PrimaryKeySchema(cs.ColSpec):
-    a = dy.Int64(primary_key=True)
-    b = dy.String()
+    a = cs.Int64(primary_key=True)
+    b = cs.String()
 
 
 class CheckSchema(cs.ColSpec):
-    a = dy.UInt64()
-    b = dy.UInt64()
+    a = cs.UInt64()
+    b = cs.UInt64()
 
-    @dy.rule()
+    @cs.rule()
     def a_ge_b() -> pl.Expr:
         return pl.col("a") >= pl.col("b")
 
 
 class ComplexSchema(cs.ColSpec):
-    a = dy.UInt8(primary_key=True)
-    b = dy.UInt8(primary_key=True)
+    a = cs.UInt8(primary_key=True)
+    b = cs.UInt8(primary_key=True)
 
-    @dy.rule()
+    @cs.rule()
     def a_greater_b() -> pl.Expr:
         return pl.col("a") > pl.col("b")
 
-    @dy.rule(group_by=["a"])
+    @cs.rule(group_by=["a"])
     def minimum_two_per_a() -> pl.Expr:
         return pl.len() >= 2
 
 
 class LimitedComplexSchema(cs.ColSpec):
-    a = dy.UInt8(primary_key=True)
-    b = dy.UInt8(primary_key=True)
+    a = cs.UInt8(primary_key=True)
+    b = cs.UInt8(primary_key=True)
 
-    @dy.rule()
+    @cs.rule()
     def a_greater_b() -> pl.Expr:
         return pl.col("a") > pl.col("b")
 
-    @dy.rule(group_by=["a"])
+    @cs.rule(group_by=["a"])
     def minimum_two_per_a() -> pl.Expr:
         # We cannot generate more than 768 rows with this rule
         return pl.len() <= 3

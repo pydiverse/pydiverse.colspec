@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import Any
 
-import dataframely as dy
 import polars as pl
 import polars.exceptions as plexc
 import pytest
@@ -13,8 +12,8 @@ import pydiverse.colspec as cs
 
 
 class MySchema(cs.ColSpec):
-    a = dy.Float64()
-    b = dy.String()
+    a = cs.Float64()
+    b = cs.String()
 
 
 @pytest.mark.parametrize("df_type", [pl.DataFrame, pl.LazyFrame])
@@ -29,7 +28,7 @@ def test_cast_valid(
     df_type: type[pl.DataFrame] | type[pl.LazyFrame], data: dict[str, Any]
 ):
     df = df_type(data)
-    out = MySchema.cast(df)
+    out = MySchema.cast_polars(df)
     assert isinstance(out, df_type)
     assert out.lazy().collect_schema() == MySchema.polars_schema()
 
@@ -37,11 +36,11 @@ def test_cast_valid(
 def test_cast_invalid_schema_eager():
     df = pl.DataFrame({"a": [1]})
     with pytest.raises(plexc.ColumnNotFoundError):
-        MySchema.cast(df)
+        MySchema.cast_polars(df)
 
 
 def test_cast_invalid_schema_lazy():
     lf = pl.LazyFrame({"a": [1]})
-    lf = MySchema.cast(lf)
+    lf = MySchema.cast_polars(lf)
     with pytest.raises(plexc.ColumnNotFoundError):
         lf.collect()
