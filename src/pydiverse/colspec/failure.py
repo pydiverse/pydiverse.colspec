@@ -6,6 +6,8 @@ import json
 from pathlib import Path
 from typing import IO, Self
 
+from pydiverse.colspec.pdt_util import num_rows
+
 from .optional_dependency import pdt, pl
 
 
@@ -61,7 +63,7 @@ class FailureInfo:
     def __len__(self) -> int:
         from pydiverse.transform.extended import collect
 
-        return len(
+        return num_rows(
             self._invalid_rows >> collect()
         )  # this can be implemented more efficiently
 

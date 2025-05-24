@@ -555,7 +555,18 @@ class Collection:
 
         self.finalize(assert_pdt=True)
 
+        new_coll = self.__class__.build()
+        fail_coll = self.__class__.build()
+
         members: dict[str, MemberInfo] = self.members()
+
+        for name, member in members.items():
+            out, failure = member.col_spec.filter(member.col_spec.tbl, cast=cast)
+            setattr(new_coll, name, out)
+            setattr(fail_coll, name, failure)
+        # TODO: make sure that the filtered members are used everywhere and add the
+        # 'how' flag.
+
         join_members: dict[str, set[str]] = {name: {name} for name in members}
         join_subqueries: dict[str, list[tuple[pdt.Table, set[str]]]] = {
             name: [] for name in members
@@ -617,8 +628,6 @@ class Collection:
                 )
                 pk_union |= subquery_pk_union
 
-        new_coll = self.__class__.build()
-        fail_coll = self.__class__.build()
         for tbl_name in self.members().keys():
             tbl, fail = self.members()[tbl_name].col_spec.filter(
                 join[tbl_name],
@@ -627,6 +636,7 @@ class Collection:
             )
             setattr(new_coll, tbl_name, tbl)
             setattr(fail_coll, tbl_name, fail)
+
         return new_coll, fail_coll
 
     def filter_rules(self) -> dict[str, Filter]:

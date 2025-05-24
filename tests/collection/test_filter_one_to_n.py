@@ -10,6 +10,7 @@ import pytest
 
 import pydiverse.colspec as cs
 from pydiverse.colspec.colspec import dy, pdt
+from pydiverse.colspec.pdt_util import num_rows
 
 
 class CarColSpec(cs.ColSpec):
@@ -63,10 +64,6 @@ class CarFleet(cs.Collection):
     @cs.filter()
     def not_car_with_vin_123(self) -> pdt.ColExpr:
         return self.cars.vin != "123"
-
-
-def num_rows(tbl: pdt.Table) -> int:
-    return tbl >> pdt.summarize(num_rows=pdt.count()) >> pdt.export(pdt.Scalar)
 
 
 @pytest.mark.skipif(pdt is None, reason="pydiverse.transform not installed")

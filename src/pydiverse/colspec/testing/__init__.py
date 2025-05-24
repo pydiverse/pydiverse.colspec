@@ -10,6 +10,7 @@ from .const import (
 )
 from .factory import create_collection, create_collection_raw, create_colspec
 from .rules import evaluate_rules_polars, rules_from_exprs_polars
+from .assert_equal import assert_table_equal
 
 __all__ = [
     "ALL_COLUMN_TYPES",
