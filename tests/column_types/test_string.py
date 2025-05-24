@@ -1,15 +1,16 @@
 # Copyright (c) QuantCo 2023-2024
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
 
 import polars as pl
+from dataframely.testing import evaluate_rules, rules_from_exprs
 from polars.testing import assert_frame_equal
 
-import dataframely as dy
-from dataframely.testing import evaluate_rules, rules_from_exprs
+import pydiverse.colspec as cs
 
 
 def test_validate_min_length():
-    column = dy.String(min_length=2)
+    column = cs.String(min_length=2)
     lf = pl.LazyFrame({"a": ["foo", "x"]})
     actual = evaluate_rules(lf, rules_from_exprs(column.validation_rules(pl.col("a"))))
     expected = pl.LazyFrame({"min_length": [True, False]})
@@ -17,7 +18,7 @@ def test_validate_min_length():
 
 
 def test_validate_max_length():
-    column = dy.String(max_length=2)
+    column = cs.String(max_length=2)
     lf = pl.LazyFrame({"a": ["foo", "x"]})
     actual = evaluate_rules(lf, rules_from_exprs(column.validation_rules(pl.col("a"))))
     expected = pl.LazyFrame({"max_length": [False, True]})
@@ -25,7 +26,7 @@ def test_validate_max_length():
 
 
 def test_validate_regex():
-    column = dy.String(regex="[0-9][a-z]$")
+    column = cs.String(regex="[0-9][a-z]$")
     lf = pl.LazyFrame({"a": ["33x", "3x", "44"]})
     actual = evaluate_rules(lf, rules_from_exprs(column.validation_rules(pl.col("a"))))
     expected = pl.LazyFrame({"regex": [True, True, False]})
@@ -33,7 +34,7 @@ def test_validate_regex():
 
 
 def test_validate_all_rules():
-    column = dy.String(nullable=False, min_length=2, max_length=4)
+    column = cs.String(nullable=False, min_length=2, max_length=4)
     lf = pl.LazyFrame({"a": ["foo", "x", "foobar", None]})
     actual = evaluate_rules(lf, rules_from_exprs(column.validation_rules(pl.col("a"))))
     expected = pl.LazyFrame(

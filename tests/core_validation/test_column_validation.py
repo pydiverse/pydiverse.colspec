@@ -1,11 +1,11 @@
 # Copyright (c) QuantCo 2024-2025
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
 
 import polars as pl
 import pytest
 
-from dataframely._validation import validate_columns
-from dataframely.exc import ValidationError
+from pydiverse.colspec.exc import ValidationError
 
 
 def test_success():

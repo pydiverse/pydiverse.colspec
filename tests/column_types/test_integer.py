@@ -17,7 +17,7 @@ import pydiverse.colspec as cs
 
 
 class IntegerSchema(cs.ColSpec):
-    a = dy.Integer()
+    a = cs.Integer()
 
 
 @pytest.mark.parametrize("column_type", INTEGER_COLUMN_TYPES)
@@ -64,13 +64,13 @@ def test_invalid_args_is_in(column_type: type[_BaseInteger], kwargs: dict[str, A
 @pytest.mark.parametrize("dtype", INTEGER_DTYPES)
 def test_any_integer_dtype_passes(dtype: DataTypeClass):
     df = pl.DataFrame(schema={"a": dtype})
-    assert IntegerSchema.is_valid(df)
+    assert IntegerSchema.is_valid_polars(df)
 
 
 @pytest.mark.parametrize("dtype", [pl.Boolean, pl.String] + list(FLOAT_DTYPES))
 def test_non_integer_dtype_fails(dtype: DataTypeClass):
     df = pl.DataFrame(schema={"a": dtype})
-    assert not IntegerSchema.is_valid(df)
+    assert not IntegerSchema.is_valid_polars(df)
 
 
 @pytest.mark.parametrize("column_type", INTEGER_COLUMN_TYPES)

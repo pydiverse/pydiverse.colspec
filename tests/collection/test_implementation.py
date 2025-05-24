@@ -1,13 +1,18 @@
 # Copyright (c) QuantCo 2024-2024
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
 
+import dataframely as dy
 import polars as pl
 import pytest
 
-import dataframely as dy
-from dataframely._filter import Filter
-from dataframely.exc import AnnotationImplementationError, ImplementationError
-from dataframely.testing import create_collection, create_collection_raw, create_schema
+from pydiverse.colspec._filter import Filter
+from pydiverse.colspec.exc import AnnotationImplementationError, ImplementationError
+from pydiverse.colspec.testing.factory import (
+    create_collection,
+    create_collection_raw,
+    create_colspec,
+)
 
 
 def test_annotation_type_failure():
@@ -17,7 +22,7 @@ def test_annotation_type_failure():
         create_collection(
             "test",
             {
-                "first": create_schema("first", {"a": dy.Integer()}),
+                "first": create_colspec("first", {"a": dy.Integer()}),
             },
             annotation_base_class=dy.DataFrame,
         )
@@ -28,10 +33,9 @@ def test_annotation_union_success():
     create_collection_raw(
         "test",
         {
-            "first": dy.LazyFrame[  # type: ignore
-                create_schema("first", {"a": dy.Integer(primary_key=True)})
-            ]
-            | None,
+            "first": (
+                create_colspec("first", {"a": dy.Integer(primary_key=True)}) | None
+            ),
         },
     )
 
@@ -42,9 +46,7 @@ def test_annotation_union_with_data_frame():
         create_collection_raw(
             "test",
             {
-                "first": dy.DataFrame[  # type: ignore
-                    create_schema("first", {"a": dy.Integer(primary_key=True)})
-                ]
+                "first": create_colspec("first", {"a": dy.Integer(primary_key=True)})
                 | None,
             },
         )
@@ -57,12 +59,8 @@ def test_annotation_union_too_many_arg_failure():
         create_collection_raw(
             "test",
             {
-                "first": dy.LazyFrame[  # type: ignore
-                    create_schema("first", {"a": dy.Integer(primary_key=True)})
-                ]
-                | dy.LazyFrame[  # type: ignore
-                    create_schema("second", {"a": dy.Integer(primary_key=True)})
-                ]
+                "first": create_colspec("first", {"a": dy.Integer(primary_key=True)})
+                | create_colspec("second", {"a": dy.Integer(primary_key=True)})
                 | None,
             },
         )
@@ -75,12 +73,8 @@ def test_annotation_union_conflicting_types_failure():
         create_collection_raw(
             "test",
             {
-                "first": dy.LazyFrame[  # type: ignore
-                    create_schema("first", {"a": dy.Integer(primary_key=True)})
-                ]
-                | dy.LazyFrame[  # type: ignore
-                    create_schema("second", {"a": dy.Integer(primary_key=True)})
-                ],
+                "first": create_colspec("first", {"a": dy.Integer(primary_key=True)})
+                | create_colspec("second", {"a": dy.Integer(primary_key=True)}),
             },
         )
 
@@ -115,8 +109,8 @@ def test_name_overlap():
         create_collection(
             "test",
             {
-                "first": create_schema("first", {"a": dy.Integer(primary_key=True)}),
-                "second": create_schema("second", {"a": dy.Integer(primary_key=True)}),
+                "first": create_colspec("first", {"a": dy.Integer(primary_key=True)}),
+                "second": create_colspec("second", {"a": dy.Integer(primary_key=True)}),
             },
             filters={"primary_key": Filter(lambda c: c.first)},
         )
@@ -127,7 +121,7 @@ def test_collection_no_primary_key_success():
     create_collection(
         "test",
         {
-            "first": create_schema("first", {"a": dy.Integer()}),
+            "first": create_colspec("first", {"a": dy.Integer()}),
         },
     )
 
@@ -141,7 +135,7 @@ def test_collection_no_primary_key_failure():
         create_collection(
             "test",
             {
-                "first": create_schema("first", {"a": dy.Integer()}),
+                "first": create_colspec("first", {"a": dy.Integer()}),
             },
             filters={"testfilter": Filter(lambda c: c.first.filter(pl.col("a") > 0))},
         )
@@ -156,8 +150,8 @@ def test_collection_primary_key_but_not_common():
         create_collection(
             "test",
             {
-                "first": create_schema("first", {"a": dy.Integer(primary_key=True)}),
-                "second": create_schema("second", {"b": dy.Integer(primary_key=True)}),
+                "first": create_colspec("first", {"a": dy.Integer(primary_key=True)}),
+                "second": create_colspec("second", {"b": dy.Integer(primary_key=True)}),
             },
             filters={"testfilter": Filter(lambda c: c.first.filter(pl.col("a") > 0))},
         )

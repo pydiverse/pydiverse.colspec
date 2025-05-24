@@ -5,10 +5,10 @@ from __future__ import annotations
 import polars as pl
 import pytest
 from dataframely._rule import Rule
-from dataframely.exc import ImplementationError
-from dataframely.testing import create_schema
 
 import pydiverse.colspec as cs
+from pydiverse.colspec.exc import ImplementationError
+from pydiverse.colspec.testing.factory import create_colspec
 
 
 class MySchema(cs.ColSpec):
@@ -47,7 +47,7 @@ def test_primary_keys():
 
 def test_no_rule_named_primary_key():
     with pytest.raises(ImplementationError):
-        create_schema(
+        create_colspec(
             "test",
             {"a": cs.String()},
             {"primary_key": Rule(pl.col("a").str.len_bytes() > 1)},

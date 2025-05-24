@@ -1,38 +1,39 @@
 # Copyright (c) QuantCo 2024-2025
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
 
 from typing import Any
 
 import polars as pl
 import pytest
 
-import dataframely as dy
-from dataframely.testing.factory import create_schema
+import pydiverse.colspec as cs
+from pydiverse.colspec.testing.factory import create_colspec
 
 
 @pytest.mark.parametrize(
     ("dy_enum", "pl_dtype", "valid"),
     [
-        (dy.Enum(["x", "y"]), pl.Enum(["x", "y"]), True),
-        (dy.Enum(["y", "x"]), pl.Enum(["x", "y"]), False),
-        (dy.Enum(["x"]), pl.Enum(["x", "y"]), False),
-        (dy.Enum(["x", "y", "z"]), pl.Enum(["x", "y"]), False),
-        (dy.Enum(["x", "y"]), pl.String(), False),
+        (cs.Enum(["x", "y"]), pl.Enum(["x", "y"]), True),
+        (cs.Enum(["y", "x"]), pl.Enum(["x", "y"]), False),
+        (cs.Enum(["x"]), pl.Enum(["x", "y"]), False),
+        (cs.Enum(["x", "y", "z"]), pl.Enum(["x", "y"]), False),
+        (cs.Enum(["x", "y"]), pl.String(), False),
     ],
 )
 @pytest.mark.parametrize("df_type", [pl.DataFrame, pl.LazyFrame])
 def test_valid(
     df_type: type[pl.DataFrame] | type[pl.LazyFrame],
-    dy_enum: dy.Enum,
+    dy_enum: cs.Enum,
     pl_dtype: pl.Enum,
     valid: bool,
 ):
-    schema = create_schema("test", {"a": dy_enum})
+    schema = create_colspec("test", {"a": dy_enum})
     df = df_type({"a": ["x", "y", "x", "x"]}).cast(pl_dtype)
-    assert schema.is_valid(df) == valid
+    assert schema.is_valid_polars(df) == valid
 
 
-@pytest.mark.parametrize("enum", [dy.Enum(["x", "y"]), dy.Enum(["y", "x"])])
+@pytest.mark.parametrize("enum", [cs.Enum(["x", "y"]), cs.Enum(["y", "x"])])
 @pytest.mark.parametrize("df_type", [pl.DataFrame, pl.LazyFrame])
 @pytest.mark.parametrize(
     ("data", "valid"),
@@ -44,11 +45,11 @@ def test_valid(
     ],
 )
 def test_valid_cast(
-    enum: dy.Enum,
+    enum: cs.Enum,
     data: Any,
     valid: bool,
     df_type: type[pl.DataFrame] | type[pl.LazyFrame],
 ):
-    schema = create_schema("test", {"a": enum})
+    schema = create_colspec("test", {"a": enum})
     df = df_type(data)
-    assert schema.is_valid(df, cast=True) == valid
+    assert schema.is_valid_polars(df, cast=True) == valid

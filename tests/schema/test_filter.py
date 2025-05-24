@@ -6,12 +6,12 @@ import random
 
 import polars as pl
 import pytest
-from dataframely.exc import DtypeValidationError, ValidationError
 from dataframely.testing import validation_mask
 from polars.datatypes import DataTypeClass
 from polars.testing import assert_frame_equal
 
 import pydiverse.colspec as cs
+from pydiverse.colspec.exc import DtypeValidationError, ValidationError
 
 
 class MySchema(cs.ColSpec):

@@ -20,4 +20,4 @@ class AnySchema(cs.ColSpec):
 )
 def test_any_dtype_passes(data: dict[str, Any]):
     df = pl.DataFrame(data)
-    assert AnySchema.is_valid(df)
+    assert AnySchema.is_valid_polars(df)

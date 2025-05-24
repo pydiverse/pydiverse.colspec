@@ -1,13 +1,14 @@
 # Copyright (c) QuantCo 2024-2024
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
 
 import polars as pl
 
-import dataframely as dy
-from dataframely.testing.factory import create_schema
+import pydiverse.colspec as cs
+from pydiverse.colspec.testing.factory import create_colspec
 
 
 def test_polars_schema() -> None:
-    schema = create_schema("test", {"a": dy.Int32(nullable=False), "b": dy.Float32()})
+    schema = create_colspec("test", {"a": cs.Int32(nullable=False), "b": cs.Float32()})
     pl_schema = schema.polars_schema()
     assert pl_schema == {"a": pl.Int32, "b": pl.Float32}
