@@ -232,7 +232,6 @@ class ColSpec(
         cls,
         tbl: pdt.Table,
         *,
-        extra_rules: dict[str, pdt.ColExpr] | None = None,
         cast: bool = False,
     ) -> tuple[Self, FailureInfo]:
         """Filter the table by the rules of this column specification.
@@ -264,10 +263,10 @@ class ColSpec(
             This method preserves the ordering of the input data frame.
         """
 
-        rules = cls._validation_rules(tbl) | (extra_rules or dict())
+        rules = cls._validation_rules(tbl)
         combined = functools.reduce(operator.and_, rules.values(), True)
         ok_rows = tbl >> pdt.filter(combined)
-        invalid_rows = tbl >> pdt.filter(~combined)
+        invalid_rows = tbl >> pdt.filter(~combined) >> pdt.mutate(**rules)
         return ok_rows, FailureInfo(
             tbl=tbl, invalid_rows=invalid_rows, rule_columns=rules
         )
@@ -421,7 +420,7 @@ class Collection:
 
     A colspec.Collection can also be instantiated and filled with
     pydiverse transform Table, pipedag Table objects, or pipedag task outputs which
-    reference a table. This yields quite intutive syntax:
+    reference a table. This yields quite intuitive syntax:
 
     .. code:: python
 
@@ -551,7 +550,18 @@ class Collection:
         Returns a tuple of two new collections one with the filtered tables as member
         variables and one with FailureInfo objects as member variables.
         """
-        from pydiverse.transform.extended import summarize
+        from pydiverse.transform.extended import (
+            C,
+            alias,
+            drop,
+            full_join,
+            group_by,
+            inner_join,
+            left_join,
+            mutate,
+            select,
+            summarize,
+        )
 
         self.finalize(assert_pdt=True)
 
@@ -576,16 +586,16 @@ class Collection:
                 )
             )
 
-            expr_pks = self._pk_overlap(*expr_col_specs)
             expr_pk_union = self._pk_union(*expr_col_specs)
+            # for reuse of subqueries across different tables
             group_subqueries: dict[tuple[str], pdt.Table] = {}
 
             for name in self.members().keys():
                 tbl = members[name].col_spec
-                pk_overlap = self._pk_overlap(tbl, *expr_col_specs)
-                requires_grouping = set(tbl.primary_keys()).issubset(expr_pks) and len(
-                    tbl.primary_keys()
-                ) < len(expr_pks)
+                pk_overlap = expr_pk_union.intersection(tbl.primary_keys())
+                requires_grouping = (
+                    len(expr_pk_union.difference(tbl.primary_keys())) > 0
+                )
 
                 # TODO: is it correct to only filter on a direct overlap? Or should it
                 # rather be transitive? (If tables A and B share a key x and B and C
@@ -594,13 +604,20 @@ class Collection:
                     if requires_grouping:
                         key = tuple(sorted(pk_overlap))
                         if key not in group_subqueries:
-                            group_subqueries[key] = self._get_join(
-                                expr_tbl_names
-                            ) >> summarize(__keep_this__=logic.any())
+                            group_subqueries[key] = (
+                                self._get_join(expr_tbl_names)
+                                # Only group by the overlap columns so the expression
+                                # can also be used for other tables. We group by all
+                                # primary keys of the current table later.
+                                >> group_by(*pk_overlap)
+                                >> summarize(__keep_this__=logic.any())
+                            )
                         join_subqueries[name].append(
                             (group_subqueries[key], expr_pk_union)
                         )
-                        extra_rules[name] += [group_subqueries[key].__keep_this__]
+                        extra_rules[name][pred.logic.__name__] = group_subqueries[
+                            key
+                        ].__keep_this__
                     else:
                         join_members[name] |= set(expr_tbl_names)
                         extra_rules[name][pred.logic.__name__] = logic
@@ -616,39 +633,87 @@ class Collection:
             setattr(fail_coll, name, failure)
 
         for name in self.members().keys():
-            tbl = new_coll[name]
-            failure = fail_coll[name]
+            tbl = getattr(new_coll, name)
             col_spec = self.member_col_specs()[name]
 
-            # build join
-            join = self._get_join(*join_members[name].difference({name}))
-            pk_union = self._pk_union(*join_members[name])
+            if len(other_join_members := join_members[name].difference({name})) > 0:
+                join = self._get_join(*other_join_members)
+                pk_union = self._pk_union(*other_join_members)
+            else:
+                join = None
+                pk_union = set()
 
             for subquery, subquery_pk_union in join_subqueries[name]:
-                join >>= pdt.inner_join(
-                    subquery, on=list(subquery_pk_union.intersection(pk_union))
-                )
+                if join is None:
+                    join = subquery
+                else:
+                    join >>= inner_join(
+                        subquery,
+                        on=list(subquery_pk_union.intersection(pk_union)),
+                    )
                 pk_union |= subquery_pk_union
 
-            join = tbl >> pdt.left_join(
-                join,
-                on=list(pk_union.intersection(col_spec.primary_keys())),
-            )
+            if join is None:
+                join = tbl
+            else:
+                join = tbl >> left_join(
+                    join,
+                    on=list(pk_union.intersection(col_spec.primary_keys())),
+                )
 
-            new_coll[name] = (
+            # The above left_join should not duplicate rows of `tbl`, so we don't need
+            # to care about uniqueness here.
+            ok_rows = (
+                join >> pdt.filter(*extra_rules.get(name).values()) >> select(*tbl)
+            )
+            setattr(new_coll, name, ok_rows)
+
+            collection_level_failure = (
                 join
-                >> pdt.filter(extra_rules.get(name))
-                >> pdt.group_by(*tbl)
-                >> summarize()
+                >> pdt.filter(~pdt.all(True, *extra_rules.get(name).values()))
+                >> mutate(**extra_rules.get(name))
+            )
+            table_level_failure: pdt.Table = getattr(fail_coll, name)._invalid_rows
+
+            rule_columns: dict[str, pdt.ColExpr] = (
+                getattr(fail_coll, name).rule_columns | extra_rules[name]
             )
 
-            tbl, fail = self.members()[name].col_spec.filter(
-                join[name],
-                cast=cast,
-                extra_rules=extra_rules.get(name),
+            failure = (
+                table_level_failure
+                >> full_join(
+                    (coll_failure := collection_level_failure >> alias())
+                    >> drop(*col_spec.column_names()),
+                    on=[
+                        table_level_failure[pk] == coll_failure[pk]
+                        for pk in col_spec.primary_keys()
+                    ],
+                )
+                >> mutate(
+                    **{
+                        col_name: table_level_failure[col_name].fill_null(
+                            coll_failure[col_name]
+                        )
+                        for col_name in col_spec.column_names()
+                    }
+                )
+                >> mutate(
+                    **{rule: C[rule].fill_null(True) for rule in rule_columns.keys()}
+                )
+                >> alias()
             )
-            setattr(new_coll, name, tbl)
-            setattr(fail_coll, name, fail)
+
+            original_tbl = getattr(fail_coll, name).tbl
+            failure >>= select(*rule_columns) >> inner_join(
+                original_tbl,
+                on=[failure[pk] == original_tbl[pk] for pk in col_spec.primary_keys()],
+            )
+
+            setattr(
+                fail_coll,
+                name,
+                FailureInfo(getattr(fail_coll, name).tbl, failure, rule_columns),
+            )
 
         return new_coll, fail_coll
 
@@ -681,10 +746,10 @@ class Collection:
             *(other.primary_keys() for other in tbls[1:])
         )
 
-    def _get_join(self, *tbls: Iterable[str]) -> pdt.Table:
-        result = getattr(self, tbls[0])
-        pk_union = set(self.member_col_specs()[tbls[0]].primary_keys())
-        for name in tbls[1:]:
+    def _get_join(self, tbl: str, *more_tbls: Iterable[str]) -> pdt.Table | None:
+        result = getattr(self, tbl)
+        pk_union = set(self.member_col_specs()[tbl].primary_keys())
+        for name in more_tbls:
             col_spec: ColSpec = self.member_col_specs()[name]
             pk_set = set(col_spec.primary_keys())
             result = result >> pdt.inner_join(
