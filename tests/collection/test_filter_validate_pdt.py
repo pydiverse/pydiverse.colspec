@@ -41,9 +41,13 @@ class MyCollection(cs.Collection):
             (self.first[key] == self.second[key] for key in self.common_primary_keys()),
         )
 
-    @cs.filter(how="full")
+    @cs.filter()
     def first_b_greater_second_b(self) -> pdt.ColExpr:
-        return self.first.b > self.second.b
+        return (
+            (self.first.b > self.second.b)
+            | self.pk_is_null(self.first)
+            | self.pk_is_null(self.second)
+        )
 
 
 class SimpleCollection(cs.Collection):
@@ -102,7 +106,6 @@ def test_filter_without_filter_without_rule_violation(
     assert len(failure.second) == 0
 
 
-# TODO: collection filter must also filter the individual tables
 def test_filter_without_filter_with_rule_violation(
     data_without_filter_with_rule_violation: tuple[pdt.Table, pdt.Table],
 ):

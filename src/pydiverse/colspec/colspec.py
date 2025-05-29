@@ -555,17 +555,7 @@ class Collection:
 
         self.finalize(assert_pdt=True)
 
-        new_coll = self.__class__.build()
-        fail_coll = self.__class__.build()
-
         members: dict[str, MemberInfo] = self.members()
-
-        for name, member in members.items():
-            out, failure = member.col_spec.filter(member.col_spec.tbl, cast=cast)
-            setattr(new_coll, name, out)
-            setattr(fail_coll, name, failure)
-        # TODO: make sure that the filtered members are used everywhere and add the
-        # 'how' flag.
 
         join_members: dict[str, set[str]] = {name: {name} for name in members}
         join_subqueries: dict[str, list[tuple[pdt.Table, set[str]]]] = {
@@ -590,8 +580,8 @@ class Collection:
             expr_pk_union = self._pk_union(*expr_col_specs)
             group_subqueries: dict[tuple[str], pdt.Table] = {}
 
-            for tbl_name in self.members().keys():
-                tbl = members[tbl_name].col_spec
+            for name in self.members().keys():
+                tbl = members[name].col_spec
                 pk_overlap = self._pk_overlap(tbl, *expr_col_specs)
                 requires_grouping = set(tbl.primary_keys()).issubset(expr_pks) and len(
                     tbl.primary_keys()
@@ -607,35 +597,58 @@ class Collection:
                             group_subqueries[key] = self._get_join(
                                 expr_tbl_names
                             ) >> summarize(__keep_this__=logic.any())
-                        join_subqueries[tbl_name].append(
+                        join_subqueries[name].append(
                             (group_subqueries[key], expr_pk_union)
                         )
-                        extra_rules[tbl_name] += [group_subqueries[key].__keep_this__]
+                        extra_rules[name] += [group_subqueries[key].__keep_this__]
                     else:
-                        join_members[tbl_name] |= set(expr_tbl_names)
-                        extra_rules[tbl_name][pred.logic.__name__] = logic
+                        join_members[name] |= set(expr_tbl_names)
+                        extra_rules[name][pred.logic.__name__] = logic
 
-        join: dict[str, pdt.Table] = dict()
+        # first filter the tables individually, else invalid rows could cause incorrect
+        # results in the multi-table filters
+        new_coll = self.__class__.build()
+        fail_coll = self.__class__.build()
+
+        for name, member in members.items():
+            out, failure = member.col_spec.filter(getattr(self, name), cast=cast)
+            setattr(new_coll, name, out)
+            setattr(fail_coll, name, failure)
+
         for name in self.members().keys():
-            # It's important that 'name' goes first, so that the columns don't get
-            # suffixes.
-            join[name] = self._get_join(name, *join_members[name].difference({name}))
+            tbl = new_coll[name]
+            failure = fail_coll[name]
+            col_spec = self.member_col_specs()[name]
+
+            # build join
+            join = self._get_join(*join_members[name].difference({name}))
             pk_union = self._pk_union(*join_members[name])
 
             for subquery, subquery_pk_union in join_subqueries[name]:
-                join[name] >>= pdt.inner_join(
-                    subquery, on=subquery_pk_union.intersection(pk_union)
+                join >>= pdt.inner_join(
+                    subquery, on=list(subquery_pk_union.intersection(pk_union))
                 )
                 pk_union |= subquery_pk_union
 
-        for tbl_name in self.members().keys():
-            tbl, fail = self.members()[tbl_name].col_spec.filter(
-                join[tbl_name],
-                cast=cast,
-                extra_rules=extra_rules.get(tbl_name),
+            join = tbl >> pdt.left_join(
+                join,
+                on=list(pk_union.intersection(col_spec.primary_keys())),
             )
-            setattr(new_coll, tbl_name, tbl)
-            setattr(fail_coll, tbl_name, fail)
+
+            new_coll[name] = (
+                join
+                >> pdt.filter(extra_rules.get(name))
+                >> pdt.group_by(*tbl)
+                >> summarize()
+            )
+
+            tbl, fail = self.members()[name].col_spec.filter(
+                join[name],
+                cast=cast,
+                extra_rules=extra_rules.get(name),
+            )
+            setattr(new_coll, name, tbl)
+            setattr(fail_coll, name, fail)
 
         return new_coll, fail_coll
 
@@ -924,3 +937,7 @@ class Collection:
                 f"Input provides {len(superfluous)} superfluous members that are "
                 f"ignored: {', '.join(superfluous)}."
             )
+
+    def pk_is_null(self, tbl: pdt.Table) -> pdt.ColExpr:
+        tbl_name = next(attr for attr in dir(self) if getattr(self, attr) == tbl)
+        return tbl[self.member_col_specs()[tbl_name].primary_keys()[0]].is_null()

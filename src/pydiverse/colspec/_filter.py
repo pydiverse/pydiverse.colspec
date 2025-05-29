@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Generic, Literal, TypeVar
+from typing import Generic, TypeVar
 
 from .optional_dependency import pdt, pl
 
@@ -17,9 +17,7 @@ class Filter(Generic[C]):
         self.logic: Callable[[C], pdt.ColExpr] = logic
 
 
-def filter(
-    how: Literal["inner", "full"] = "inner",
-) -> Callable[[Callable[[C], pdt.ColExpr]], Filter[C]]:
+def filter() -> Callable[[Callable[[C], pdt.ColExpr]], Filter[C]]:
     """Mark a function as filters for rows in the members of a collection.
 
     The name of the function will be used as the name of the filter. The name must not
