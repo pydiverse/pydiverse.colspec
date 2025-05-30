@@ -17,7 +17,12 @@ from pydiverse.colspec.columns._base import Column
 
 from . import exc
 from ._filter import Filter
-from .exc import ImplementationError, ValidationError
+from .exc import (
+    ImplementationError,
+    MemberValidationError,
+    RuleValidationError,
+    ValidationError,
+)
 from .failure import FailureInfo
 from .optional_dependency import FrameType, Generator, dag, dy, pdt, pl
 
@@ -132,6 +137,13 @@ class ColSpec(
             member for member in dir(cls) if isinstance(getattr(cls, member), Column)
         ]
         return result
+
+    @classmethod
+    def validate(cls, tbl: pdt.Table, cast: bool = False) -> pdt.Table:
+        valid_rows, failure = cls.filter(tbl, cast=cast)
+        if len(failure) > 0:
+            raise RuleValidationError(failure.counts())
+        return valid_rows
 
     @classmethod
     def validate_polars(
@@ -436,6 +448,17 @@ class Collection:
         as it requires the proper schema definitions to ensure that the collection is
         implemented correctly.
     """
+
+    def validate(self, *, cast: bool = False):
+        out, failure = self.filter(cast=cast)
+        if any(len(getattr(failure, tbl_name)) > 0 for tbl_name in failure.members()):
+            raise MemberValidationError(
+                {
+                    tbl_name: RuleValidationError(getattr(failure, tbl_name).counts())
+                    for tbl_name in failure.members()
+                }
+            )
+        return out
 
     def validate_polars(self, *, cast: bool = False, fault_tolerant: bool = False):
         self.finalize()
