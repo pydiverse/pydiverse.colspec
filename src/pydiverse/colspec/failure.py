@@ -51,14 +51,14 @@ class FailureInfo:
             A mapping from rule name to counts. If a rule's failure count is 0, it is
             not included here.
         """
-        from pydiverse.transform.extended import Polars, export, summarize
+        from pydiverse.transform.extended import C, export, summarize
 
-        agg = (
+        cnts: dict[str, int] = (
             self._invalid_rows
-            >> summarize(**{k: c.sum() for k, c in self.rule_columns.items()})
-            >> export(Polars)
+            >> summarize(**{k: (~C[k]).sum() for k in self.rule_columns.keys()})
+            >> export(pdt.Dict)
         )
-        return agg.to_dict()
+        return {k: v for k, v in cnts.items() if v is not None and v > 0}
 
     def __len__(self) -> int:
         from pydiverse.transform.extended import collect

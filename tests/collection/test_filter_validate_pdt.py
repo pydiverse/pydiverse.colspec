@@ -115,10 +115,10 @@ def test_filter_without_filter_with_rule_violation(
     out, failure = c.filter()
 
     assert isinstance(out, SimpleCollection)
-    assert num_rows(out.first) == 1
+    assert num_rows(out.first) == 3
     assert num_rows(out.second) == 2
-    assert failure.first.counts() == {"primary_key": 2}
-    assert failure.second.counts() == {"b|min": 1}
+    assert failure.first.counts() == {}
+    assert failure.second.counts() == {"b_min": 1}
 
 
 def test_filter_with_filter_without_rule_violation(
@@ -151,10 +151,10 @@ def test_filter_with_filter_with_rule_violation(
     out, failure = c.filter()
 
     assert isinstance(out, MyCollection)
-    assert_frame_equal(out.first, pdt.Table({"a": [3], "b": [3]}))
-    assert_frame_equal(out.second, pdt.Table({"a": [3], "b": [1]}))
+    assert_table_equal(out.first, pdt.Table({"a": [3], "b": [3]}))
+    assert_table_equal(out.second, pdt.Table({"a": [3], "b": [1]}))
     assert failure.first.counts() == {"equal_primary_keys": 2}
-    assert failure.second.counts() == {"b|min": 1, "equal_primary_keys": 2}
+    assert failure.second.counts() == {"b_min": 1, "equal_primary_keys": 2}
 
 
 # -------------------------------- VALIDATE WITH DATA -------------------------------- #

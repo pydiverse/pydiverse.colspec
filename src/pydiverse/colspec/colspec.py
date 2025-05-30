@@ -567,6 +567,16 @@ class Collection:
 
         members: dict[str, MemberInfo] = self.members()
 
+        # first filter the tables individually, else invalid rows could cause incorrect
+        # results in the multi-table filters
+        individually_filtered = self.__class__.build()
+        table_level_fail = self.__class__.build()
+
+        for name, member in members.items():
+            out, failure = member.col_spec.filter(getattr(self, name), cast=cast)
+            setattr(individually_filtered, name, out)
+            setattr(table_level_fail, name, failure)
+
         join_members: dict[str, set[str]] = {name: {name} for name in members}
         join_subqueries: dict[str, list[tuple[pdt.Table, set[str]]]] = {
             name: [] for name in members
@@ -605,7 +615,7 @@ class Collection:
                         key = tuple(sorted(pk_overlap))
                         if key not in group_subqueries:
                             group_subqueries[key] = (
-                                self._get_join(expr_tbl_names)
+                                individually_filtered._get_join(expr_tbl_names)
                                 # Only group by the overlap columns so the expression
                                 # can also be used for other tables. We group by all
                                 # primary keys of the current table later.
@@ -622,76 +632,80 @@ class Collection:
                         join_members[name] |= set(expr_tbl_names)
                         extra_rules[name][pred.logic.__name__] = logic
 
-        # first filter the tables individually, else invalid rows could cause incorrect
-        # results in the multi-table filters
-        new_coll = self.__class__.build()
-        fail_coll = self.__class__.build()
-
-        for name, member in members.items():
-            out, failure = member.col_spec.filter(getattr(self, name), cast=cast)
-            setattr(new_coll, name, out)
-            setattr(fail_coll, name, failure)
+        new = self.__class__.build()
+        fail = self.__class__.build()
 
         for name in self.members().keys():
-            tbl = getattr(new_coll, name)
+            tbl = getattr(individually_filtered, name)
             col_spec = self.member_col_specs()[name]
 
             if len(other_join_members := join_members[name].difference({name})) > 0:
-                join = self._get_join(*other_join_members)
+                filter_join = individually_filtered._get_join(*other_join_members)
                 pk_union = self._pk_union(*other_join_members)
             else:
-                join = None
+                filter_join = None
                 pk_union = set()
 
             for subquery, subquery_pk_union in join_subqueries[name]:
-                if join is None:
-                    join = subquery
+                if filter_join is None:
+                    filter_join = subquery
                 else:
-                    join >>= inner_join(
+                    filter_join >>= inner_join(
                         subquery,
                         on=list(subquery_pk_union.intersection(pk_union)),
                     )
                 pk_union |= subquery_pk_union
 
-            if join is None:
-                join = tbl
+            if filter_join is None:
+                filter_join = tbl
             else:
-                join = tbl >> left_join(
-                    join,
+                filter_join = tbl >> left_join(
+                    filter_join,
                     on=list(pk_union.intersection(col_spec.primary_keys())),
                 )
+
+            # NOTE: we currently throw rows out if a rule results in null. We could also
+            # keep everything, but then we should do the same if no match in the join
+            # is found.
+            extra_rules[name] = {
+                name: rule.fill_null(False) for name, rule in extra_rules[name].items()
+            }
 
             # The above left_join should not duplicate rows of `tbl`, so we don't need
             # to care about uniqueness here.
             ok_rows = (
-                join >> pdt.filter(*extra_rules.get(name).values()) >> select(*tbl)
+                filter_join
+                >> pdt.filter(*extra_rules.get(name).values())
+                >> select(*tbl)
             )
-            setattr(new_coll, name, ok_rows)
+            setattr(new, name, ok_rows)
 
-            collection_level_failure = (
-                join
+            collection_level_invalid_rows = (
+                filter_join
                 >> pdt.filter(~pdt.all(True, *extra_rules.get(name).values()))
                 >> mutate(**extra_rules.get(name))
             )
-            table_level_failure: pdt.Table = getattr(fail_coll, name)._invalid_rows
+            table_level_invalid_rows: pdt.Table = getattr(
+                table_level_fail, name
+            )._invalid_rows
 
             rule_columns: dict[str, pdt.ColExpr] = (
-                getattr(fail_coll, name).rule_columns | extra_rules[name]
+                getattr(table_level_fail, name).rule_columns | extra_rules[name]
             )
 
             failure = (
-                table_level_failure
+                table_level_invalid_rows
                 >> full_join(
-                    (coll_failure := collection_level_failure >> alias())
+                    (coll_failure := collection_level_invalid_rows >> alias())
                     >> drop(*col_spec.column_names()),
                     on=[
-                        table_level_failure[pk] == coll_failure[pk]
+                        table_level_invalid_rows[pk] == coll_failure[pk]
                         for pk in col_spec.primary_keys()
                     ],
                 )
                 >> mutate(
                     **{
-                        col_name: table_level_failure[col_name].fill_null(
+                        col_name: table_level_invalid_rows[col_name].fill_null(
                             coll_failure[col_name]
                         )
                         for col_name in col_spec.column_names()
@@ -703,19 +717,15 @@ class Collection:
                 >> alias()
             )
 
-            original_tbl = getattr(fail_coll, name).tbl
+            original_tbl = getattr(table_level_fail, name).tbl
             failure >>= select(*rule_columns) >> inner_join(
                 original_tbl,
                 on=[failure[pk] == original_tbl[pk] for pk in col_spec.primary_keys()],
             )
 
-            setattr(
-                fail_coll,
-                name,
-                FailureInfo(getattr(fail_coll, name).tbl, failure, rule_columns),
-            )
+            setattr(fail, name, FailureInfo(original_tbl, failure, rule_columns))
 
-        return new_coll, fail_coll
+        return new, fail
 
     def filter_rules(self) -> dict[str, Filter]:
         return {
