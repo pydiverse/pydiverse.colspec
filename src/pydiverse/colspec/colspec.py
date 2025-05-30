@@ -184,8 +184,10 @@ class ColSpec(
         overrides: Mapping[str, Iterable[Any]] | None = None,
     ) -> pl.DataFrame | pl.LazyFrame:
         dy_schema_cols = convert_to_dy_col_spec(cls)
-        dy_schema = type[dy.Schema](cls.__name__, (dy.Schema,), dy_schema_cols.copy())
-        return dy_schema.sample(num_rows, generator, overrides=overrides)
+        dy_schema: type[dy.Schema] = type[dy.Schema](
+            cls.__name__, (dy.Schema,), dy_schema_cols.copy()
+        )
+        return dy_schema.sample(num_rows, generator=generator, overrides=overrides)
 
     @classmethod
     def create_empty_polars(cls) -> dy.DataFrame[Self]:
@@ -979,7 +981,7 @@ class Collection:
 
     @classmethod
     def _init_polars_data(cls, data: Mapping[str, FrameType]) -> Self:
-        out = cls()
+        out = cls.build()
         for member_name, member in cls.members().items():
             if member.is_optional and (
                 member_name not in data or data[member_name] is None

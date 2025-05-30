@@ -5,6 +5,7 @@
 #  simply want to ensure that our type checking works as desired. In some instances, we add
 #  'type: ignore' markers here but, paired with "warn_unused_ignores = true", this allows
 #  testing that typing fails where we want it to without failing pre-commit checks.
+from __future__ import annotations
 
 import datetime
 import decimal
@@ -16,8 +17,6 @@ import pytest
 
 # Note: To properly test the typing of the library,
 # we also need to make sure that imported colspecs are properly processed.
-from dataframely.testing.typing import MyImportedSchema
-
 from pydiverse.colspec.testing.typing import MyImportedColSpec
 
 try:
@@ -33,8 +32,8 @@ except ImportError:
     dy = None
     pl = None
 
-from pydiverse.colspec import ColSpec
 import pydiverse.colspec as cs
+from pydiverse.colspec import ColSpec
 from pydiverse.colspec.columns import ColExpr
 
 # pytestmark = pytest.mark.skip(reason="typing-only tests")
@@ -89,13 +88,18 @@ class MyCollection(cs.Collection):
 
 def test_collection_filter_return_value():
     _, failure = MyCollection.filter_polars_data(
-        {"first": MyFirstColSpec.sample_polars(3), "second": MySecondColSpec.sample_polars(2)},
+        {
+            "first": MyFirstColSpec.sample_polars(3),
+            "second": MySecondColSpec.sample_polars(2),
+        },
     )
     assert len(failure["first"]) == 0  # type: ignore[misc]
 
 
 def test_collection_filter_return_value2():
-    c = MyCollection(first=MyFirstColSpec.sample_polars(3), second=MySecondColSpec.sample_polars(2))
+    c = MyCollection(
+        first=MyFirstColSpec.sample_polars(3), second=MySecondColSpec.sample_polars(2)
+    )
     _, failure = c.filter_polars()
     assert len(failure["first"]) == 0  # type: ignore[misc]
 
@@ -149,7 +153,7 @@ def my_colspec_df() -> MyColSpec:
     )
 
 
-def test_iter_rows_assignment_correct_type(my_colspec_df: dy.DataFrame[MyColSpec]):
+def test_iter_rows_assignment_correct_type(my_colspec_df: pl.DataFrame):
     entry = next(my_colspec_df.iter_rows(named=True))
 
     a: int = entry["a"]  # noqa: F841
@@ -157,20 +161,24 @@ def test_iter_rows_assignment_correct_type(my_colspec_df: dy.DataFrame[MyColSpec
     c: list[Any] = entry["custom_col_list"]  # noqa: F841
 
 
-def test_iter_rows_colspec_subtypes(my_colspec_df: dy.DataFrame[MyColSpec]):
+def test_iter_rows_colspec_subtypes(my_colspec_df: pl.DataFrame):
     class MySubColSpec(MyColSpec):
         i = cs.Int64()
 
     class MySubSubColSpec(MySubColSpec):
         j = cs.Int64()
 
-    my_sub_colspec_df = MySubColSpec.validate_polars(my_colspec_df.with_columns(i=2))
+    my_sub_colspec_df = MySubColSpec.validate_polars(
+        my_colspec_df.with_columns(i=pl.lit(2, dtype=pl.Int64))
+    )
     entry1 = next(my_sub_colspec_df.iter_rows(named=True))
 
     a1: int = entry1["a"]  # noqa: F841
     i1: int = entry1["i"]  # noqa: F841
 
-    my_sub_sub_colspec_df = MySubSubColSpec.validate_polars(my_sub_colspec_df.with_columns(j=2))
+    my_sub_sub_colspec_df = MySubSubColSpec.validate_polars(
+        my_sub_colspec_df.with_columns(j=pl.lit(2, dtype=pl.Int64))
+    )
     entry2 = next(my_sub_sub_colspec_df.iter_rows(named=True))
 
     a2: int = entry2["a"]  # noqa: F841
