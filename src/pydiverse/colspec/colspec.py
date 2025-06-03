@@ -283,8 +283,8 @@ class ColSpec(
         if len(cls.primary_keys()) > 0:
             pk_check = pdt.count(partition_by=[getattr(tbl, col) for col in cls.primary_keys()]) == 1
             tbl = tbl >> pdt.mutate(_pk_check=pk_check)
-            rules["primary_key"] = tbl._pk_check
-        combined = functools.reduce(operator.and_, rules.values(), True)
+            rules["_primary_key_"] = tbl._pk_check
+        combined = pdt.all(True, *rules.values())
         ok_rows = tbl >> pdt.filter(combined)
         invalid_rows = tbl >> pdt.filter(~combined) >> pdt.mutate(**rules)
         if len(cls.primary_keys()) > 0:
@@ -466,6 +466,16 @@ class Collection:
         as it requires the proper schema definitions to ensure that the collection is
         implemented correctly.
     """
+    def get_pdt(self, name: str, fix_table_name: bool = True) -> pdt.Table:
+        tbl = getattr(self, name)
+        if not isinstance(tbl, pdt.Table):
+            raise TypeError(
+                f"Collection member '{name}' is not a pydiverse transform Table, but {type(tbl)}; collection={self}"
+            )
+        if fix_table_name:
+            # fix the name of the table according to Collection member name
+            tbl._ast.name = name
+        return tbl
 
     def validate(self, *, cast: bool = False):
         out, failure = self.filter(cast=cast)
@@ -607,7 +617,7 @@ class Collection:
         except ValidationError:
             return False
 
-    def filter(self, *, cast: bool = False) -> tuple[Self, Self]:
+    def filter(self, *, cast: bool = False, fix_table_name: bool = True) -> tuple[Self, Self]:
         """Filter rows which conform to column specifications and collections rules.
 
         Returns a tuple of two new collections one with the filtered tables as member
@@ -636,64 +646,74 @@ class Collection:
         table_level_fail = self.__class__.build()
 
         for name, member in members.items():
-            out, failure = member.col_spec.filter(getattr(self, name), cast=cast)
+            out, failure = member.col_spec.filter(self.get_pdt(name, fix_table_name), cast=cast)
             setattr(individually_filtered, name, out)
             setattr(table_level_fail, name, failure)
 
-        join_members: dict[str, set[str]] = {name: {name} for name in members}
-        join_subqueries: dict[str, list[tuple[pdt.Table, set[str]]]] = {
-            name: [] for name in members
-        }
+        # join tables needed for executing filter rules
+        join_members: dict[str, set[str]] = {name: set() for name in members}
         extra_rules: dict[str, dict[str, pdt.ColExpr]] = {name: {} for name in members}
+        # for reuse of subqueries across different tables:
+        @dataclass
+        class GroupSubquery:
+            # grouping keys of subquery
+            keys: set[str]
+            # table names that need subquery for filtering
+            tbls: set[str]
+            # table names joined in subquery
+            join_tbls: set[str]
+            # dict[filter name, filter expression]
+            cols: dict[str,pdt.ColExpr]
+            @staticmethod
+            def build():
+                return GroupSubquery(set(), set(), set(), {})
 
-        for pred in self.filter_rules().values():
+        group_subqueries: dict[tuple[str], GroupSubquery] = {}
+
+        for pred_name, pred in self.filter_rules().items():
             logic = pred.logic_fn(self)
             expr_tbl_names = [
                 tbl_name
                 for tbl_name in members.keys()
-                if logic.uses_table(getattr(self, tbl_name))
+                if logic.uses_table(self.get_pdt(tbl_name, fix_table_name))
             ]
-            expr_col_specs = list(
-                itertools.chain(
-                    members[tbl_name].col_spec for tbl_name in expr_tbl_names
-                )
-            )
+            expr_col_specs = [members[tbl_name].col_spec for tbl_name in expr_tbl_names]
 
             expr_pk_union = self._pk_union(*expr_col_specs)
-            # for reuse of subqueries across different tables
-            group_subqueries: dict[tuple[str], pdt.Table] = {}
 
             for name in self.members().keys():
                 tbl = members[name].col_spec
+                join = self.get_join(name, set(expr_tbl_names) - set([name]), fix_table_name=fix_table_name)
                 pk_overlap = expr_pk_union.intersection(tbl.primary_keys())
                 requires_grouping = (
                     len(expr_pk_union.difference(tbl.primary_keys())) > 0
                 )
 
-                # TODO: is it correct to only filter on a direct overlap? Or should it
-                # rather be transitive? (If tables A and B share a key x and B and C
-                # share y, should we filter A if expr_table_names = [C]?)
-                if len(pk_overlap) > 0:
+                if join is not None:
                     if requires_grouping:
-                        key = tuple(sorted(pk_overlap))
+                        key = tuple(*pk_overlap, 0, *sorted(tbl.primary_keys() + expr_pk_union))
                         if key not in group_subqueries:
-                            group_subqueries[key] = (
-                                individually_filtered._get_join(expr_tbl_names)
-                                # Only group by the overlap columns so the expression
-                                # can also be used for other tables. We group by all
-                                # primary keys of the current table later.
-                                >> group_by(*pk_overlap)
-                                >> summarize(__keep_this__=logic.any())
-                            )
-                        join_subqueries[name].append(
-                            (group_subqueries[key], expr_pk_union)
-                        )
-                        extra_rules[name][pred.logic_fn.__name__] = group_subqueries[
-                            key
-                        ].__keep_this__
+                            group_subqueries[key] = GroupSubquery.build()
+                        group_subqueries[key].keys = pk_overlap
+                        group_subqueries[key].tbls |= name
+                        group_subqueries[key].join_tbls |= set(expr_tbl_names)
+                        group_subqueries[key].cols[pred_name] = logic
                     else:
-                        join_members[name] |= set(expr_tbl_names)
+                        join_members[name] |= set(expr_tbl_names) - set([name])
                         extra_rules[name][pred.logic_fn.__name__] = logic
+
+        join_subqueries: dict[str, list[tuple[pdt.Table, set[str]]]] = {
+            name: [] for name in members
+        }
+
+        for group_subquery in group_subqueries.values():
+            for name in group_subquery.tbls:
+                subquery = self._get_join(*group_subquery.join_tbls) >> group_by(group_subquery.keys) >> summarize(**group_subquery.cols)
+                join_subqueries[name].append(
+                    (subquery, group_subquery.keys)
+                )
+                for col in group_subquery.cols.keys():
+                    extra_rules[name][col] = subquery[col]
 
         new = self.__class__.build()
         fail = self.__class__.build()
@@ -702,30 +722,13 @@ class Collection:
             tbl = getattr(individually_filtered, name)
             col_spec = self.member_col_specs()[name]
 
-            if len(other_join_members := join_members[name].difference({name})) > 0:
-                filter_join = individually_filtered._get_join(*other_join_members)
-                pk_union = self._pk_union(*other_join_members)
+            if len(join_members[name]) > 0:
+                filter_join = individually_filtered.get_join(name, *join_members[name], fix_table_name=fix_table_name)
             else:
-                filter_join = None
-                pk_union = set()
-
-            for subquery, subquery_pk_union in join_subqueries[name]:
-                if filter_join is None:
-                    filter_join = subquery
-                else:
-                    filter_join >>= inner_join(
-                        subquery,
-                        on=list(subquery_pk_union.intersection(pk_union)),
-                    )
-                pk_union |= subquery_pk_union
-
-            if filter_join is None:
                 filter_join = tbl
-            else:
-                filter_join = tbl >> left_join(
-                    filter_join,
-                    on=list(pk_union.intersection(col_spec.primary_keys())),
-                )
+            if len(join_subqueries[name]):
+                for subquery, keys in join_subqueries[name]:
+                    filter_join >>= left_join(subquery, on=keys)
 
             # NOTE: we currently throw rows out if a rule results in null. We could also
             # keep everything, but then we should do the same if no match in the join
@@ -762,6 +765,8 @@ class Collection:
                     (coll_failure := collection_level_invalid_rows >> alias())
                     >> drop(*col_spec.column_names()),
                     on=[
+                        # collection_level_invalid_rows is based on
+                        # individually_filtered and thus has unique primary keys
                         table_level_invalid_rows[pk] == coll_failure[pk]
                         for pk in col_spec.primary_keys()
                     ],
@@ -777,15 +782,9 @@ class Collection:
                 >> mutate(
                     **{rule: C[rule].fill_null(True) for rule in rule_columns.keys()}
                 )
-                >> alias()
             )
 
             original_tbl = getattr(table_level_fail, name).tbl
-            failure >>= select(*rule_columns) >> inner_join(
-                original_tbl,
-                on=[failure[pk] == original_tbl[pk] for pk in col_spec.primary_keys()],
-            )
-
             setattr(fail, name, FailureInfo(original_tbl, failure, rule_columns))
 
         return new, fail
@@ -809,7 +808,7 @@ class Collection:
         )
 
     def _pk_union(
-        self, tbl: str | types[ColSpec], *more_tbls: str | type[ColSpec]
+        self, tbl: str | types[ColSpec], *more_tbls: Iterable[str | type[ColSpec]]
     ) -> set[str]:
         tbls: list[ColSpec] = [
             self.member_col_specs()[t] if isinstance(t, str) else t
@@ -819,16 +818,62 @@ class Collection:
             *(other.primary_keys() for other in tbls[1:])
         )
 
-    def _get_join(self, tbl: str, *more_tbls: Iterable[str]) -> pdt.Table | None:
-        result = getattr(self, tbl)
-        pk_union = set(self.member_col_specs()[tbl].primary_keys())
-        for name in more_tbls:
-            col_spec: ColSpec = self.member_col_specs()[name]
-            pk_set = set(col_spec.primary_keys())
-            result = result >> pdt.inner_join(
-                getattr(self, name), on=list(pk_set.intersection(pk_union))
-            )
-            pk_union |= pk_set
+    def _get_join(self, *tbls: Iterable[str], fix_table_name: bool = True) -> pdt.Table | None:
+        """
+        Similar to get_join(), but without given leftmost table.
+
+        It is used for constructing grouped subqueries.
+        """
+        col_specs = self.member_col_specs()
+        primary_keyss = {name: spec.primary_keys() for name, spec in col_specs.items() if name in tbls}
+        # the ordering should match that of get_join()
+        ordered_tbls = sorted(primary_keyss.keys(), key=lambda name: (len(primary_keyss[name]), name))
+        return self.get_join(*ordered_tbls, fix_table_name=fix_table_name)
+
+    def get_join(self, tbl: str, *more_tbls: Iterable[str], fix_table_name: bool = True) -> pdt.Table | None:
+        """
+        Get a left join expression if tables should be joinable.
+
+        This method is intended ot be overridden in case the automatic detection by
+        checking primary key overlap is not sufficient. The automatic detection assumes
+        that when ordering more_tbls by number of primary keys, that every next table
+        can be joined with its primary key columns to the left most table that has them.
+
+        This heuristic fails for some cases where not all tables have at least one
+        common primary key column. In such situations it is intended to be overridden
+        with a version that solves the problem for the concrete tables in a collection.
+        """
+        more_tbls = list(more_tbls)
+        result = self.get_pdt(tbl, fix_table_name)
+        col_specs = self.member_col_specs()
+        primary_keyss = {name: spec.primary_keys() for name, spec in col_specs.items() if name in more_tbls}
+        # it is important to ensure consistent ordering in case additional tables are
+        # added to `more_tbls`
+        ordered_tbls = sorted(primary_keyss.keys(), key=lambda name: (len(primary_keyss[name]), name))
+        primary_keyss[tbl] = col_specs[tbl].primary_keys()
+        ordered_tbls = [tbl, *ordered_tbls]
+        for i, name in enumerate(ordered_tbls):
+            if i > 0:
+                join_tbls = ordered_tbls[0:i]
+                pk_set = set(primary_keyss[name])
+                on = None
+                for join_name in join_tbls:
+                    pk_overlap = pk_set.intersection(primary_keyss[join_name])
+                    if len(pk_overlap) > 0:
+                        on = reduce(
+                                operator.and_,
+                                (self.get_pdt(name, fix_table_name)[f] == self.get_pdt(join_name, fix_table_name)[f] for f in pk_overlap),
+                                on or pdt.lit(True)
+                            )
+                        pk_set -= pk_overlap
+                if on is None:
+                    # one join table has no matching primary keys to previous tables
+                    logger = structlog.getLogger(__name__, collection=self, method="get_join", members=self.members())
+                    logger.debug("Heuristic failed to join table {name}. "
+                                 "Please override get_join method in this collection.", join_tbls=join_tbls, primary_key=pk_set)
+                    return None
+                result = result >> pdt.left_join(
+                    self.get_pdt(name, fix_table_name), on)
         return result
 
     def filter_polars(
