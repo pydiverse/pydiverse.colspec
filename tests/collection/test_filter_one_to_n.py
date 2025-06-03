@@ -16,6 +16,9 @@ from pydiverse.colspec.pdt_util import num_rows
 class CarColSpec(cs.ColSpec):
     vin = cs.String(primary_key=True)
     manufacturer = cs.String(nullable=False)
+    @cs.filter()
+    def not_empty(self) -> ColExpr:
+        return self.manufacturer != ""
 
 
 class CarPartColSpec(cs.ColSpec):
@@ -74,11 +77,11 @@ def test_valid_failure_infos():
         "part": ["Motor", "Wheel", "Motor"],
         "price": [1000, 100, 1000],
     }
-    raw_fleet = CarFleet.build()
+    raw_fleet = CarFleet.build()  # type: CarFleet[pdt.Table]
     raw_fleet.cars = pdt.Table(cars)
     raw_fleet.car_parts = pdt.Table(car_parts)
 
-    car_fleet, failures = raw_fleet.filter(cast=True)
+    car_fleet, failures = raw_fleet.filter(cast=True)  # type: CarFleet[pdt.Table], CarFleet[FailureInfo]
 
     assert num_rows(car_fleet.cars) + num_rows(failures.cars.invalid_rows) == len(cars)
     assert num_rows(car_fleet.car_parts) + num_rows(

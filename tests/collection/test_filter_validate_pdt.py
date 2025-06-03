@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import functools
 import operator
+from dataclasses import dataclass
 
 import pytest
-from polars.testing import assert_frame_equal
 
 import pydiverse.colspec as cs
 import pydiverse.transform as pdt
@@ -30,6 +30,7 @@ class MySecondColSpec(cs.ColSpec):
     b = cs.Integer(min=1)
 
 
+@dataclass
 class MyCollection(cs.Collection):
     first: MyFirstColSpec
     second: MySecondColSpec
@@ -50,9 +51,14 @@ class MyCollection(cs.Collection):
         )
 
 
+@dataclass
 class SimpleCollection(cs.Collection):
     first: MyFirstColSpec
     second: MySecondColSpec
+
+
+def to_my_collection(c: SimpleCollection) -> MyCollection:
+    return MyCollection(c.first, c.second)
 
 
 # ------------------------------------------------------------------------------------ #
@@ -61,73 +67,69 @@ class SimpleCollection(cs.Collection):
 
 
 @pytest.fixture()
-def data_without_filter_without_rule_violation() -> tuple[pdt.Table, pdt.Table]:
-    first = pdt.Table({"a": [1, 2, 3], "b": [1, 2, 3]})
-    second = pdt.Table({"a": [1, 2, 3], "b": [1, 2, 3]})
-    return first, second
+def data_without_filter_without_rule_violation() -> SimpleCollection:
+    c = SimpleCollection.build()
+    c.first = pdt.Table({"a": [1, 2, 3], "b": [1, 2, 3]})
+    c.second = pdt.Table({"a": [1, 2, 3], "b": [1, 2, 3]})
+    return c
 
 
 @pytest.fixture()
-def data_without_filter_with_rule_violation() -> tuple[pdt.Table, pdt.Table]:
-    first = pdt.Table({"a": [1, 2, 1], "b": [1, 2, 3]})
-    second = pdt.Table({"a": [1, 2, 3], "b": [0, 1, 2]})
-    return first, second
+def data_without_filter_with_rule_violation() -> SimpleCollection:
+    c = SimpleCollection.build()
+    c.first = pdt.Table({"a": [1, 2, 1], "b": [1, 2, 3]})
+    c.second = pdt.Table({"a": [1, 2, 3], "b": [0, 1, 2]})
+    return c
 
 
 @pytest.fixture()
-def data_with_filter_without_rule_violation() -> tuple[pdt.Table, pdt.Table]:
-    first = pdt.Table({"a": [1, 2, 3], "b": [1, 1, 3]})
-    second = pdt.Table({"a": [2, 3, 4, 5], "b": [1, 2, 3, 4]})
-    return first, second
+def data_with_filter_without_rule_violation() -> SimpleCollection:
+    c = SimpleCollection.build()
+    c.first = pdt.Table({"a": [1, 2, 3], "b": [1, 1, 3]})
+    c.second = pdt.Table({"a": [2, 3, 4, 5], "b": [1, 2, 3, 4]})
+    return c
 
 
 @pytest.fixture()
-def data_with_filter_with_rule_violation() -> tuple[pdt.Table, pdt.Table]:
-    first = pdt.Table({"a": [1, 2, 3], "b": [1, 2, 3]})
-    second = pdt.Table({"a": [2, 3, 4, 5], "b": [0, 1, 2, 3]})
-    return first, second
+def data_with_filter_with_rule_violation() -> SimpleCollection:
+    c = SimpleCollection.build()
+    c.first = pdt.Table({"a": [1, 2, 3], "b": [1, 2, 3]})
+    c.second = pdt.Table({"a": [2, 3, 4, 5], "b": [0, 1, 2, 3]})
+    return c
 
 
 # -------------------------------------- FILTER -------------------------------------- #
 
 
 def test_filter_without_filter_without_rule_violation(
-    data_without_filter_without_rule_violation: tuple[pdt.Table, pdt.Table],
+    data_without_filter_without_rule_violation: SimpleCollection,
 ):
-    c = SimpleCollection.build()
-    c.first = data_without_filter_without_rule_violation[0]
-    c.second = data_without_filter_without_rule_violation[1]
-    out, failure = c.filter()
+    out, failure = data_without_filter_without_rule_violation.filter()
 
     assert isinstance(out, SimpleCollection)
-    assert_table_equal(out.first, data_without_filter_without_rule_violation[0])
-    assert_table_equal(out.second, data_without_filter_without_rule_violation[1])
+    assert_table_equal(out.first, data_without_filter_without_rule_violation.first)
+    assert_table_equal(out.second, data_without_filter_without_rule_violation.second)
     assert len(failure.first) == 0
     assert len(failure.second) == 0
 
 
 def test_filter_without_filter_with_rule_violation(
-    data_without_filter_with_rule_violation: tuple[pdt.Table, pdt.Table],
+    data_without_filter_with_rule_violation: SimpleCollection,
 ):
-    c = SimpleCollection.build()
-    c.first = data_without_filter_with_rule_violation[0]
-    c.second = data_without_filter_with_rule_violation[1]
-    out, failure = c.filter()
+    out, failure = data_without_filter_with_rule_violation.filter()
 
     assert isinstance(out, SimpleCollection)
-    assert num_rows(out.first) == 3
+    assert num_rows(out.first) == 1
     assert num_rows(out.second) == 2
-    assert failure.first.counts() == {}
+    assert failure.first.counts() == {"primary_key": 2}
     assert failure.second.counts() == {"b_min": 1}
 
 
 def test_filter_with_filter_without_rule_violation(
-    data_with_filter_without_rule_violation: tuple[pdt.Table, pdt.Table],
+    data_with_filter_without_rule_violation: SimpleCollection,
 ):
-    c = MyCollection.build()
-    c.first = data_with_filter_without_rule_violation[0]
-    c.second = data_with_filter_without_rule_violation[1]
-    out, failure = c.filter()
+    my_collection = to_my_collection(data_with_filter_without_rule_violation)
+    out, failure = my_collection.filter()
 
     assert isinstance(out, MyCollection)
     assert_table_equal(out.first, pdt.Table({"a": [3], "b": [3]}))
@@ -143,12 +145,10 @@ def test_filter_with_filter_without_rule_violation(
 
 
 def test_filter_with_filter_with_rule_violation(
-    data_with_filter_with_rule_violation: tuple[pdt.Table, pdt.Table],
+    data_with_filter_with_rule_violation: SimpleCollection,
 ):
-    c = MyCollection.build()
-    c.first = data_with_filter_with_rule_violation[0]
-    c.second = data_with_filter_with_rule_violation[1]
-    out, failure = c.filter()
+    my_collection = to_my_collection(data_with_filter_with_rule_violation)
+    out, failure = my_collection.filter()
 
     assert isinstance(out, MyCollection)
     assert_table_equal(out.first, pdt.Table({"a": [3], "b": [3]}))
@@ -161,33 +161,25 @@ def test_filter_with_filter_with_rule_violation(
 
 
 def test_validate_without_filter_without_rule_violation(
-    data_without_filter_without_rule_violation: tuple[pdt.Table, pdt.Table],
+    data_without_filter_without_rule_violation: SimpleCollection,
 ):
-    data = {
-        "first": data_without_filter_without_rule_violation[0],
-        "second": data_without_filter_without_rule_violation[1],
-    }
-    assert SimpleCollection.is_valid_polars_data(data)
-    out = SimpleCollection.validate_polars_data(data)
+    assert data_without_filter_without_rule_violation.is_valid()
+    out = data_without_filter_without_rule_violation.validate()
 
     assert isinstance(out, SimpleCollection)
-    assert_frame_equal(out.first, data_without_filter_without_rule_violation[0])
-    assert_frame_equal(out.second, data_without_filter_without_rule_violation[1])
+    assert_table_equal(out.first, data_without_filter_without_rule_violation.first)
+    assert_table_equal(out.second, data_without_filter_without_rule_violation.second)
 
 
 def test_validate_without_filter_with_rule_violation(
-    data_without_filter_with_rule_violation: tuple[pdt.Table, pdt.Table],
+    data_without_filter_with_rule_violation: SimpleCollection,
 ):
-    data = {
-        "first": data_without_filter_with_rule_violation[0],
-        "second": data_without_filter_with_rule_violation[1],
-    }
-    assert not SimpleCollection.is_valid_polars_data(data)
+    assert not data_without_filter_with_rule_violation.is_valid()
 
     with pytest.raises(
         MemberValidationError, match=r"2 members failed validation"
     ) as exc:
-        SimpleCollection.validate_polars_data(data)
+        data_without_filter_with_rule_violation.validate()
 
     exc.match(r"Member 'first' failed validation")
     exc.match(r"'primary_key' failed validation for 2 rows")
@@ -196,18 +188,16 @@ def test_validate_without_filter_with_rule_violation(
 
 
 def test_validate_with_filter_without_rule_violation(
-    data_with_filter_without_rule_violation: tuple[pdt.Table, pdt.Table],
+    data_with_filter_without_rule_violation: SimpleCollection,
 ):
-    data = {
-        "first": data_with_filter_without_rule_violation[0],
-        "second": data_with_filter_without_rule_violation[1],
-    }
-    assert not MyCollection.is_valid_polars_data(data)
+    my_collection = to_my_collection(data_with_filter_without_rule_violation)
+
+    assert not my_collection.is_valid()
 
     with pytest.raises(
         MemberValidationError, match=r"2 members failed validation"
     ) as exc:
-        MyCollection.validate_polars_data(data)
+        my_collection.validate()
 
     exc.match(r"Member 'first' failed validation")
     exc.match(r"'equal_primary_keys' failed validation for 1 rows")
@@ -217,18 +207,15 @@ def test_validate_with_filter_without_rule_violation(
 
 
 def test_validate_with_filter_with_rule_violation(
-    data_with_filter_with_rule_violation: tuple[pdt.Table, pdt.Table],
+    data_with_filter_with_rule_violation: SimpleCollection,
 ):
-    data = {
-        "first": data_with_filter_with_rule_violation[0],
-        "second": data_with_filter_with_rule_violation[1],
-    }
-    assert not MyCollection.is_valid_polars_data(data)
+    my_collection = to_my_collection(data_with_filter_with_rule_violation)
+    assert not my_collection.is_valid()
 
     with pytest.raises(
         MemberValidationError, match=r"2 members failed validation"
     ) as exc:
-        MyCollection.validate_polars_data(data)
+        my_collection.validate()
 
     exc.match(r"Member 'first' failed validation")
     exc.match(r"'equal_primary_keys' failed validation for 2 rows")

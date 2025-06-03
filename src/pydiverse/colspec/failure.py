@@ -53,9 +53,15 @@ class FailureInfo:
         """
         from pydiverse.transform.extended import C, export, summarize
 
+        # wait on pydiverse.transform fix
+        # cnts: dict[str, int] = (
+        #     self._invalid_rows
+        #     >> summarize(**{k: (~C[k]).sum() for k in self.rule_columns.keys()})
+        #     >> export(pdt.Dict)
+        # )
         cnts: dict[str, int] = (
             self._invalid_rows
-            >> summarize(**{k: (~C[k]).sum() for k in self.rule_columns.keys()})
+            >> summarize(**{k: pdt.count() - C[k].sum() for k in self.rule_columns.keys()})
             >> export(pdt.Dict)
         )
         return {k: v for k, v in cnts.items() if v is not None and v > 0}

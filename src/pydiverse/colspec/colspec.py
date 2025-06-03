@@ -280,9 +280,16 @@ class ColSpec(
         """
 
         rules = cls._validation_rules(tbl)
+        if len(cls.primary_keys()) > 0:
+            pk_check = pdt.count(partition_by=[getattr(tbl, col) for col in cls.primary_keys()]) == 1
+            tbl = tbl >> pdt.mutate(_pk_check=pk_check)
+            rules["primary_key"] = tbl._pk_check
         combined = functools.reduce(operator.and_, rules.values(), True)
         ok_rows = tbl >> pdt.filter(combined)
         invalid_rows = tbl >> pdt.filter(~combined) >> pdt.mutate(**rules)
+        if len(cls.primary_keys()) > 0:
+            ok_rows = ok_rows >> pdt.drop(tbl._pk_check)
+            invalid_rows = invalid_rows >> pdt.drop(tbl._pk_check)
         return ok_rows, FailureInfo(
             tbl=tbl, invalid_rows=invalid_rows, rule_columns=rules
         )
@@ -290,7 +297,7 @@ class ColSpec(
     @classmethod
     def _validation_rules(cls, tbl: pdt.Table) -> dict[str, pdt.ColExpr]:
         return {
-            f"{col}_{rule_name}": rule
+            f"{col}|{rule_name}": rule
             for col in cls.column_names()
             for rule_name, rule in getattr(cls, col).validation_rules(tbl[col]).items()
         }
@@ -543,6 +550,26 @@ class Collection:
                     raise ValidationError(e.message)
         return cls._init_polars_data(data)  # ignore validation if fault_tolerant
 
+    def is_valid(self, *, cast: bool = False,) -> bool:
+        """Utility method to check whether :meth:`validate` raises an exception.
+
+        Args:
+            cast: Whether columns with a wrong data type in the member data frame are
+                cast to their schemas' defined data types if possible.
+
+        Returns:
+            Whether the provided members satisfy the invariants of the collection.
+
+        Raises:
+            ValueError: If an insufficient set of input data frames is provided, i.e. if
+                any required member of this collection is missing in the input.
+        """
+        try:
+            self.validate(cast=cast)
+            return True
+        except ValidationError:
+            return False
+
     def is_valid_polars(self, *, cast: bool = False, fault_tolerant: bool = False):
         self.finalize()
         return self.is_valid_polars_data(
@@ -620,7 +647,7 @@ class Collection:
         extra_rules: dict[str, dict[str, pdt.ColExpr]] = {name: {} for name in members}
 
         for pred in self.filter_rules().values():
-            logic = pred.logic(self)
+            logic = pred.logic_fn(self)
             expr_tbl_names = [
                 tbl_name
                 for tbl_name in members.keys()
@@ -661,12 +688,12 @@ class Collection:
                         join_subqueries[name].append(
                             (group_subqueries[key], expr_pk_union)
                         )
-                        extra_rules[name][pred.logic.__name__] = group_subqueries[
+                        extra_rules[name][pred.logic_fn.__name__] = group_subqueries[
                             key
                         ].__keep_this__
                     else:
                         join_members[name] |= set(expr_tbl_names)
-                        extra_rules[name][pred.logic.__name__] = logic
+                        extra_rules[name][pred.logic_fn.__name__] = logic
 
         new = self.__class__.build()
         fail = self.__class__.build()

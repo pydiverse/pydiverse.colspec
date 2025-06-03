@@ -13,8 +13,8 @@ C = TypeVar("C")
 class Filter(Generic[C]):
     """Internal class representing logic for filtering members of a collection."""
 
-    def __init__(self, logic: Callable[[C], pdt.ColExpr]):
-        self.logic: Callable[[C], pdt.ColExpr] = logic
+    def __init__(self, logic_fn: Callable[[C], pdt.ColExpr]):
+        self.logic_fn: Callable[[C], pdt.ColExpr] = logic_fn
 
 
 def filter() -> Callable[[Callable[[C], pdt.ColExpr]], Filter[C]]:
@@ -38,7 +38,7 @@ def filter() -> Callable[[Callable[[C], pdt.ColExpr]], Filter[C]]:
     """
 
     def decorator(pred: Callable[[C], pdt.ColExpr]) -> Filter[C]:
-        return Filter(logic=pred)
+        return Filter(logic_fn=pred)
 
     return decorator
 

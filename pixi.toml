@@ -16,9 +16,9 @@ pip = "*"
 hatchling = "*"
 
 [dependencies]
-python = ">=3.11"
-pydiverse-common = ">=0.1.0"
-structlog = ">=22.1.0"
+python = ">=3.11.12,<3.14"
+pydiverse-common = ">=0.1.0,<0.2"
+structlog = ">=25.4.0,<26"
 
 [feature.dev.dependencies]
 ruff = ">=0.5.6"
@@ -39,7 +39,7 @@ polars = ">=0.19, <2"
 SQLAlchemy = ">=1.4.39, <3"
 
 [feature.pdt.dependencies]
-pydiverse-transform = ">=0.2.3" #">=0.3.0"
+pydiverse-transform = ">=0.3.3"
 
 [feature.dag.dependencies]
 pydiverse-pipedag = ">=0.9.9" #">=0.10.0"
