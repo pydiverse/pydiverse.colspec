@@ -280,18 +280,19 @@ class ColSpec(
         """
 
         rules = cls._validation_rules(tbl)
+        src_tbl = tbl
         if len(cls.primary_keys()) > 0:
             pk_check = pdt.count(partition_by=[getattr(tbl, col) for col in cls.primary_keys()]) == 1
-            tbl = tbl >> pdt.mutate(_pk_check=pk_check)
-            rules["_primary_key_"] = tbl._pk_check
+            tbl = tbl >> pdt.mutate(_pk_check_=pk_check)
+            rules["_primary_key_"] = tbl._pk_check_
         combined = pdt.all(True, *rules.values())
         ok_rows = tbl >> pdt.filter(combined)
         invalid_rows = tbl >> pdt.filter(~combined) >> pdt.mutate(**rules)
         if len(cls.primary_keys()) > 0:
-            ok_rows = ok_rows >> pdt.drop(tbl._pk_check)
-            invalid_rows = invalid_rows >> pdt.drop(tbl._pk_check)
+            ok_rows = ok_rows >> pdt.drop(tbl._pk_check_)
+            invalid_rows = invalid_rows >> pdt.drop(tbl._pk_check_)
         return ok_rows, FailureInfo(
-            tbl=tbl, invalid_rows=invalid_rows, rule_columns=rules
+            tbl=src_tbl, invalid_rows=invalid_rows, rule_columns=rules
         )
 
     @classmethod

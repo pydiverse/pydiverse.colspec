@@ -38,7 +38,7 @@ class FailureInfo:
     def invalid_rows(self) -> pdt.Table:
         from pydiverse.transform.extended import select
 
-        return self._invalid_rows >> select(*self.tbl)
+        return self._invalid_rows >> select(*[c.name for c in self.tbl])
 
     @property
     def debug_invalid_rows(self) -> pdt.Table:
