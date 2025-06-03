@@ -121,6 +121,7 @@ class ColSpec(
         """
         from pydiverse.colspec import Column
 
+        cls.fail_dy_columns_in_colspec()
         result = [
             member
             for member in dir(cls)
@@ -130,9 +131,20 @@ class ColSpec(
         return result
 
     @classmethod
+    def fail_dy_columns_in_colspec(cls):
+        if dy is not None:
+            if any([isinstance(getattr(cls, c), dy.Column) for c in dir(cls)]):
+                raise ImplementationError(
+                    "Dataframely Columns won't work in ColSpec classes. Most likely "
+                    "you find the same column classes in pydiverse.colspec. With "
+                    "import pydiverse.colspec as cs, `dy.Integer` becomes `cs.Integer` "
+                    "for example.")
+
+    @classmethod
     def column_names(cls):
         from pydiverse.colspec import Column
 
+        cls.fail_dy_columns_in_colspec()
         result = [
             member for member in dir(cls) if isinstance(getattr(cls, member), Column)
         ]
@@ -388,18 +400,29 @@ class MemberInfo:
     def is_member(anno: type):
         if isinstance(anno, types.UnionType):
             union_types = typing.get_args(anno)
-            return (
-                1 <= len(union_types) <= 2
-                and sum(
+            col_specs_in_union = sum(
                     1 if (inspect.isclass(t) and issubclass(t, ColSpec)) else 0
                     for t in union_types
                 )
-                == 1
-                and all(
+            if col_specs_in_union > 1:
+                raise exc.AnnotationImplementationErrorDetail(
+                    "Table annotations in Collections must contain at most one "
+                    f"ColSpec type. Found: {union_types}", anno
+                )
+            all_but_one_none = all(
                     t is type(None)
                     for t in union_types
                     if not (inspect.isclass(t) and issubclass(t, ColSpec))
                 )
+            if not all_but_one_none and col_specs_in_union == 1:
+                raise exc.AnnotationImplementationErrorDetail(
+                    "Table annotations in Collections only allow None as second option "
+                    f"next to ColSpec type. Found: {union_types}", anno
+                )
+            return (
+                1 <= len(union_types) <= 2
+                and col_specs_in_union == 1
+                and all_but_one_none
             )
         return inspect.isclass(anno) and issubclass(anno, ColSpec)
 
@@ -791,11 +814,14 @@ class Collection:
         return new, fail
 
     def filter_rules(self) -> dict[str, Filter]:
-        return {
+        rules = {
             pred: getattr(self, pred)
             for pred in dir(self)
             if isinstance(getattr(self, pred), Filter)
         }
+        if "_primary_key_" in rules:
+            raise ImplementationError("Collection cannot have a filter named '_primary_key_'")
+        return rules
 
     def _pk_overlap(
         self, tbl: str | type[ColSpec], *more_tbls: str | types[ColSpec]
@@ -905,10 +931,16 @@ class Collection:
     @classmethod
     def members(cls) -> dict[str, MemberInfo]:
         """Information about the members of the collection."""
+        def better_msg(fn, arg, *, name: str):
+            try:
+                return fn(arg)
+            except exc.AnnotationImplementationErrorDetail as e:
+                raise exc.AnnotationImplementationError(name, e._type) from e
+
         return {
             k: MemberInfo.new(v)
             for k, v in typing.get_type_hints(cls).items()
-            if MemberInfo.is_member(v)
+            if better_msg(MemberInfo.is_member, v, name=k)
         }
 
     @classmethod

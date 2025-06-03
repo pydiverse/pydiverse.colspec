@@ -91,13 +91,19 @@ class ImplementationError(Exception):
     """Error raised when a schema is implemented incorrectly."""
 
 
+class AnnotationImplementationErrorDetail(ImplementationError):
+    def __init__(self, message: str, _type: type):
+        self._type = _type
+        super().__init__(message)
+
+
 class AnnotationImplementationError(ImplementationError):
     """Error raised when the annotations of a collection are invalid."""
 
     def __init__(self, attr: str, kls: type):
         message = (
             "Annotations of a 'dy.Collection' may only be an (optional) "
-            f"'dy.LazyFrame', but \"{attr}\" has type '{kls}'."
+            f"'ColSpec', but \"{attr}\" has type '{kls}'."
         )
         super().__init__(message)
 

@@ -2,10 +2,11 @@
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
 
-import dataframely as dy
 import polars as pl
 import pytest
+import pydiverse.colspec as cs
 
+from pydiverse.colspec import ColSpec, Collection
 from pydiverse.colspec._filter import Filter
 from pydiverse.colspec.exc import AnnotationImplementationError, ImplementationError
 from pydiverse.colspec.testing.factory import (
@@ -15,41 +16,20 @@ from pydiverse.colspec.testing.factory import (
 )
 
 
-def test_annotation_type_failure():
-    with pytest.raises(
-        AnnotationImplementationError,
-    ):
-        create_collection(
-            "test",
-            {
-                "first": create_colspec("first", {"a": dy.Integer()}),
-            },
-            annotation_base_class=dy.DataFrame,
-        )
-
-
 def test_annotation_union_success():
     """When we use a union annotation, it must contain one typed LazyFrame and None."""
-    create_collection_raw(
+    res = create_collection_raw(
         "test",
         {
             "first": (
-                create_colspec("first", {"a": dy.Integer(primary_key=True)}) | None
+                create_colspec("first", {"a": cs.Integer(primary_key=True)}) | None
             ),
         },
-    )
-
-
-def test_annotation_union_with_data_frame():
-    """When we use a union annotation, it must contain one typed LazyFrame and None."""
-    with pytest.raises(AnnotationImplementationError):
-        create_collection_raw(
-            "test",
-            {
-                "first": create_colspec("first", {"a": dy.Integer(primary_key=True)})
-                | None,
-            },
-        )
+    ).members()
+    assert len(res) == 1
+    assert res["first"].is_optional
+    assert res["first"].col_spec.primary_keys() == ["a"]
+    assert issubclass(res["first"].col_spec, ColSpec)
 
 
 def test_annotation_union_too_many_arg_failure():
@@ -59,11 +39,11 @@ def test_annotation_union_too_many_arg_failure():
         create_collection_raw(
             "test",
             {
-                "first": create_colspec("first", {"a": dy.Integer(primary_key=True)})
-                | create_colspec("second", {"a": dy.Integer(primary_key=True)})
+                "first": create_colspec("first", {"a": cs.Integer(primary_key=True)})
+                | create_colspec("second", {"a": cs.Integer(primary_key=True)})
                 | None,
             },
-        )
+        ).members()
 
 
 def test_annotation_union_conflicting_types_failure():
@@ -73,85 +53,89 @@ def test_annotation_union_conflicting_types_failure():
         create_collection_raw(
             "test",
             {
-                "first": create_colspec("first", {"a": dy.Integer(primary_key=True)})
-                | create_colspec("second", {"a": dy.Integer(primary_key=True)}),
+                "first": create_colspec("first", {"a": cs.Integer(primary_key=True)})
+                | create_colspec("second", {"a": cs.Integer(primary_key=True)}),
             },
-        )
+        ).members()
 
 
 def test_annotation_only_none_failure():
     """Annotations must not just be None."""
-    with pytest.raises(AnnotationImplementationError):
-        create_collection_raw(
-            "test",
-            {
-                "first": None,
-            },
-        )
+    res = create_collection_raw(
+        "test",
+        {
+            "first": None,
+            "second": int,
+            "third": Collection
+        },
+    ).members()
+    assert len(res) == 0
 
 
 def test_annotation_invalid_type_failure():
     """Annotations must not just be None."""
-    with pytest.raises(AnnotationImplementationError):
-        create_collection_raw(
-            "test",
-            {
-                "first": int | None,
-            },
-        )
+    res = create_collection_raw(
+        "test",
+        {
+            "first": int | None,
+        },
+    ).members()
+    assert len(res) == 0
 
 
 def test_name_overlap():
     with pytest.raises(
         ImplementationError,
-        match=r"Filters defined on the collection must not be named the same",
+        match=r"Collection cannot have a filter named '_primary_key_'",
     ):
-        create_collection(
+        coll = create_collection(
             "test",
             {
-                "first": create_colspec("first", {"a": dy.Integer(primary_key=True)}),
-                "second": create_colspec("second", {"a": dy.Integer(primary_key=True)}),
+                "first": create_colspec("first", {"a": cs.Integer(primary_key=True)}),
+                "second": create_colspec("second", {"a": cs.Integer(primary_key=True)}),
             },
-            filters={"primary_key": Filter(lambda c: c.first)},
-        )
+            filters={"_primary_key_": Filter(lambda c: c.first)},
+        )()
+        coll.filter_rules()
 
 
 def test_collection_no_primary_key_success():
     """It's ok not to have primary keys if there are no filters."""
-    create_collection(
+    res = create_collection(
         "test",
         {
-            "first": create_colspec("first", {"a": dy.Integer()}),
+            "first": create_colspec("first", {"a": cs.Integer()}),
         },
-    )
+    ).members()
+    assert len(res) == 1
+    assert not res["first"].is_optional
+    assert issubclass(res["first"].col_spec, ColSpec)
 
 
-def test_collection_no_primary_key_failure():
-    """If you have a filter, you must also have a primary key."""
-    with pytest.raises(
-        ImplementationError,
-        match=r"Members of a collection must have an overlapping primary key",
-    ):
-        create_collection(
-            "test",
-            {
-                "first": create_colspec("first", {"a": dy.Integer()}),
-            },
-            filters={"testfilter": Filter(lambda c: c.first.filter(pl.col("a") > 0))},
-        )
+def test_collection_no_common_primary_key():
+    res = create_collection(
+        "test",
+        {
+            "first": create_colspec("first", {"a": cs.Integer()}),
+        },
+        filters={"testfilter": Filter(lambda c: c.first.filter(pl.col("a") > 0))},
+    ).members()
+    assert len(res) == 1
+    assert not res["first"].is_optional
+    assert res["first"].col_spec.primary_keys() == []
 
 
 def test_collection_primary_key_but_not_common():
-    """If you have a filter, you must also have a common primary key between members."""
-    with pytest.raises(
-        ImplementationError,
-        match=r"Members of a collection must have an overlapping primary key",
-    ):
-        create_collection(
-            "test",
-            {
-                "first": create_colspec("first", {"a": dy.Integer(primary_key=True)}),
-                "second": create_colspec("second", {"b": dy.Integer(primary_key=True)}),
-            },
-            filters={"testfilter": Filter(lambda c: c.first.filter(pl.col("a") > 0))},
-        )
+    res = create_collection(
+        "test",
+        {
+            "first": create_colspec("first", {"a": cs.Integer(primary_key=True)}),
+            "second": create_colspec("second", {"b": cs.Integer(primary_key=True)}),
+        },
+        filters={"testfilter": Filter(lambda c: c.first.filter(pl.col("a") > 0))},
+    ).members()
+    assert len(res) == 2
+    assert not res["first"].is_optional
+    assert res["first"].col_spec.primary_keys() == ["a"]
+    assert not res["second"].is_optional
+    assert res["second"].col_spec.primary_keys() == ["b"]
