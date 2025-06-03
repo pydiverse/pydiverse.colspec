@@ -121,8 +121,8 @@ def test_filter_without_filter_with_rule_violation(
     assert isinstance(out, SimpleCollection)
     assert num_rows(out.first) == 1
     assert num_rows(out.second) == 2
-    assert failure.first.counts() == {"primary_key": 2}
-    assert failure.second.counts() == {"b_min": 1}
+    assert failure.first.counts() == {"_primary_key_": 2}
+    assert failure.second.counts() == {"b|min": 1}
 
 
 def test_filter_with_filter_without_rule_violation(
@@ -154,7 +154,7 @@ def test_filter_with_filter_with_rule_violation(
     assert_table_equal(out.first, pdt.Table({"a": [3], "b": [3]}))
     assert_table_equal(out.second, pdt.Table({"a": [3], "b": [1]}))
     assert failure.first.counts() == {"equal_primary_keys": 2}
-    assert failure.second.counts() == {"b_min": 1, "equal_primary_keys": 2}
+    assert failure.second.counts() == {"b|min": 1, "equal_primary_keys": 2}
 
 
 # -------------------------------- VALIDATE WITH DATA -------------------------------- #
@@ -182,8 +182,9 @@ def test_validate_without_filter_with_rule_violation(
         data_without_filter_with_rule_violation.validate()
 
     exc.match(r"Member 'first' failed validation")
-    exc.match(r"'primary_key' failed validation for 2 rows")
+    exc.match(r"'_primary_key_' failed validation for 2 rows")
     exc.match(r"Member 'second' failed validation")
+    exc.match(r"Column 'b' failed validation for 1 rules:")
     exc.match(r"'min' failed for 1 rows")
 
 
