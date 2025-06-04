@@ -15,8 +15,6 @@ from typing import Iterable, Mapping, Self
 import structlog
 from dataframely._polars import FrameType
 
-from pydiverse.colspec import ColSpec, Filter, FilterPolars, exc
-from pydiverse.colspec.colspec import convert_to_dy_anno_dict
 from pydiverse.colspec.config import Config, alias_collection_fail, alias_subquery
 from pydiverse.colspec.exc import (
     ImplementationError,
@@ -26,6 +24,10 @@ from pydiverse.colspec.exc import (
 )
 from pydiverse.colspec.failure import FailureInfo
 from pydiverse.colspec.optional_dependency import dy, pdt, pl
+
+from . import exc
+from ._filter import Filter, FilterPolars
+from .colspec import ColSpec, convert_to_dy_anno_dict
 
 
 def convert_filter_to_dy(f: FilterPolars):
