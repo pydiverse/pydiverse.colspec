@@ -51,7 +51,7 @@ def validate_dtypes(
     tbl: pdt.Table,
     expected: dict[str, Column],
     *,
-    cast: bool,
+    casting: Literal["none", "lenient", "strict"],
 ) -> pdt.Table:
     """Validate the dtypes of all expected columns in a table.
 
@@ -75,12 +75,14 @@ def validate_dtypes(
             dtype_errors[col.name] = (col.dtype(), expected[col.name].dtype())
 
     if len(dtype_errors) > 0:
-        if not cast:
+        if casting == "none":
             raise DtypeValidationError(dtype_errors)
         else:
             return tbl >> mutate(
                 **{
-                    name: C[name].cast(expected[name].dtype())
+                    name: C[name].cast(
+                        expected[name].dtype(), strict=(casting == "strict")
+                    )
                     for name in dtype_errors.keys()
                 }
             )

@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable
 
+from pydiverse.colspec.columns._utils import classproperty
+
 from .optional_dependency import pdt, verb
 
 
@@ -29,8 +31,8 @@ class Config:
     #: a function to materialize a pdt.Table expression returning reference to result
     materialize_hook: Callable[[pdt.Table], pdt.Table] | None = None
 
-    @property
-    def default(self):
+    @classproperty
+    def default(cls):
         return Config()
 
 
@@ -38,7 +40,7 @@ class Config:
 def alias_subquery(tbl: pdt.Table, cfg: Config):
     if cfg.materialize_hook is not None:
         return cfg.materialize_hook(tbl)
-    return pdt.alias()
+    return pdt.alias(keep_col_refs=True)
 
 
 @verb

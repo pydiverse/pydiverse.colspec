@@ -1,3 +1,6 @@
+# Copyright (c) QuantCo and pydiverse contributors 2025-2025
+# SPDX-License-Identifier: BSD-3-Clause
+
 # Copyright (c) QuantCo 2024-2025
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
@@ -7,7 +10,6 @@ import random
 import polars as pl
 import pytest
 import sqlalchemy as sqa
-from dataframely.testing import validation_mask
 from polars.datatypes import DataTypeClass
 from polars.testing import assert_frame_equal
 
@@ -59,9 +61,9 @@ def test_filter_extra_columns(
     ],
 )
 def test_filter_dtypes(schema: dict[str, DataTypeClass], cast: bool, success: bool):
-    df = sql_table(pl.DataFrame(schema=schema), name="tbl")
+    tbl = sql_table(pl.DataFrame(schema=schema), name="tbl")
     try:
-        MySchema.filter_polars(df, cast=cast)
+        MySchema.filter(tbl, cast=cast)
         assert success
     except DtypeValidationError:
         assert not success
@@ -82,10 +84,10 @@ def test_filter_dtypes(schema: dict[str, DataTypeClass], cast: bool, success: bo
             [1, 2, 2],
             ["foo", "bar", "foobar"],
             [True, False, False],
-            {"b|max_length": 1, "primary_key": 2},
+            {"b|max_length": 1, "_primary_key_": 2},
             {
-                frozenset({"b|max_length", "primary_key"}): 1,
-                frozenset({"primary_key"}): 1,
+                frozenset({"b|max_length", "_primary_key_"}): 1,
+                frozenset({"_primary_key_"}): 1,
             },
         ),
     ],
@@ -99,11 +101,12 @@ def test_filter_failure(
 ):
     tbl = sql_table(pl.DataFrame({"a": data_a, "b": data_b}), name="tbl")
     tbl_valid, failures = MySchema.filter(tbl)
-    assert isinstance(tbl_valid, pl.DataFrame)
+    assert isinstance(tbl_valid, pdt.Table)
     assert_frame_equal(
-        tbl >> pdt.filter(pl.Series(failure_mask)).lazy().collect(), tbl_valid
+        (tbl >> export(Polars)).filter(pl.Series(failure_mask)),
+        tbl_valid >> export(Polars),
+        check_row_order=False,
     )
-    assert validation_mask(tbl, failures).to_list() == failure_mask
     assert len(failures) == (len(failure_mask) - sum(failure_mask))
     assert failures.counts() == counts
 
@@ -142,7 +145,7 @@ def test_filter_cast():
     tbl = sql_table(pl.DataFrame(data), name="tbl")
     tbl_valid, failures = MySchema.filter(tbl, cast=True)
     assert isinstance(tbl_valid, pdt.Table)
-    assert tbl_valid.collect_schema().names() == MySchema.column_names()
+    assert [col.name for col in tbl_valid] == MySchema.column_names()
     assert len(failures) == 5
     assert failures.counts() == {
         "a|dtype": 3,
@@ -176,7 +179,8 @@ def test_filter_nondeterministic_tbl():
         filtered
         >> group_by(filtered.b)
         >> summarize()
-        >> mutate(n_unique=pdt.count())
+        >> alias()
+        >> summarize(n_unique=pdt.count())
         >> export(Scalar)
         == 1
     )

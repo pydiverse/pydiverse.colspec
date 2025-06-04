@@ -10,7 +10,7 @@ import typing
 from dataclasses import dataclass
 from functools import reduce
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Iterable, Mapping, Self, overload
+from typing import TYPE_CHECKING, Any, Iterable, Literal, Mapping, Self, overload
 
 import structlog
 
@@ -338,7 +338,7 @@ class ColSpec(
             This method preserves the ordering of the input data frame.
         """
 
-        tbl = cls._validate_schema(tbl, cast=cast)
+        tbl = cls._validate_schema(tbl, casting=("lenient" if cast else "none"))
 
         rules = cls._validation_rules(tbl)
         src_tbl = tbl
@@ -349,7 +349,7 @@ class ColSpec(
                 )
                 == 1
             )
-            tbl = tbl >> pdt.mutate(_pk_check_=pk_check)
+            tbl = tbl >> pdt.mutate(_pk_check_=pk_check) >> alias_subquery(cfg)
             rules["_primary_key_"] = tbl._pk_check_
         combined = pdt.all(True, *rules.values())
         ok_rows = tbl >> pdt.filter(combined)
@@ -365,14 +365,16 @@ class ColSpec(
         )
 
     @classmethod
-    def _validate_schema(cls, tbl: pdt.Table, *, cast: bool):
+    def _validate_schema(
+        cls, tbl: pdt.Table, *, casting: Literal["none", "lenient", "strict"]
+    ):
         tbl = validate_columns(tbl, expected=cls.column_names())
-        return validate_dtypes(tbl, expected=cls.columns(), cast=cast)
+        return validate_dtypes(tbl, expected=cls.columns(), casting=casting)
 
     @classmethod
     def _validation_rules(cls, tbl: pdt.Table) -> dict[str, pdt.ColExpr]:
         return {
-            f"{col}|{rule_name}": rule
+            f"{col}|{rule_name}": rule.fill_null(True)
             for col in cls.column_names()
             for rule_name, rule in getattr(cls, col).validation_rules(tbl[col]).items()
         }
@@ -767,7 +769,7 @@ class Collection:
         group_subqueries: dict[tuple[str], GroupSubquery] = {}
 
         for pred_name, pred in self.filter_rules().items():
-            logic = pred.logic_fn(self)
+            logic = pred.logic_fn(self).fill_null(True)
             expr_tbl_names = [
                 tbl_name
                 for tbl_name in members.keys()

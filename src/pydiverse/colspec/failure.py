@@ -11,7 +11,7 @@ from typing import IO, Self
 
 from pydiverse.colspec.pdt_util import num_rows
 
-from .config import Config
+from .config import Config, alias_subquery
 from .optional_dependency import pdt, pl
 
 
@@ -31,7 +31,7 @@ class FailureInfo:
         # describes a single rule where a value of ``False``` indicates unsuccessful
         # validation. Thus, at least one value per row is ``False``.
         self.tbl = tbl
-        self._invalid_rows = invalid_rows
+        self._invalid_rows = invalid_rows >> alias_subquery(cfg=cfg)
         #: The columns in `_tbl` which are used for validation.
         self.rule_columns = rule_columns
         self.cfg = cfg
@@ -53,6 +53,8 @@ class FailureInfo:
             A mapping from rule name to counts. If a rule's failure count is 0, it is
             not included here.
         """
+        if not self.rule_columns:  # pdt summarize needs at least one column
+            return {}
         from pydiverse.transform.extended import C, export, summarize
 
         # wait on pydiverse.transform fix
