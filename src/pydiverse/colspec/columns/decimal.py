@@ -57,7 +57,7 @@ class Decimal(OrdinalMixin[decimal.Decimal], Column):
         if min is not None:
             _validate(min, precision, scale, "min")
             if isinstance(min, decimal.Decimal):
-                min = float(min)  # noqa: A001
+                min = float(min)  # noqa: A001, Decimal is more a RDBMS thing
         if min_exclusive is not None:
             _validate(min_exclusive, precision, scale, "min_exclusive")
             if isinstance(min_exclusive, decimal.Decimal):
@@ -65,7 +65,7 @@ class Decimal(OrdinalMixin[decimal.Decimal], Column):
         if max is not None:
             _validate(max, precision, scale, "max")
             if isinstance(max, decimal.Decimal):
-                max = float(max)  # noqa: A001
+                max = float(max)  # noqa: A001, Decimal is more a RDBMS thing
         if max_exclusive is not None:
             _validate(max_exclusive, precision, scale, "max_exclusive")
             if isinstance(max_exclusive, decimal.Decimal):
