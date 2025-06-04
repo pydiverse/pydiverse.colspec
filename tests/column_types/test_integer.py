@@ -7,16 +7,17 @@ from typing import Any
 import dataframely as dy
 import polars as pl
 import pytest
-from dataframely.columns.integer import _BaseInteger
-from dataframely.testing import INTEGER_COLUMN_TYPES, evaluate_rules, rules_from_exprs
 from polars.datatypes import DataTypeClass
 from polars.datatypes.group import FLOAT_DTYPES, INTEGER_DTYPES
 from polars.testing import assert_frame_equal
 
 import pydiverse.colspec as cs
+from pydiverse.colspec.columns.integer import _BaseInteger
+from pydiverse.colspec.testing import INTEGER_COLUMN_TYPES
+from pydiverse.colspec.optional_dependency import pdt
 
 
-class IntegerSchema(cs.ColSpec):
+class IntegerColSpec(cs.ColSpec):
     a = cs.Integer()
 
 
@@ -61,16 +62,35 @@ def test_invalid_args_is_in(column_type: type[_BaseInteger], kwargs: dict[str, A
         column_type(**kwargs)
 
 
+@pytest.mark.skipif(dy is None, reason="dataframely not installed")
+@pytest.mark.parametrize("dtype", INTEGER_DTYPES)
+def test_any_integer_dtype_passes_polars(dtype: DataTypeClass):
+    df = pl.DataFrame(schema={"a": dtype})
+    assert IntegerColSpec.is_valid_polars(df)
+
+
+@pytest.mark.skipif(pdt is None, reason="pydiverse.transform not installed")
 @pytest.mark.parametrize("dtype", INTEGER_DTYPES)
 def test_any_integer_dtype_passes(dtype: DataTypeClass):
+    if dtype == pl.Int128:
+        # this type is not supported by pydiverse libraries, yet
+        return
     df = pl.DataFrame(schema={"a": dtype})
-    assert IntegerSchema.is_valid_polars(df)
+    tbl = pdt.Table(df)
+    assert IntegerColSpec.is_valid(tbl)
+
+
+@pytest.mark.parametrize("dtype", [pl.Boolean, pl.String] + list(FLOAT_DTYPES))
+def test_non_integer_dtype_fails_polars(dtype: DataTypeClass):
+    df = pl.DataFrame(schema={"a": dtype})
+    assert not IntegerColSpec.is_valid_polars(df)
 
 
 @pytest.mark.parametrize("dtype", [pl.Boolean, pl.String] + list(FLOAT_DTYPES))
 def test_non_integer_dtype_fails(dtype: DataTypeClass):
     df = pl.DataFrame(schema={"a": dtype})
-    assert not IntegerSchema.is_valid_polars(df)
+    tbl = pdt.Table(df)
+    assert not IntegerColSpec.is_valid(tbl)
 
 
 @pytest.mark.parametrize("column_type", INTEGER_COLUMN_TYPES)

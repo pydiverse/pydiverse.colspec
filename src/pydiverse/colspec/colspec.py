@@ -174,6 +174,38 @@ class ColSpec(
             raise f from e
 
     @classmethod
+    def is_valid(
+        cls, tbl: pdt.Table, *, cast: bool = False
+    ) -> bool:
+        """Utility method to check whether :meth:`validate` raises an exception.
+
+        Args:
+            tbl: The table to check for validity.
+            allow_extra_columns: Whether to allow the data frame to contain columns
+                that are not defined in the schema.
+            cast: Whether columns with a wrong data type in the input data frame are
+                cast to the schema's defined data type before running validation. If set
+                to ``False``, a wrong data type will result in a return value of
+                ``False``.
+
+        Returns:
+            Whether the provided dataframe can be validated with this schema.
+        """
+        try:
+            from polars.exceptions import InvalidOperationError as PlInvalidOperationError
+        except ImportError:
+            PlInvalidOperationError = None
+
+
+        try:
+            cls.validate(tbl, cast=cast)
+            return True
+        except (ValidationError, PlInvalidOperationError):
+            return False
+        except Exception as e:  # pragma: no cover
+            raise e
+
+    @classmethod
     def is_valid_polars(
         cls, df: pl.DataFrame | pl.LazyFrame, *, cast: bool = False
     ) -> bool:

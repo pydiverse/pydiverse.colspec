@@ -8,13 +8,13 @@ from typing import Any
 import polars as pl
 import pytest
 from dataframely.random import Generator
-from dataframely.testing import evaluate_rules, rules_from_exprs
 from polars.testing import assert_frame_equal
 
 import pydiverse.colspec as cs
 from pydiverse.colspec import Column
+from pydiverse.colspec.exc import DtypeValidationError
 from pydiverse.colspec.testing.factory import create_colspec
-
+from pydiverse.colspec.optional_dependency import pdt
 
 @pytest.mark.parametrize(
     ("column_type", "kwargs"),
@@ -172,8 +172,17 @@ def test_args_consistency_min_max(column_type: type[Column], kwargs: dict[str, A
     ],
 )
 def test_args_resolution_invalid(column_type: type[Column], kwargs: dict[str, Any]):
+    # Resolution errors are not caught by ColSpec. They only are raised when
+    # converting to dataframely Schema in polars functions.
+    # In Practice, it is recommended to use microsecond resolution for Datetimes,
+    # Time, and Durations and second resolution for Dates. SQL Databases can represent
+    # these precisions as well.
+    class TestColSpec(cs.ColSpec):
+        a = column_type(**kwargs)
+
     with pytest.raises(ValueError):
-        column_type(**kwargs)
+        # the ValueError is raised when converting ColSpec to dy.Schema
+        TestColSpec.validate_polars(pl.DataFrame(dict(a=[])))
 
 
 @pytest.mark.parametrize(
@@ -202,9 +211,16 @@ def test_args_resolution_invalid(column_type: type[Column], kwargs: dict[str, An
     ],
 )
 def test_args_resolution_valid(column_type: type[Column], kwargs: dict[str, Any]):
-    column_type(**kwargs)
+    class TestColSpec(cs.ColSpec):
+        a = column_type(**kwargs)
+
+    with pytest.raises(DtypeValidationError):
+        # this still tests that there is no ValueError when instantiating
+        # dy.Column types
+        TestColSpec.validate_polars(pl.DataFrame(dict(a=[])))
 
 
+@pytest.mark.skipif(pdt is None, reason="pydiverse.transform not installed")
 @pytest.mark.parametrize(
     ("column", "values", "valid"),
     [
@@ -333,7 +349,7 @@ def test_args_resolution_valid(column_type: type[Column], kwargs: dict[str, Any]
 def test_validate_min_max(
     column: Column, values: list[Any], valid: dict[str, list[bool]]
 ):
-    lf = pl.LazyFrame({"a": values})
+    lf = pdt.Table({"a": values})
     actual = evaluate_rules(lf, rules_from_exprs(column.validation_rules(pl.col("a"))))
     expected = pl.LazyFrame(valid)
     assert_frame_equal(actual, expected)
@@ -350,7 +366,8 @@ def test_validate_min_max(
         (
             cs.Time(resolution="1h"),
             [dt.time(12, 0), dt.time(13, 15), dt.time(14, 0, 5)],
-            {"resolution": [True, False, False]},
+            {},
+            # {"resolution": [True, False, False]},
         ),
         (
             cs.Datetime(resolution="1d"),
@@ -359,7 +376,8 @@ def test_validate_min_max(
                 dt.datetime(2021, 1, 1, 12),
                 dt.datetime(2022, 7, 10, 0, 0, 1),
             ],
-            {"resolution": [True, False, False]},
+            {},
+            # {"resolution": [True, False, False]},
         ),
         (
             cs.Duration(resolution="12h"),
@@ -369,7 +387,8 @@ def test_validate_min_max(
                 dt.timedelta(hours=5),
                 dt.timedelta(hours=12, minutes=30),
             ],
-            {"resolution": [True, True, False, False]},
+            {},
+            # {"resolution": [True, True, False, False]},
         ),
     ],
 )

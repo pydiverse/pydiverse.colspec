@@ -144,6 +144,9 @@ class Time(OrdinalMixin[dt.time], Column):
                 this option does _not_ allow to refer to the column with two different
                 names, the specified alias is the only valid name.
         """
+        # # pydiverse.transform is currently not able to check resolution problems.
+        # # However, it is a problem that can be solved by convention.
+        # # pydiverse.pipedag will enforce those.
         # if resolution is not None:
         #     offset_date = pl.Series([EPOCH_DATETIME]).dt.offset_by(resolution) \
         #       .dt.date()
@@ -180,14 +183,17 @@ class Time(OrdinalMixin[dt.time], Column):
 
     def validation_rules(self, expr: ColExpr) -> dict[str, ColExpr]:
         result = super().validation_rules(expr)
-        if self.resolution is not None:
-            rounded_expr = (
-                pdt.lit(EPOCH_DATETIME.date())
-                .dt.combine(expr)
-                .dt.truncate(self.resolution)
-                .dt.time()
-            )
-            result["resolution"] = rounded_expr == expr
+        # # pydiverse.transform is currently not able to check resolution problems.
+        # # However, it is a problem that can be solved by convention.
+        # # pydiverse.pipedag will enforce those.
+        # if self.resolution is not None:
+        #     rounded_expr = (
+        #         pdt.lit(EPOCH_DATETIME.date())
+        #         .dt.combine(expr)
+        #         .dt.truncate(self.resolution)
+        #         .dt.time()
+        #     )
+        #     result["resolution"] = rounded_expr == expr
         return result
 
 
