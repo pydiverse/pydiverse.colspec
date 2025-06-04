@@ -14,7 +14,7 @@ def test_success():
     df = pl.DataFrame(schema={k: pl.Int64() for k in ["a", "b"]})
     tbl = pdt.Table(df)
     out_tbl = validate_columns(tbl, expected=["a"])
-    assert set(out_tbl) == {"a"}
+    assert set(c.name for c in out_tbl) == {"a"}
 
 
 @pytest.mark.parametrize(

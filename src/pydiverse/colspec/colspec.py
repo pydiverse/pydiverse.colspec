@@ -196,7 +196,9 @@ class ColSpec(
     def column_names(cls) -> list[str]:
         cls.fail_dy_columns_in_colspec()
         result = [
-            member for member in dir(cls) if isinstance(getattr(cls, member), Column)
+            getattr(cls, member).alias or member
+            for member in dir(cls)
+            if isinstance(getattr(cls, member), Column)
         ]
         return result
 
@@ -204,7 +206,17 @@ class ColSpec(
     def columns(cls) -> dict[str, Column]:
         cls.fail_dy_columns_in_colspec()
         return {
-            name: col for name, col in cls.__dict__.items() if isinstance(col, Column)
+            col.alias or name: col
+            for name, col in cls.__dict__.items()
+            if isinstance(col, Column)
+        }
+
+    @classmethod
+    def alias_map(cls) -> dict[str, str]:
+        return {
+            col.alias or name: name
+            for name, col in cls.__dict__.items()
+            if isinstance(col, Column)
         }
 
     @classmethod
@@ -440,10 +452,13 @@ class ColSpec(
         cls, tbl: pdt.Table
     ) -> tuple[dict[str, pdt.ColExpr], dict[str, GroupRule]]:
         cls.fail_dy_columns_in_colspec()
+        alias_map = cls.alias_map()
         return {
             f"{col}|{rule_name}": rule
             for col in cls.column_names()
-            for rule_name, rule in getattr(cls, col).validation_rules(tbl[col]).items()
+            for rule_name, rule in getattr(cls, alias_map[col])
+            .validation_rules(tbl[col])
+            .items()
         } | {
             rule: getattr(cls, rule).expr
             for rule in dir(cls)

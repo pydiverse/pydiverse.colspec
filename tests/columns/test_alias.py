@@ -2,25 +2,29 @@
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
 
-import dataframely as dy
 import polars as pl
 
 import pydiverse.colspec as cs
+from pydiverse.colspec.optional_dependency import pdt
 
 
-class AliasSchema(cs.ColSpec):
-    a = dy.Int64(alias="hello world: col with space!")
+class AliasColSpec(cs.ColSpec):
+    a = cs.Int64(alias="hello world: col with space!")
 
 
 def test_column_names():
-    assert AliasSchema.column_names() == ["hello world: col with space!"]
+    assert AliasColSpec.column_names() == ["hello world: col with space!"]
 
 
 def test_validation():
     df = pl.DataFrame({"hello world: col with space!": [1, 2]})
-    assert AliasSchema.is_valid(df)
+    assert AliasColSpec.is_valid_polars(df)
+    tbl = pdt.Table(df)
+    assert AliasColSpec.is_valid(tbl)
 
 
 def test_create_empty():
-    df = AliasSchema.create_empty()
-    assert AliasSchema.is_valid(df)
+    df = AliasColSpec.create_empty_polars()
+    assert AliasColSpec.is_valid_polars(df)
+    tbl = pdt.Table(df)
+    assert AliasColSpec.is_valid(tbl)
