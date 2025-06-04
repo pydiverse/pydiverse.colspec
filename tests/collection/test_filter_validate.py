@@ -9,6 +9,7 @@ import pytest
 from polars.testing import assert_frame_equal
 
 import pydiverse.colspec as cs
+import pydiverse.colspec.collection
 from pydiverse.colspec.exc import MemberValidationError
 
 # ------------------------------------------------------------------------------------ #
@@ -26,7 +27,7 @@ class MySecondColSpec(cs.ColSpec):
     b = cs.Integer(min=1)
 
 
-class MyCollection(cs.Collection):
+class MyCollection(pydiverse.colspec.collection.Collection):
     first: MyFirstColSpec
     second: MySecondColSpec
 
@@ -42,7 +43,7 @@ class MyCollection(cs.Collection):
 
 
 @dataclasses.dataclass
-class SimpleCollection(cs.Collection):
+class SimpleCollection(pydiverse.colspec.collection.Collection):
     first: MyFirstColSpec
     second: MySecondColSpec
 

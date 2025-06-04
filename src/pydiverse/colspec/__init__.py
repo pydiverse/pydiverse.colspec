@@ -4,9 +4,9 @@
 from __future__ import annotations
 
 from ._filter import Filter, FilterPolars, filter, filter_polars  # noqa: A004
-from ._rule import Rule, rule
+from ._rule import GroupRule, GroupRulePolars, Rule, RulePolars, rule, rule_polars
+from .collection import Collection
 from .colspec import (
-    Collection,
     ColSpec,
 )
 from .columns import (
@@ -44,7 +44,11 @@ __all__ = [
     "filter_polars",
     "FilterPolars",
     "rule",
+    "rule_polars",
     "Rule",
+    "RulePolars",
+    "GroupRule",
+    "GroupRulePolars",
     "Column",
     "Any",
     "Bool",

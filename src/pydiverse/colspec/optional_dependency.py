@@ -38,7 +38,7 @@ except ImportError:
 try:
     # colspec has optional dependency to pydiverse.transform
     import pydiverse.transform as pdt
-    from pydiverse.transform import verb
+    from pydiverse.transform import C, ColExpr, verb
 except ImportError:
 
     def verb(func):
@@ -51,6 +51,8 @@ except ImportError:
     # Create a new module with the given name.
     pdt = types.ModuleType("pydiverse.transform")
     pdt.Table = Table
+    ColExpr = None
+    C = None
     # TODO: add members that break if pdt is not there
 
 

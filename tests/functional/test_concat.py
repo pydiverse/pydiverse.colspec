@@ -7,13 +7,14 @@ import polars as pl
 import pytest
 
 import pydiverse.colspec as cs
+import pydiverse.colspec.collection
 
 
 class MySchema(cs.ColSpec):
     a = cs.Int64()
 
 
-class SimpleCollection(cs.Collection):
+class SimpleCollection(pydiverse.colspec.collection.Collection):
     first: MySchema
     second: MySchema | None
     third: MySchema | None

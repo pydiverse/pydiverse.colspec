@@ -12,12 +12,12 @@ from polars.testing import assert_frame_equal
 import pydiverse.colspec as cs
 
 
-class MySimpleSchema(cs.ColSpec):
+class MySimpleColSpec(cs.ColSpec):
     a = cs.Int64()
     b = cs.String()
 
 
-class PrimaryKeySchema(cs.ColSpec):
+class PrimaryKeyColSpec(cs.ColSpec):
     a = cs.Int64(primary_key=True)
     b = cs.String()
 
@@ -64,11 +64,11 @@ class LimitedComplexSchema(cs.ColSpec):
 @pytest.mark.parametrize("n", [0, 1000])
 def test_sample_deterministic(n: int):
     with dy.Config(max_sampling_iterations=1):
-        df = MySimpleSchema.sample(n)
-        MySimpleSchema.validate(df)
+        df = MySimpleColSpec.sample(n)
+        MySimpleColSpec.validate(df)
 
 
-@pytest.mark.parametrize("schema", [PrimaryKeySchema, CheckSchema, ComplexSchema])
+@pytest.mark.parametrize("schema", [PrimaryKeyColSpec, CheckSchema, ComplexSchema])
 @pytest.mark.parametrize("n", [0, 1000])
 def test_sample_fuzzy(schema: type[cs.ColSpec], n: int):
     df = schema.sample(n, generator=Generator(seed=42))
@@ -118,9 +118,9 @@ def test_sample_overrides_full(n: int):
 
 def test_sample_overrides_invalid_column():
     with pytest.raises(ValueError, match=r"not in the schema"):
-        MySimpleSchema.sample(overrides={"foo": []})
+        MySimpleColSpec.sample(overrides={"foo": []})
 
 
 def test_sample_overrides_invalid_length():
     with pytest.raises(ValueError, match=r"`num_rows` is different"):
-        MySimpleSchema.sample(overrides={"a": [1, 2]})
+        MySimpleColSpec.sample(overrides={"a": [1, 2]})
