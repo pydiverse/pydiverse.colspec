@@ -141,7 +141,7 @@ class ColSpec(
                 )
 
     @classmethod
-    def column_names(cls):
+    def column_names(cls) -> list[str]:
         cls.fail_dy_columns_in_colspec()
         result = [
             member for member in dir(cls) if isinstance(getattr(cls, member), Column)
@@ -149,9 +149,11 @@ class ColSpec(
         return result
 
     @classmethod
-    def columns(cls):
+    def columns(cls) -> dict[str, Column]:
         cls.fail_dy_columns_in_colspec()
-        return [col for name, col in cls.__dict__.items() if isinstance(col, Column)]
+        return {
+            name: col for name, col in cls.__dict__.items() if isinstance(col, Column)
+        }
 
     @classmethod
     def validate(cls, tbl: pdt.Table, cast: bool = False) -> pdt.Table:
@@ -324,6 +326,8 @@ class ColSpec(
         Note:
             This method preserves the ordering of the input data frame.
         """
+
+        tbl = cls._validate_schema(tbl, cast=cast)
 
         rules = cls._validation_rules(tbl)
         src_tbl = tbl

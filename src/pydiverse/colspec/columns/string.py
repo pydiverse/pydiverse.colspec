@@ -58,10 +58,15 @@ class String(Column):
 
     def validation_rules(self, expr: ColExpr) -> dict[str, ColExpr]:
         result = super().validation_rules(expr)
+
+        import polars as pl
+
+        len_fn = "len_bytes" if isinstance(expr, pl.Expr) else "len"
+
         if self.min_length is not None:
-            result["min_length"] = expr.str.len_bytes() >= self.min_length
+            result["min_length"] = getattr(expr.str, len_fn)() >= self.min_length
         if self.max_length is not None:
-            result["max_length"] = expr.str.len_bytes() <= self.max_length
+            result["max_length"] = getattr(expr.str, len_fn)() <= self.max_length
         if self.regex is not None:
             result["regex"] = expr.str.contains(self.regex)
         return result

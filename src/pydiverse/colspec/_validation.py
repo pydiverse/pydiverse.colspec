@@ -47,7 +47,8 @@ def validate_columns(
 def validate_dtypes(
     tbl: pdt.Table,
     expected: dict[str, Column],
-    *cast: bool,
+    *,
+    cast: bool,
 ) -> pdt.Table:
     """Validate the dtypes of all expected columns in a table.
 
@@ -67,8 +68,8 @@ def validate_dtypes(
 
     dtype_errors: dict[str, tuple[Dtype, Dtype]] = {}
     for col in tbl:
-        if not col.dtype().is_subtype(expected[col.name].dtype):
-            dtype_errors[col.name] = (col.dtype(), expected[col.name].dtype)
+        if not col.dtype().is_subtype(expected[col.name].dtype()):
+            dtype_errors[col.name] = (col.dtype(), expected[col.name].dtype())
 
     if len(dtype_errors) > 0:
         if not cast:
@@ -76,7 +77,7 @@ def validate_dtypes(
         else:
             return tbl >> mutate(
                 **{
-                    name: C[name].cast(expected[name].dtype)
+                    name: C[name].cast(expected[name].dtype())
                     for name in dtype_errors.keys()
                 }
             )

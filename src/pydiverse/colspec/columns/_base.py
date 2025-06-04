@@ -57,7 +57,6 @@ class Column(ABC, ColExpr):
 
     # ------------------------------------- DTYPE ------------------------------------ #
 
-    @property
     @abstractmethod
     def dtype(self) -> Dtype:
         """The common dtype of this column definition.
