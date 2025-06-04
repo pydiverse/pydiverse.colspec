@@ -115,8 +115,8 @@ class RuleImplementationError(ImplementationError):
         if is_group_rule:
             details = (
                 " When implementing a group rule (i.e. when using the `group_by` "
-                "parameter), make sure to use an aggregation function such as `.any()`, "
-                "`.all()`, and others to reduce an expression evaluated on multiple "
+                "parameter), make sure to use an aggregation function such as `.any()`,"
+                " `.all()`, and others to reduce an expression evaluated on multiple "
                 "rows in the same group to a single boolean value for the group."
             )
         else:

@@ -6,6 +6,7 @@ from __future__ import annotations
 import polars as pl
 
 from pydiverse.colspec import Rule
+from pydiverse.colspec.optional_dependency import pdt
 
 
 def rules_from_exprs_polars(exprs: dict[str, pl.Expr]) -> dict[str, Rule]:
@@ -33,3 +34,12 @@ def evaluate_rules_polars(lf: pl.LazyFrame, rules: dict[str, Rule]) -> pl.LazyFr
         of the input data frame are dropped.
     """
     return Rule.append_rules_polars(lf, rules).drop(lf.collect_schema())
+
+
+def evaluate_rules(tbl: pdt.Table, rules: dict[str, pdt.ColExpr]):
+    return {
+        k: (tbl >> pdt.select() >> pdt.mutate(out=v) >> pdt.export(pdt.DictOfLists))[
+            "out"
+        ]
+        for k, v in rules.items()
+    }

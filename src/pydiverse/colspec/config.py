@@ -1,9 +1,11 @@
 # Copyright (c) QuantCo and pydiverse contributors 2025-2025
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Callable
-from optional_dependency import pdt
+
+from .optional_dependency import pdt, verb
 
 
 @dataclass
@@ -27,6 +29,20 @@ class Config:
     #: a function to materialize a pdt.Table expression returning reference to result
     materialize_hook: Callable[[pdt.Table], pdt.Table] | None = None
 
+    @property
+    def default(self):
+        return Config()
 
-def alias_subquery(cfg: Config):
-    if
+
+@verb
+def alias_subquery(tbl: pdt.Table, cfg: Config):
+    if cfg.materialize_hook is not None:
+        return cfg.materialize_hook(tbl)
+    return pdt.alias()
+
+
+@verb
+def alias_collection_fail(tbl: pdt.Table, cfg: Config):
+    if cfg.materialize_hook is not None:
+        return cfg.materialize_hook(tbl)
+    return pdt.alias()

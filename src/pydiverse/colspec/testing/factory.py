@@ -17,10 +17,12 @@ def create_colspec(
 
     Args:
         name: The name of the column specification.
-        columns: The columns to set on the column specification. When properly defining the column specification,
-            this would be the annotations that define the column types.
+        columns: The columns to set on the column specification. When properly defining
+            the column specification, this would be the annotations that define the
+            column types.
         rules: The custom non-column-specific validation rules. When properly defining
-            the column specification, this would be the functions annotated with ``@dy.rule``.
+            the column specification, this would be the functions annotated with
+            ``@dy.rule``.
 
     Returns:
         The dynamically created column specification.

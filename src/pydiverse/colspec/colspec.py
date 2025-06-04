@@ -14,11 +14,12 @@ from typing import TYPE_CHECKING, Any, Iterable, Mapping, Self, overload
 
 import structlog
 
+from pydiverse.colspec._validation import validate_columns, validate_dtypes
 from pydiverse.colspec.columns._base import Column
 
 from . import exc
 from ._filter import Filter
-from .config import Config
+from .config import Config, alias_collection_fail, alias_subquery
 from .exc import (
     ImplementationError,
     MemberValidationError,
@@ -96,7 +97,13 @@ class ColSpecMeta(type):
         return super().__new__(cls, clsname, bases, attribs)
 
 
+class ColSpecBase:
+    #  this is just the same as object but ruff does not kill it
+    pass
+
+
 class ColSpec(
+    ColSpecBase,
     FailureInfo,
     pdt.Table,
     dag.Table,
@@ -145,13 +152,16 @@ class ColSpec(
 
     @classmethod
     def column_names(cls):
-        from pydiverse.colspec import Column
-
         cls.fail_dy_columns_in_colspec()
         result = [
             member for member in dir(cls) if isinstance(getattr(cls, member), Column)
         ]
         return result
+
+    @classmethod
+    def columns(cls):
+        cls.fail_dy_columns_in_colspec()
+        return [col for name, col in cls.__dict__.items() if isinstance(col, Column)]
 
     @classmethod
     def validate(cls, tbl: pdt.Table, cast: bool = False) -> pdt.Table:
@@ -295,7 +305,7 @@ class ColSpec(
         tbl: pdt.Table,
         *,
         cast: bool = False,
-        cfg: Config = Config(),
+        cfg: Config = Config.default,
     ) -> tuple[Self, FailureInfo]:
         """Filter the table by the rules of this column specification.
 
@@ -349,6 +359,11 @@ class ColSpec(
             rule_columns=rules,
             cfg=cfg,
         )
+
+    @classmethod
+    def _validate_schema(cls, tbl: pdt.Table, *, cast: bool):
+        tbl = validate_columns(tbl, expected=cls.column_names())
+        return validate_dtypes(tbl, expected=cls.columns(), cast=cast)
 
     @classmethod
     def _validation_rules(cls, tbl: pdt.Table) -> dict[str, pdt.ColExpr]:
@@ -478,7 +493,7 @@ class MemberInfo:
             col_spec = [
                 t for t in union_types if inspect.isclass(t) and issubclass(t, ColSpec)
             ][0]
-            is_optional = any(t == type(None) for t in union_types)
+            is_optional = any(t == type(None) for t in union_types)  # noqa: E721
         else:
             col_spec = anno
             is_optional = False
@@ -505,7 +520,7 @@ class Collection:
     represent "semantic objects" which cannot be represented in a single table due
     to 1-N relationships that are managed in separate tables.
 
-    A collection must only have type annotations for :class:`~pydiverse.colspec.ColSpec`s
+    A collection must only have type annotations for :class:`~pydiverse.colspec.ColSpec`
     with known column specification:
 
     .. code:: python
@@ -536,11 +551,12 @@ class Collection:
         implemented correctly.
     """
 
-    def get_pdt(self, name: str, cfg: Config = Config()) -> pdt.Table:
+    def get_pdt(self, name: str, cfg: Config = Config.default) -> pdt.Table:
         tbl = getattr(self, name)
         if not isinstance(tbl, pdt.Table):
             raise TypeError(
-                f"Collection member '{name}' is not a pydiverse transform Table, but {type(tbl)}; collection={self}"
+                f"Collection member '{name}' is not a pydiverse transform Table, but "
+                f"{type(tbl)}; collection={self}"
             )
         if cfg.fix_table_name:
             # fix the name of the table according to Collection member name
@@ -606,12 +622,12 @@ class Collection:
                 "Dataframely raised column specification implementation error"
             )
             if not fault_tolerant:
-                raise exc.ImplementationError(e.message)
+                raise exc.ImplementationError(e.message)  # noqa: B904
         except plexc.InvalidOperationError as e:
             logger = structlog.getLogger(logger_name)
             logger.exception("Dataframely validation failed within polars expression")
             if not fault_tolerant:
-                raise ValidationError(e.message)
+                raise ValidationError(e.message)  # noqa: B904
         except dy_exc.ValidationError as e:
             logger = structlog.getLogger(logger_name)
             logger.exception("Dataframely validation failed")
@@ -620,14 +636,14 @@ class Collection:
                 # does not always store the arguments to it directly.
                 exc_class = getattr(exc, e.__class__.__name__)
                 if hasattr(e, "errors"):
-                    raise exc_class(e.errors)
+                    raise exc_class(e.errors)  # noqa: B904
                 elif hasattr(e, "schema_errors") and hasattr(e, "column_errors"):
                     new_e = exc_class({})
                     new_e.schema_errors = e.schema_errors
                     new_e.column_errors = e.column_errors
-                    raise new_e
+                    raise new_e  # noqa: B904
                 else:
-                    raise ValidationError(e.message)
+                    raise ValidationError(e.message)  # noqa: B904
         return cls._init_polars_data(data)  # ignore validation if fault_tolerant
 
     def is_valid(
@@ -692,7 +708,7 @@ class Collection:
             return False
 
     def filter(
-        self, *, cast: bool = False, cfg: Config = Config()
+        self, *, cast: bool = False, cfg: Config = Config.default
     ) -> tuple[Self, Self]:
         """Filter rows which conform to column specifications and collections rules.
 
@@ -929,7 +945,7 @@ class Collection:
         return self.get_join(*ordered_tbls, fix_table_name=fix_table_name)
 
     def get_join(
-        self, tbl: str, *more_tbls: Iterable[str], cfg: Config = Config()
+        self, tbl: str, *more_tbls: Iterable[str], cfg: Config = Config.default
     ) -> pdt.Table | None:
         """
         Get a left join expression if tables should be joinable.
@@ -1075,49 +1091,6 @@ class Collection:
             if getattr(self, member) is not None
         }
 
-    # ------------------------------------ CASTING ----------------------------------- #
-
-    @classmethod
-    def cast_polars_data(cls, data: Mapping[str, FrameType]) -> Self:
-        """Initialize a collection by casting all members to correct column spec.
-
-        This method calls :meth:`~ColSpec.cast` on every member, thus, removing
-        superfluous columns and casting to the correct dtypes for all input data frames.
-
-        You should typically use :meth:`validate` or :meth:`filter` to obtain instances
-        of the collection as this method does not guarantee that the returned collection
-        upholds any invariants. Nonetheless, it may be useful to use in instances where
-        it is known that the provided data adheres to the collection's invariants.
-
-        Args:
-            data: The data for all members. The dictionary must contain exactly one
-                entry per member with the name of the member as key.
-
-        Returns:
-            The initialized collection.
-
-        Raises:
-            ValueError: If an insufficient set of input data frames is provided, i.e. if
-                any required member of this collection is missing in the input.
-
-        Attention:
-            For lazy frames, casting is not performed eagerly. This prevents collecting
-            the lazy frames' schemas but also means that a call to :meth:`collect`
-            further down the line might fail because of the cast and/or missing columns.
-        """
-        import polars.exceptions as plexc
-
-        cls._validate_polars_input_keys(data)
-        result: dict[str, FrameType] = {}
-        for member_name, member in cls.members().items():
-            if member.is_optional and member_name not in data:
-                continue
-            try:
-                result[member_name] = member.col_spec.cast_polars(data[member_name])
-            except plexc.PolarsError as e:
-                raise ValidationError(str(e)) from e
-        return cls._init_polars_data(result)
-
     # ---------------------------------- COLLECTION ---------------------------------- #
 
     def collect_all_polars(self) -> Self:
@@ -1177,7 +1150,7 @@ class Collection:
                 try:
                     return cls()
                 except TypeError:
-                    raise ImplementationError(
+                    raise ImplementationError(  # noqa: B904
                         "Failed constructing collection with empty members. Try adding"
                         " @dataclasses.dataclass annotation to a collection class you"
                         " like to build."

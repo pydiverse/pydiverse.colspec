@@ -20,7 +20,7 @@ class Filter(Generic[C]):
         self.logic_fn: Callable[[C], pdt.ColExpr] = logic_fn
 
 
-def filter() -> Callable[[Callable[[C], pdt.ColExpr]], Filter[C]]:
+def filter() -> Callable[[Callable[[C], pdt.ColExpr]], Filter[C]]:  # noqa: A001
     """Mark a function as filters for rows in the members of a collection.
 
     The name of the function will be used as the name of the filter. The name must not

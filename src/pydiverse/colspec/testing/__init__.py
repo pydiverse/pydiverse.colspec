@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-from .assert_equal import assert_table_equal
 from .const import (
     ALL_COLUMN_TYPES,
     COLUMN_TYPES,

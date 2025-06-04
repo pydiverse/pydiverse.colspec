@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from optional_dependency import pdt
+from .optional_dependency import pdt
 
 
 def num_rows(tbl: pdt.Table) -> int:

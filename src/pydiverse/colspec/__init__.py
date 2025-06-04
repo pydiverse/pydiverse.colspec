@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from ._filter import Filter, FilterPolars, filter, filter_polars
+from ._filter import Filter, FilterPolars, filter, filter_polars  # noqa: A004
 from ._rule import Rule, rule
 from .colspec import (
     Collection,

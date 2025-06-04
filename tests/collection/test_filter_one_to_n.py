@@ -10,6 +10,7 @@ import pytest
 
 import pydiverse.colspec as cs
 from pydiverse.colspec.colspec import dy, pdt
+from pydiverse.colspec.columns import ColExpr
 from pydiverse.colspec.pdt_util import num_rows
 
 

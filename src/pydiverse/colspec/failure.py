@@ -27,9 +27,9 @@ class FailureInfo:
         cfg: Config,
     ):
         #: The subset of the input data frame containing the *invalid* rows along with
-        #: all boolean columns used for validation. Each of these boolean columns describes
-        #: a single rule where a value of ``False``` indicates unsuccessful validation.
-        #: Thus, at least one value per row is ``False``.
+        # all boolean columns used for validation. Each of these boolean columns
+        # describes a single rule where a value of ``False``` indicates unsuccessful
+        # validation. Thus, at least one value per row is ``False``.
         self.tbl = tbl
         self._invalid_rows = invalid_rows
         #: The columns in `_tbl` which are used for validation.

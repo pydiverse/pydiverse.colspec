@@ -63,7 +63,7 @@ def rule(*, group_by: list[str] | None = None) -> Callable[[ValidationFunction],
 
     def decorator(validation_fn: ValidationFunction) -> Rule:
         try:
-            import pydiverse.transform
+            import pydiverse.transform  # noqa: F401
         except ImportError:
             # avoid running rule functions if pydiverse.transform is not installed
             return Rule(expr=ColExpr())
