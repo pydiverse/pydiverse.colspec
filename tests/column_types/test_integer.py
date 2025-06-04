@@ -1,4 +1,4 @@
-# Copyright (c) QuantCo 2024-2025
+# Copyright (c) QuantCo and pydiverse contributors 2024-2025
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
 
@@ -13,8 +13,9 @@ from polars.testing import assert_frame_equal
 
 import pydiverse.colspec as cs
 from pydiverse.colspec.columns.integer import _BaseInteger
-from pydiverse.colspec.testing import INTEGER_COLUMN_TYPES
 from pydiverse.colspec.optional_dependency import pdt
+from pydiverse.colspec.testing import INTEGER_COLUMN_TYPES
+from pydiverse.colspec.testing.rules import evaluate_rules
 
 
 class IntegerColSpec(cs.ColSpec):
@@ -98,11 +99,11 @@ def test_non_integer_dtype_fails(dtype: DataTypeClass):
 def test_validate_min(column_type: type[_BaseInteger], inclusive: bool):
     kwargs = {("min" if inclusive else "min_exclusive"): 3}
     column = column_type(**kwargs)  # type: ignore
-    lf = pl.LazyFrame({"a": [1, 2, 3, 4, 5]})
-    actual = evaluate_rules(lf, rules_from_exprs(column.validation_rules(pl.col("a"))))
+    tbl = pdt.Table({"a": [1, 2, 3, 4, 5]})
+    actual = evaluate_rules(tbl, column.validation_rules(tbl.a))
     key = "min" if inclusive else "min_exclusive"
-    expected = pl.LazyFrame({key: [False, False, inclusive, True, True]})
-    assert_frame_equal(actual, expected)
+    expected = {key: [False, False, inclusive, True, True]}
+    assert actual == expected
 
 
 @pytest.mark.parametrize("column_type", INTEGER_COLUMN_TYPES)
@@ -110,8 +111,8 @@ def test_validate_min(column_type: type[_BaseInteger], inclusive: bool):
 def test_validate_max(column_type: type[_BaseInteger], inclusive: bool):
     kwargs = {("max" if inclusive else "max_exclusive"): 3}
     column = column_type(**kwargs)  # type: ignore
-    lf = pl.LazyFrame({"a": [1, 2, 3, 4, 5]})
-    actual = evaluate_rules(lf, rules_from_exprs(column.validation_rules(pl.col("a"))))
+    tbl = pdt.Table({"a": [1, 2, 3, 4, 5]})
+    actual = evaluate_rules(tbl, column.validation_rules(tbl.a))
     key = "max" if inclusive else "max_exclusive"
     expected = pl.LazyFrame({key: [True, True, inclusive, False, False]})
     assert_frame_equal(actual, expected)
@@ -128,8 +129,8 @@ def test_validate_range(
         ("max" if max_inclusive else "max_exclusive"): 4,
     }
     column = column_type(**kwargs)  # type: ignore
-    lf = pl.LazyFrame({"a": [1, 2, 3, 4, 5]})
-    actual = evaluate_rules(lf, rules_from_exprs(column.validation_rules(pl.col("a"))))
+    tbl = pdt.Table({"a": [1, 2, 3, 4, 5]})
+    actual = evaluate_rules(tbl, column.validation_rules(tbl.a))
     key_min = "min" if min_inclusive else "min_exclusive"
     key_max = "max" if max_inclusive else "max_exclusive"
     expected = pl.LazyFrame(
@@ -144,8 +145,8 @@ def test_validate_range(
 @pytest.mark.parametrize("column_type", INTEGER_COLUMN_TYPES)
 def test_validate_is_in(column_type: type[_BaseInteger]):
     column = column_type(is_in=[3, 5])
-    lf = pl.LazyFrame({"a": [1, 2, 3, 4, 5]})
-    actual = evaluate_rules(lf, rules_from_exprs(column.validation_rules(pl.col("a"))))
+    tbl = pdt.Table({"a": [1, 2, 3, 4, 5]})
+    actual = evaluate_rules(tbl, column.validation_rules(tbl.a))
     expected = pl.LazyFrame({"is_in": [False, False, True, False, True]})
     assert_frame_equal(actual, expected)
 

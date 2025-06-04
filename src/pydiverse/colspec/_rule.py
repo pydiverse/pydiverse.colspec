@@ -1,5 +1,7 @@
-# Copyright (c) QuantCo 2024-2024
-# SPDX-License-Identifier: LicenseRef-QuantCo
+# Copyright (c) QuantCo and pydiverse contributors 2025-2025
+# SPDX-License-Identifier: BSD-3-Clause
+
+from __future__ import annotations
 
 from collections import defaultdict
 from collections.abc import Callable
@@ -17,7 +19,7 @@ class Rule:
         self.expr = expr
 
     @staticmethod
-    def append_rules_polars(lf: pl.LazyFrame, rules: dict[str, "Rule"]) -> pl.LazyFrame:
+    def append_rules_polars(lf: pl.LazyFrame, rules: dict[str, Rule]) -> pl.LazyFrame:
         return _with_evaluation_rules(lf, rules)
 
 
@@ -61,7 +63,7 @@ def rule(*, group_by: list[str] | None = None) -> Callable[[ValidationFunction],
 
     def decorator(validation_fn: ValidationFunction) -> Rule:
         try:
-            import pydiverse.transform
+            import pydiverse.transform  # noqa: F401
         except ImportError:
             # avoid running rule functions if pydiverse.transform is not installed
             return Rule(expr=ColExpr())

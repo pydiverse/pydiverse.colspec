@@ -1,4 +1,4 @@
-# Copyright (c) QuantCo 2023-2025
+# Copyright (c) QuantCo and pydiverse contributors 2023-2025
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
 
@@ -115,8 +115,8 @@ class RuleImplementationError(ImplementationError):
         if is_group_rule:
             details = (
                 " When implementing a group rule (i.e. when using the `group_by` "
-                "parameter), make sure to use an aggregation function such as `.any()`, "
-                "`.all()`, and others to reduce an expression evaluated on multiple "
+                "parameter), make sure to use an aggregation function such as `.any()`,"
+                " `.all()`, and others to reduce an expression evaluated on multiple "
                 "rows in the same group to a single boolean value for the group."
             )
         else:

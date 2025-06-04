@@ -1,10 +1,11 @@
-# Copyright (c) QuantCo 2025-2025
+# Copyright (c) QuantCo and pydiverse contributors 2025-2025
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
 
 import pytest
 
-from pydiverse.colspec import ColSpec
 import pydiverse.colspec as cs
+from pydiverse.colspec import ColSpec
 
 try:
     import dataframely as dy
@@ -16,6 +17,7 @@ def perform_dataframely_operation():
     class C(ColSpec):
         a = cs.Integer(min=0)
         b = cs.String
+
     df = C.sample_polars(10)
     C.validate_polars(df)
 

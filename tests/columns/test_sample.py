@@ -1,15 +1,15 @@
-# Copyright (c) QuantCo 2025-2025
+# Copyright (c) QuantCo and pydiverse contributors 2025-2025
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
 
 import datetime as dt
 import decimal
 import math
 from typing import Any, cast
 
+import dataframely as dy
 import polars as pl
 import pytest
-
-import dataframely as dy
 from dataframely.random import Generator
 from dataframely.testing import (
     COLUMN_TYPES,

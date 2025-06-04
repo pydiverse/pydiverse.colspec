@@ -1,4 +1,7 @@
-# Copyright (c) QuantCo 2024-2025
+# Copyright (c) QuantCo and pydiverse contributors 2025-2025
+# SPDX-License-Identifier: BSD-3-Clause
+
+# Copyright (c) QuantCo and pydiverse contributors 2024-2025
 # SPDX-License-Identifier: LicenseRef-QuantCo
 from __future__ import annotations
 
@@ -17,7 +20,7 @@ class Filter(Generic[C]):
         self.logic_fn: Callable[[C], pdt.ColExpr] = logic_fn
 
 
-def filter() -> Callable[[Callable[[C], pdt.ColExpr]], Filter[C]]:
+def filter() -> Callable[[Callable[[C], pdt.ColExpr]], Filter[C]]:  # noqa: A001
     """Mark a function as filters for rows in the members of a collection.
 
     The name of the function will be used as the name of the filter. The name must not

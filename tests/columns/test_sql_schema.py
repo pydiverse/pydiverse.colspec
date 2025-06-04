@@ -1,14 +1,14 @@
-# Copyright (c) QuantCo 2024-2024
+# Copyright (c) QuantCo and pydiverse contributors 2024-2025
 # SPDX-License-Identifier: BSD-3-Clause
-
-import pytest
-import sqlalchemy as sa
-from sqlalchemy.dialects.mssql.pyodbc import MSDialect_pyodbc
-from sqlalchemy.dialects.postgresql.psycopg2 import PGDialect_psycopg2
+from __future__ import annotations
 
 import dataframely as dy
+import pytest
+import sqlalchemy as sa
 from dataframely.columns import Column
 from dataframely.testing import COLUMN_TYPES, create_schema
+from sqlalchemy.dialects.mssql.pyodbc import MSDialect_pyodbc
+from sqlalchemy.dialects.postgresql.psycopg2 import PGDialect_psycopg2
 
 
 @pytest.mark.parametrize(

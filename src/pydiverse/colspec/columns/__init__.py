@@ -1,4 +1,4 @@
-# Copyright (c) QuantCo 2025-2025
+# Copyright (c) QuantCo and pydiverse contributors 2025-2025
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ from .datetime import Date, Datetime, Duration, Time
 from .decimal import Decimal
 from .enum import Enum
 from .float import Float, Float32, Float64
-from .integer import Integer, Int8, Int16, Int32, Int64, UInt8, UInt16, UInt32, UInt64
+from .integer import Int8, Int16, Int32, Int64, Integer, UInt8, UInt16, UInt32, UInt64
 from .list import List
 from .string import String
 from .struct import Struct

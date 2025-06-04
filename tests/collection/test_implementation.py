@@ -1,12 +1,12 @@
-# Copyright (c) QuantCo 2024-2024
+# Copyright (c) QuantCo and pydiverse contributors 2024-2025
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
 
 import polars as pl
 import pytest
-import pydiverse.colspec as cs
 
-from pydiverse.colspec import ColSpec, Collection
+import pydiverse.colspec as cs
+from pydiverse.colspec import Collection, ColSpec
 from pydiverse.colspec._filter import Filter
 from pydiverse.colspec.exc import AnnotationImplementationError, ImplementationError
 from pydiverse.colspec.testing.factory import (
@@ -63,11 +63,7 @@ def test_annotation_only_none_failure():
     """Annotations must not just be None."""
     res = create_collection_raw(
         "test",
-        {
-            "first": None,
-            "second": int,
-            "third": Collection
-        },
+        {"first": None, "second": int, "third": Collection},
     ).members()
     assert len(res) == 0
 

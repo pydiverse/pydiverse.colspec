@@ -1,3 +1,6 @@
+# Copyright (c) QuantCo and pydiverse contributors 2025-2025
+# SPDX-License-Identifier: BSD-3-Clause
+
 from __future__ import annotations
 
 import types
@@ -35,7 +38,12 @@ except ImportError:
 try:
     # colspec has optional dependency to pydiverse.transform
     import pydiverse.transform as pdt
+    from pydiverse.transform import verb
 except ImportError:
+
+    def verb(func):
+        """A no-op decorator for functions that are intended to be used as verbs."""
+        return func
 
     class Table:
         pass

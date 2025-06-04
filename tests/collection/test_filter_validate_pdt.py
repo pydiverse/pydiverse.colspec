@@ -1,4 +1,4 @@
-# Copyright (c) QuantCo 2024-2025
+# Copyright (c) QuantCo and pydiverse contributors 2024-2025
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
 
@@ -13,7 +13,6 @@ import pydiverse.transform as pdt
 from pydiverse.colspec.exc import MemberValidationError
 from pydiverse.colspec.pdt_util import num_rows
 from pydiverse.colspec.testing.assert_equal import assert_table_equal
-from pydiverse.transform.common import *
 
 # ------------------------------------------------------------------------------------ #
 #                                        SCHEMA                                        #

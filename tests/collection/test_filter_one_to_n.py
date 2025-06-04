@@ -1,4 +1,4 @@
-# Copyright (c) QuantCo 2025-2025
+# Copyright (c) QuantCo and pydiverse contributors 2025-2025
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
 
@@ -10,12 +10,14 @@ import pytest
 
 import pydiverse.colspec as cs
 from pydiverse.colspec.colspec import dy, pdt
+from pydiverse.colspec.columns import ColExpr
 from pydiverse.colspec.pdt_util import num_rows
 
 
 class CarColSpec(cs.ColSpec):
     vin = cs.String(primary_key=True)
     manufacturer = cs.String(nullable=False)
+
     @cs.filter()
     def not_empty(self) -> ColExpr:
         return self.manufacturer != ""

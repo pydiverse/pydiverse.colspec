@@ -1,13 +1,11 @@
-# Copyright (c) QuantCo 2024-2024
-# SPDX-License-Identifier: LicenseRef-QuantCo
+# Copyright (c) QuantCo and pydiverse contributors 2025-2025
+# SPDX-License-Identifier: BSD-3-Clause
+
+from __future__ import annotations
 
 from typing import Any
 
-from pydiverse.colspec import Filter
-from pydiverse.colspec import Rule
-from pydiverse.colspec import Collection
-from pydiverse.colspec import Column
-from pydiverse.colspec import ColSpec
+from pydiverse.colspec import Collection, ColSpec, Column, Filter, Rule
 
 
 def create_colspec(
@@ -19,10 +17,12 @@ def create_colspec(
 
     Args:
         name: The name of the column specification.
-        columns: The columns to set on the column specification. When properly defining the column specification,
-            this would be the annotations that define the column types.
+        columns: The columns to set on the column specification. When properly defining
+            the column specification, this would be the annotations that define the
+            column types.
         rules: The custom non-column-specific validation rules. When properly defining
-            the column specification, this would be the functions annotated with ``@dy.rule``.
+            the column specification, this would be the functions annotated with
+            ``@dy.rule``.
 
     Returns:
         The dynamically created column specification.

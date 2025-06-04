@@ -1,18 +1,13 @@
-# Copyright (c) QuantCo 2024-2025
+# Copyright (c) QuantCo and pydiverse contributors 2024-2025
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Any, Generic, Protocol, Self, TypeVar
+from typing import Any, Generic, Protocol, Self, TypeVar
 
 from pydiverse.colspec.columns import ColExpr
 
-if TYPE_CHECKING:  # pragma: no cover
-    from ._base import Column
-
-    Base = Column
-else:
-    Base = object
+from ._base import Column
 
 # ----------------------------------- ORDINAL MIXIN ---------------------------------- #
 
@@ -25,7 +20,7 @@ class Comparable(Protocol):
 T = TypeVar("T", bound=Comparable)
 
 
-class OrdinalMixin(Generic[T], Base):
+class OrdinalMixin(Generic[T], Column):
     """Mixin to use for ordinal types."""
 
     def __init__(
@@ -81,7 +76,7 @@ class OrdinalMixin(Generic[T], Base):
 U = TypeVar("U")
 
 
-class IsInMixin(Generic[U], Base):
+class IsInMixin(Generic[U], Column):
     """Mixin to use for types implementing "is in"."""
 
     def __init__(self, *, is_in: Sequence[U] | None = None, **kwargs: Any):

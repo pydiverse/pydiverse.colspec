@@ -1,4 +1,4 @@
-# Copyright (c) QuantCo 2024-2025
+# Copyright (c) QuantCo and pydiverse contributors 2024-2025
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
 
@@ -8,13 +8,14 @@ from typing import Any
 import polars as pl
 import pytest
 from dataframely.random import Generator
-from polars.testing import assert_frame_equal
 
 import pydiverse.colspec as cs
 from pydiverse.colspec import Column
 from pydiverse.colspec.exc import DtypeValidationError
-from pydiverse.colspec.testing.factory import create_colspec
 from pydiverse.colspec.optional_dependency import pdt
+from pydiverse.colspec.testing.factory import create_colspec
+from pydiverse.colspec.testing.rules import evaluate_rules
+
 
 @pytest.mark.parametrize(
     ("column_type", "kwargs"),
@@ -349,10 +350,9 @@ def test_args_resolution_valid(column_type: type[Column], kwargs: dict[str, Any]
 def test_validate_min_max(
     column: Column, values: list[Any], valid: dict[str, list[bool]]
 ):
-    lf = pdt.Table({"a": values})
-    actual = evaluate_rules(lf, rules_from_exprs(column.validation_rules(pl.col("a"))))
-    expected = pl.LazyFrame(valid)
-    assert_frame_equal(actual, expected)
+    tbl = pdt.Table({"a": values})
+    actual = evaluate_rules(tbl, column.validation_rules(tbl.a))
+    assert actual == valid
 
 
 @pytest.mark.parametrize(
@@ -395,10 +395,9 @@ def test_validate_min_max(
 def test_validate_resolution(
     column: Column, values: list[Any], valid: dict[str, list[bool]]
 ):
-    lf = pl.LazyFrame({"a": values})
-    actual = evaluate_rules(lf, rules_from_exprs(column.validation_rules(pl.col("a"))))
-    expected = pl.LazyFrame(valid)
-    assert_frame_equal(actual, expected)
+    tbl = pdt.Table({"a": values})
+    actual = evaluate_rules(tbl, column.validation_rules(tbl.a))
+    assert actual == valid
 
 
 @pytest.mark.parametrize(

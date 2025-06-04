@@ -1,17 +1,20 @@
-# Copyright (c) QuantCo 2024-2025
+# Copyright (c) QuantCo and pydiverse contributors 2024-2025
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
 
 import polars as pl
 import pytest
 
+from pydiverse.colspec._validation import validate_columns
 from pydiverse.colspec.exc import ValidationError
+from pydiverse.colspec.optional_dependency import pdt
 
 
 def test_success():
     df = pl.DataFrame(schema={k: pl.Int64() for k in ["a", "b"]})
-    lf = validate_columns(df.lazy(), actual=df.schema.keys(), expected=["a"])
-    assert set(lf.collect_schema().names()) == {"a"}
+    tbl = pdt.Table(df)
+    out_tbl = validate_columns(tbl, expected=["a"])
+    assert set(out_tbl) == {"a"}
 
 
 @pytest.mark.parametrize(
@@ -23,5 +26,6 @@ def test_success():
 )
 def test_failure(actual: list[str], expected: list[str], error: str):
     df = pl.DataFrame(schema={k: pl.Int64() for k in actual})
+    tbl = pdt.Table(df)
     with pytest.raises(ValidationError, match=error):
-        validate_columns(df.lazy(), actual=df.schema.keys(), expected=expected)
+        validate_columns(tbl, expected=expected)

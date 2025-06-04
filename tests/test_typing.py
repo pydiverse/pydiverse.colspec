@@ -1,10 +1,11 @@
-# Copyright (c) QuantCo 2024-2025
+# Copyright (c) QuantCo and pydiverse contributors 2024-2025
 # SPDX-License-Identifier: BSD-3-Clause
 
-# NOTE: This file does not actually run any tests. Instead, it calls functions for which we
-#  simply want to ensure that our type checking works as desired. In some instances, we add
-#  'type: ignore' markers here but, paired with "warn_unused_ignores = true", this allows
-#  testing that typing fails where we want it to without failing pre-commit checks.
+# NOTE: This file does not actually run any tests. Instead, it calls functions for which
+# we simply want to ensure that our type checking works as desired. In some instances,
+# we add 'type: ignore' markers here but, paired with "warn_unused_ignores = true", this
+# allows testing that typing fails where we want it to without failing pre-commit
+# checks.
 from __future__ import annotations
 
 import datetime
@@ -205,7 +206,8 @@ def test_iter_rows_read_only(my_colspec_df: dy.DataFrame[MyColSpec]):
 
 
 # def test_iter_rows_without_named(my_colspec_df: dy.DataFrame[MyColSpec]):
-#     # Make sure we don't accidentally override the return type of `iter_rows` with `named=False`.
+#     # Make sure we don't accidentally override the return type of `iter_rows` with
+#     # `named=False`.
 #     entry = next(my_colspec_df.iter_rows(named=False))
 #
 #     _ = entry["g"]  # type: ignore[call-overload]

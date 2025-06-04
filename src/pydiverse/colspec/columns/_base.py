@@ -1,10 +1,10 @@
-# Copyright (c) QuantCo 2023-2025
+# Copyright (c) QuantCo and pydiverse contributors 2023-2025
 # SPDX-License-Identifier: BSD-3-Clause
 
 from __future__ import annotations
 
 import datetime as dt
-from abc import ABC, abstractmethod
+from abc import ABC, ABCMeta, abstractmethod
 from collections.abc import Callable
 from typing import TYPE_CHECKING
 
@@ -22,7 +22,14 @@ SECONDS_PER_DAY = 86400
 # ------------------------------------------------------------------------------------ #
 
 
-class Column(ABC, ColExpr):
+class ColumnMeta(ABCMeta):
+    def __new__(cls, clsname, bases, attribs):
+        # change bases (only ABC is a real base)
+        bases = tuple([base for base in bases if not issubclass(base, ColExpr)])
+        return super().__new__(cls, clsname, bases, attribs)
+
+
+class Column(ABC, ColExpr, metaclass=ColumnMeta):
     """Abstract base class for data frame column definitions.
 
     This class is merely supposed to be used in :class:`~colspec.Schema`

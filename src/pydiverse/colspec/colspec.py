@@ -1,3 +1,6 @@
+# Copyright (c) QuantCo and pydiverse contributors 2025-2025
+# SPDX-License-Identifier: BSD-3-Clause
+
 from __future__ import annotations
 
 import inspect
@@ -16,6 +19,7 @@ from pydiverse.colspec.columns._base import Column
 
 from . import exc
 from ._filter import Filter
+from .config import Config, alias_collection_fail, alias_subquery
 from .exc import (
     ImplementationError,
     MemberValidationError,
@@ -93,7 +97,13 @@ class ColSpecMeta(type):
         return super().__new__(cls, clsname, bases, attribs)
 
 
+class ColSpecBase:
+    #  this is just the same as object but ruff does not kill it
+    pass
+
+
 class ColSpec(
+    ColSpecBase,
     FailureInfo,
     pdt.Table,
     dag.Table,
@@ -297,6 +307,7 @@ class ColSpec(
         tbl: pdt.Table,
         *,
         cast: bool = False,
+        cfg: Config = Config.default,
     ) -> tuple[Self, FailureInfo]:
         """Filter the table by the rules of this column specification.
 
@@ -347,7 +358,10 @@ class ColSpec(
             ok_rows = ok_rows >> pdt.drop(tbl._pk_check_)
             invalid_rows = invalid_rows >> pdt.drop(tbl._pk_check_)
         return ok_rows, FailureInfo(
-            tbl=src_tbl, invalid_rows=invalid_rows, rule_columns=rules
+            tbl=src_tbl,
+            invalid_rows=invalid_rows,
+            rule_columns=rules,
+            cfg=cfg,
         )
 
     @classmethod
@@ -483,7 +497,7 @@ class MemberInfo:
             col_spec = [
                 t for t in union_types if inspect.isclass(t) and issubclass(t, ColSpec)
             ][0]
-            is_optional = any(t == type(None) for t in union_types)
+            is_optional = any(t == type(None) for t in union_types)  # noqa: E721
         else:
             col_spec = anno
             is_optional = False
@@ -510,7 +524,7 @@ class Collection:
     represent "semantic objects" which cannot be represented in a single table due
     to 1-N relationships that are managed in separate tables.
 
-    A collection must only have type annotations for :class:`~pydiverse.colspec.ColSpec`s
+    A collection must only have type annotations for :class:`~pydiverse.colspec.ColSpec`
     with known column specification:
 
     .. code:: python
@@ -541,13 +555,14 @@ class Collection:
         implemented correctly.
     """
 
-    def get_pdt(self, name: str, fix_table_name: bool = True) -> pdt.Table:
+    def get_pdt(self, name: str, cfg: Config = Config.default) -> pdt.Table:
         tbl = getattr(self, name)
         if not isinstance(tbl, pdt.Table):
             raise TypeError(
-                f"Collection member '{name}' is not a pydiverse transform Table, but {type(tbl)}; collection={self}"
+                f"Collection member '{name}' is not a pydiverse transform Table, but "
+                f"{type(tbl)}; collection={self}"
             )
-        if fix_table_name:
+        if cfg.fix_table_name:
             # fix the name of the table according to Collection member name
             tbl._ast.name = name
         return tbl
@@ -611,12 +626,12 @@ class Collection:
                 "Dataframely raised column specification implementation error"
             )
             if not fault_tolerant:
-                raise exc.ImplementationError(e.message)
+                raise exc.ImplementationError(e.message)  # noqa: B904
         except plexc.InvalidOperationError as e:
             logger = structlog.getLogger(logger_name)
             logger.exception("Dataframely validation failed within polars expression")
             if not fault_tolerant:
-                raise ValidationError(e.message)
+                raise ValidationError(e.message)  # noqa: B904
         except dy_exc.ValidationError as e:
             logger = structlog.getLogger(logger_name)
             logger.exception("Dataframely validation failed")
@@ -625,14 +640,14 @@ class Collection:
                 # does not always store the arguments to it directly.
                 exc_class = getattr(exc, e.__class__.__name__)
                 if hasattr(e, "errors"):
-                    raise exc_class(e.errors)
+                    raise exc_class(e.errors)  # noqa: B904
                 elif hasattr(e, "schema_errors") and hasattr(e, "column_errors"):
                     new_e = exc_class({})
                     new_e.schema_errors = e.schema_errors
                     new_e.column_errors = e.column_errors
-                    raise new_e
+                    raise new_e  # noqa: B904
                 else:
-                    raise ValidationError(e.message)
+                    raise ValidationError(e.message)  # noqa: B904
         return cls._init_polars_data(data)  # ignore validation if fault_tolerant
 
     def is_valid(
@@ -697,7 +712,7 @@ class Collection:
             return False
 
     def filter(
-        self, *, cast: bool = False, fix_table_name: bool = True
+        self, *, cast: bool = False, cfg: Config = Config.default
     ) -> tuple[Self, Self]:
         """Filter rows which conform to column specifications and collections rules.
 
@@ -706,7 +721,6 @@ class Collection:
         """
         from pydiverse.transform.extended import (
             C,
-            alias,
             drop,
             full_join,
             group_by,
@@ -726,9 +740,7 @@ class Collection:
         table_level_fail = self.__class__.build()
 
         for name, member in members.items():
-            out, failure = member.col_spec.filter(
-                self.get_pdt(name, fix_table_name), cast=cast
-            )
+            out, failure = member.col_spec.filter(self.get_pdt(name, cfg), cast=cast)
             setattr(individually_filtered, name, out)
             setattr(table_level_fail, name, failure)
 
@@ -759,7 +771,7 @@ class Collection:
             expr_tbl_names = [
                 tbl_name
                 for tbl_name in members.keys()
-                if logic.uses_table(self.get_pdt(tbl_name, fix_table_name))
+                if logic.uses_table(self.get_pdt(tbl_name, cfg))
             ]
             expr_col_specs = [members[tbl_name].col_spec for tbl_name in expr_tbl_names]
 
@@ -767,11 +779,7 @@ class Collection:
 
             for name in self.members().keys():
                 tbl = members[name].col_spec
-                join = self.get_join(
-                    name,
-                    set(expr_tbl_names) - set([name]),
-                    fix_table_name=fix_table_name,
-                )
+                join = self.get_join(name, set(expr_tbl_names) - set([name]), cfg=cfg)
                 pk_overlap = expr_pk_union.intersection(tbl.primary_keys())
                 requires_grouping = (
                     len(expr_pk_union.difference(tbl.primary_keys())) > 0
@@ -816,13 +824,13 @@ class Collection:
 
             if len(join_members[name]) > 0:
                 filter_join = individually_filtered.get_join(
-                    name, *join_members[name], fix_table_name=fix_table_name
+                    name, *join_members[name], cfg=cfg
                 )
             else:
                 filter_join = tbl
             if len(join_subqueries[name]):
                 for subquery, keys in join_subqueries[name]:
-                    filter_join >>= left_join(subquery, on=keys)
+                    filter_join >>= left_join(subquery >> alias_subquery(cfg), on=keys)
 
             # NOTE: we currently throw rows out if a rule results in null. We could also
             # keep everything, but then we should do the same if no match in the join
@@ -856,7 +864,10 @@ class Collection:
             failure = (
                 table_level_invalid_rows
                 >> full_join(
-                    (coll_failure := collection_level_invalid_rows >> alias())
+                    (
+                        coll_failure := collection_level_invalid_rows
+                        >> alias_collection_fail(cfg)
+                    )
                     >> drop(*col_spec.column_names()),
                     on=[
                         # collection_level_invalid_rows is based on
@@ -879,7 +890,7 @@ class Collection:
             )
 
             original_tbl = getattr(table_level_fail, name).tbl
-            setattr(fail, name, FailureInfo(original_tbl, failure, rule_columns))
+            setattr(fail, name, FailureInfo(original_tbl, failure, rule_columns, cfg))
 
         return new, fail
 
@@ -938,12 +949,12 @@ class Collection:
         return self.get_join(*ordered_tbls, fix_table_name=fix_table_name)
 
     def get_join(
-        self, tbl: str, *more_tbls: Iterable[str], fix_table_name: bool = True
+        self, tbl: str, *more_tbls: Iterable[str], cfg: Config = Config.default
     ) -> pdt.Table | None:
         """
         Get a left join expression if tables should be joinable.
 
-        This method is intended not be overridden in case the automatic detection by
+        This method is intended to be overridden in case the automatic detection by
         checking primary key overlap is not sufficient. The automatic detection assumes
         that when ordering more_tbls by number of primary keys, that every next table
         can be joined with its primary key columns to the left most table that has them.
@@ -953,9 +964,9 @@ class Collection:
         with a version that solves the problem for the concrete tables in a collection.
         """
         more_tbls = list(more_tbls)
-        result = self.get_pdt(tbl, fix_table_name)
+        result = self.get_pdt(tbl, cfg)
         col_specs = self.member_col_specs()
-        primary_keys = {
+        primary_keyss = {
             name: spec.primary_keys()
             for name, spec in col_specs.items()
             if name in more_tbls
@@ -963,23 +974,23 @@ class Collection:
         # it is important to ensure consistent ordering in case additional tables are
         # added to `more_tbls`
         ordered_tbls = sorted(
-            primary_keys.keys(), key=lambda name: (len(primary_keys[name]), name)
+            primary_keyss.keys(), key=lambda name: (len(primary_keyss[name]), name)
         )
-        primary_keys[tbl] = col_specs[tbl].primary_keys()
+        primary_keyss[tbl] = col_specs[tbl].primary_keys()
         ordered_tbls = [tbl, *ordered_tbls]
         for i, name in enumerate(ordered_tbls):
             if i > 0:
                 join_tbls = ordered_tbls[0:i]
-                pk_set = set(primary_keys[name])
+                pk_set = set(primary_keyss[name])
                 on = None
                 for join_name in join_tbls:
-                    pk_overlap = pk_set.intersection(primary_keys[join_name])
+                    pk_overlap = pk_set.intersection(primary_keyss[join_name])
                     if len(pk_overlap) > 0:
                         on = reduce(
                             operator.and_,
                             (
-                                self.get_pdt(name, fix_table_name)[f]
-                                == self.get_pdt(join_name, fix_table_name)[f]
+                                self.get_pdt(name, cfg)[f]
+                                == self.get_pdt(join_name, cfg)[f]
                                 for f in pk_overlap
                             ),
                             on or pdt.lit(True),
@@ -1000,7 +1011,7 @@ class Collection:
                         primary_key=pk_set,
                     )
                     return None
-                result = result >> pdt.left_join(self.get_pdt(name, fix_table_name), on)
+                result = result >> pdt.left_join(self.get_pdt(name, cfg), on)
         return result
 
     def filter_polars(
@@ -1084,49 +1095,6 @@ class Collection:
             if getattr(self, member) is not None
         }
 
-    # ------------------------------------ CASTING ----------------------------------- #
-
-    @classmethod
-    def cast_polars_data(cls, data: Mapping[str, FrameType]) -> Self:
-        """Initialize a collection by casting all members to correct column spec.
-
-        This method calls :meth:`~ColSpec.cast` on every member, thus, removing
-        superfluous columns and casting to the correct dtypes for all input data frames.
-
-        You should typically use :meth:`validate` or :meth:`filter` to obtain instances
-        of the collection as this method does not guarantee that the returned collection
-        upholds any invariants. Nonetheless, it may be useful to use in instances where
-        it is known that the provided data adheres to the collection's invariants.
-
-        Args:
-            data: The data for all members. The dictionary must contain exactly one
-                entry per member with the name of the member as key.
-
-        Returns:
-            The initialized collection.
-
-        Raises:
-            ValueError: If an insufficient set of input data frames is provided, i.e. if
-                any required member of this collection is missing in the input.
-
-        Attention:
-            For lazy frames, casting is not performed eagerly. This prevents collecting
-            the lazy frames' schemas but also means that a call to :meth:`collect`
-            further down the line might fail because of the cast and/or missing columns.
-        """
-        import polars.exceptions as plexc
-
-        cls._validate_polars_input_keys(data)
-        result: dict[str, FrameType] = {}
-        for member_name, member in cls.members().items():
-            if member.is_optional and member_name not in data:
-                continue
-            try:
-                result[member_name] = member.col_spec.cast_polars(data[member_name])
-            except plexc.PolarsError as e:
-                raise ValidationError(str(e)) from e
-        return cls._init_polars_data(result)
-
     # ---------------------------------- COLLECTION ---------------------------------- #
 
     def collect_all_polars(self) -> Self:
@@ -1185,12 +1153,12 @@ class Collection:
             except TypeError:
                 try:
                     return cls()
-                except TypeError as e:
-                    raise ImplementationError(
+                except TypeError:
+                    raise ImplementationError(  # noqa: B904
                         "Failed constructing collection with empty members. Try adding"
                         " @dataclasses.dataclass annotation to a collection class you"
                         " like to build."
-                    ) from e
+                    )
 
     def finalize(self, assert_pdt=False):
         # finalize builder stage and ensure that all dataclass members have been set
