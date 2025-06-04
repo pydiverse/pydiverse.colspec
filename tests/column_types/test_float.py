@@ -18,7 +18,7 @@ from pydiverse.colspec.testing import FLOAT_COLUMN_TYPES
 from pydiverse.colspec.testing.rules import evaluate_rules
 
 
-class IntegerSchema(cs.ColSpec):
+class FloatColSpec(cs.ColSpec):
     a = cs.Float()
 
 
@@ -60,13 +60,13 @@ def test_invalid_args(column_type: type[_BaseFloat], kwargs: dict[str, Any]):
 @pytest.mark.parametrize("dtype", FLOAT_DTYPES)
 def test_any_integer_dtype_passes(dtype: DataTypeClass):
     df = pl.DataFrame(schema={"a": dtype})
-    assert IntegerSchema.is_valid_polars(df)
+    assert FloatColSpec.is_valid_polars(df)
 
 
 @pytest.mark.parametrize("dtype", [pl.Boolean, pl.String] + list(INTEGER_DTYPES))
 def test_non_integer_dtype_fails(dtype: DataTypeClass):
     df = pl.DataFrame(schema={"a": dtype})
-    assert not IntegerSchema.is_valid_polars(df)
+    assert not FloatColSpec.is_valid_polars(df)
 
 
 @pytest.mark.parametrize("column_type", FLOAT_COLUMN_TYPES)

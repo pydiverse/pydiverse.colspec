@@ -7,15 +7,15 @@ from typing import Any
 
 import polars as pl
 import pytest
-from dataframely.testing import evaluate_rules, rules_from_exprs
 from polars.datatypes import DataTypeClass
 from polars.datatypes.group import FLOAT_DTYPES, INTEGER_DTYPES
-from polars.testing import assert_frame_equal
 
 import pydiverse.colspec as cs
+from pydiverse.colspec.optional_dependency import pdt
+from pydiverse.colspec.testing.rules import evaluate_rules
 
 
-class DecimalSchema(cs.ColSpec):
+class DecimalColSpec(cs.ColSpec):
     a = cs.Decimal()
 
 
@@ -53,20 +53,26 @@ def test_invalid_args(kwargs: dict[str, Any]):
         cs.Decimal(**kwargs)
 
 
+@pytest.mark.skip("Currently Dtype.from_polars does not support Decimal")
 @pytest.mark.parametrize(
     "dtype", [pl.Decimal, pl.Decimal(12), pl.Decimal(None, 8), pl.Decimal(6, 2)]
 )
 def test_any_decimal_dtype_passes(dtype: DataTypeClass):
     df = pl.DataFrame(schema={"a": dtype})
-    assert DecimalSchema.is_valid(df)
+    tbl = pdt.Table(df)
+    assert DecimalColSpec.is_valid(tbl)
 
 
 @pytest.mark.parametrize(
     "dtype", [pl.Boolean, pl.String] + list(INTEGER_DTYPES) + list(FLOAT_DTYPES)
 )
 def test_non_decimal_dtype_fails(dtype: DataTypeClass):
+    if dtype == pl.Int128:
+        # this type is not supported by pydiverse libraries, yet
+        return
     df = pl.DataFrame(schema={"a": dtype})
-    assert not DecimalSchema.is_valid(df)
+    tbl = pdt.Table(df)
+    assert not DecimalColSpec.is_valid(tbl)
 
 
 @pytest.mark.parametrize(
@@ -77,12 +83,11 @@ def test_non_decimal_dtype_fails(dtype: DataTypeClass):
     ],
 )
 def test_validate_min(inclusive: bool, valid: dict[str, list[bool]]):
-    kwargs = {("min" if inclusive else "min_exclusive"): decimal.Decimal(3)}
+    kwargs = {("min" if inclusive else "min_exclusive"): 3}
     column = cs.Decimal(**kwargs)  # type: ignore
-    lf = pl.LazyFrame({"a": [1, 2, 3, 4, 5]})
-    actual = evaluate_rules(lf, rules_from_exprs(column.validation_rules(pl.col("a"))))
-    expected = pl.LazyFrame(valid)
-    assert_frame_equal(actual, expected)
+    tbl = pdt.Table({"a": [1, 2, 3, 4, 5]})
+    actual = evaluate_rules(tbl, column.validation_rules(tbl.a))
+    assert actual == valid
 
 
 @pytest.mark.parametrize(
@@ -95,10 +100,9 @@ def test_validate_min(inclusive: bool, valid: dict[str, list[bool]]):
 def test_validate_max(inclusive: bool, valid: dict[str, list[bool]]):
     kwargs = {("max" if inclusive else "max_exclusive"): decimal.Decimal(3)}
     column = cs.Decimal(**kwargs)  # type: ignore
-    lf = pl.LazyFrame({"a": [1, 2, 3, 4, 5]})
-    actual = evaluate_rules(lf, rules_from_exprs(column.validation_rules(pl.col("a"))))
-    expected = pl.LazyFrame(valid)
-    assert_frame_equal(actual, expected)
+    tbl = pdt.Table({"a": [1, 2, 3, 4, 5]})
+    actual = evaluate_rules(tbl, column.validation_rules(tbl.a))
+    assert actual == valid
 
 
 @pytest.mark.parametrize(
@@ -148,7 +152,6 @@ def test_validate_range(
         ("max" if max_inclusive else "max_exclusive"): decimal.Decimal(4),
     }
     column = cs.Decimal(**kwargs)  # type: ignore
-    lf = pl.LazyFrame({"a": [1, 2, 3, 4, 5]})
-    actual = evaluate_rules(lf, rules_from_exprs(column.validation_rules(pl.col("a"))))
-    expected = pl.LazyFrame(valid)
-    assert_frame_equal(actual, expected)
+    tbl = pdt.Table({"a": [1, 2, 3, 4, 5]})
+    actual = evaluate_rules(tbl, column.validation_rules(tbl.a))
+    assert actual == valid
