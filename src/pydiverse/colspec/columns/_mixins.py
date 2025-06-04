@@ -86,5 +86,5 @@ class IsInMixin(Generic[U], Column):
     def validation_rules(self, expr: ColExpr) -> dict[str, ColExpr]:
         result = super().validation_rules(expr)
         if self.is_in is not None:
-            result["is_in"] = expr.is_in(self.is_in)
+            result["is_in"] = expr.is_in(*self.is_in)
         return result

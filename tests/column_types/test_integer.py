@@ -9,7 +9,6 @@ import polars as pl
 import pytest
 from polars.datatypes import DataTypeClass
 from polars.datatypes.group import FLOAT_DTYPES, INTEGER_DTYPES
-from polars.testing import assert_frame_equal
 
 import pydiverse.colspec as cs
 from pydiverse.colspec.columns.integer import _BaseInteger
@@ -114,8 +113,8 @@ def test_validate_max(column_type: type[_BaseInteger], inclusive: bool):
     tbl = pdt.Table({"a": [1, 2, 3, 4, 5]})
     actual = evaluate_rules(tbl, column.validation_rules(tbl.a))
     key = "max" if inclusive else "max_exclusive"
-    expected = pl.LazyFrame({key: [True, True, inclusive, False, False]})
-    assert_frame_equal(actual, expected)
+    expected = {key: [True, True, inclusive, False, False]}
+    assert actual == expected
 
 
 @pytest.mark.parametrize("column_type", INTEGER_COLUMN_TYPES)
@@ -133,13 +132,11 @@ def test_validate_range(
     actual = evaluate_rules(tbl, column.validation_rules(tbl.a))
     key_min = "min" if min_inclusive else "min_exclusive"
     key_max = "max" if max_inclusive else "max_exclusive"
-    expected = pl.LazyFrame(
-        {
-            key_min: [False, min_inclusive, True, True, True],
-            key_max: [True, True, True, max_inclusive, False],
-        }
-    )
-    assert_frame_equal(actual, expected)
+    expected = {
+        key_min: [False, min_inclusive, True, True, True],
+        key_max: [True, True, True, max_inclusive, False],
+    }
+    assert actual == expected
 
 
 @pytest.mark.parametrize("column_type", INTEGER_COLUMN_TYPES)
@@ -147,8 +144,8 @@ def test_validate_is_in(column_type: type[_BaseInteger]):
     column = column_type(is_in=[3, 5])
     tbl = pdt.Table({"a": [1, 2, 3, 4, 5]})
     actual = evaluate_rules(tbl, column.validation_rules(tbl.a))
-    expected = pl.LazyFrame({"is_in": [False, False, True, False, True]})
-    assert_frame_equal(actual, expected)
+    expected = {"is_in": [False, False, True, False, True]}
+    assert actual == expected
 
 
 @pytest.mark.parametrize(
