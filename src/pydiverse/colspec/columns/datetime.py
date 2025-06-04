@@ -95,7 +95,6 @@ class Date(OrdinalMixin[dt.date], Column):
         )
         self.resolution = resolution
 
-    @property
     def dtype(self) -> pdc.Date:
         return pdc.Date()
 
@@ -177,7 +176,6 @@ class Time(OrdinalMixin[dt.time], Column):
         )
         self.resolution = resolution
 
-    @property
     def dtype(self) -> pdc.Time:
         return pdc.Time()
 
@@ -260,7 +258,6 @@ class Datetime(OrdinalMixin[dt.datetime], Column):
         )
         self.resolution = resolution
 
-    @property
     def dtype(self) -> pdc.Datetime:
         return pdc.Datetime()
 
@@ -334,7 +331,6 @@ class Duration(OrdinalMixin[dt.timedelta], Column):
         )
         self.resolution = resolution
 
-    @property
     def dtype(self) -> pdc.Duration:
         return pdc.Duration()
 
