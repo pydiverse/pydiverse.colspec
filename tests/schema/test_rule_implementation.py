@@ -6,7 +6,7 @@ import polars as pl
 import pytest
 
 import pydiverse.colspec as cs
-from pydiverse.colspec._rule import GroupRule, Rule
+from pydiverse.colspec._rule import GroupRulePolars, RulePolars
 from pydiverse.colspec.exc import ImplementationError, RuleImplementationError
 from pydiverse.colspec.testing.factory import create_colspec
 
@@ -23,11 +23,11 @@ def test_group_rule_group_by_error():
             "test",
             columns={"a": cs.Integer(), "b": cs.Integer()},
             rules={
-                "b_greater_zero": GroupRule(
+                "b_greater_zero": GroupRulePolars(
                     (pl.col("b") > 0).all(), group_columns=["c"]
                 )
             },
-        )
+        ).validate_polars(None)
 
 
 def test_rule_implementation_error():
@@ -37,8 +37,8 @@ def test_rule_implementation_error():
         create_colspec(
             "test",
             columns={"a": cs.Integer()},
-            rules={"integer_rule": Rule(pl.col("a") + 1)},
-        )
+            rules={"integer_rule": RulePolars(pl.col("a") + 1)},
+        ).validate_polars(None)
 
 
 def test_group_rule_implementation_error():
@@ -52,8 +52,10 @@ def test_group_rule_implementation_error():
         create_colspec(
             "test",
             columns={"a": cs.Integer(), "b": cs.Integer()},
-            rules={"b_greater_zero": GroupRule(pl.col("b") > 0, group_columns=["a"])},
-        )
+            rules={
+                "b_greater_zero": GroupRulePolars(pl.col("b") > 0, group_columns=["a"])
+            },
+        ).validate_polars(None)
 
 
 def test_rule_column_overlap_error():
@@ -64,5 +66,5 @@ def test_rule_column_overlap_error():
         create_colspec(
             "test",
             columns={"test": cs.Integer(alias="a")},
-            rules={"a": Rule(pl.col("a") > 0)},
-        )
+            rules={"a": RulePolars(pl.col("a") > 0)},
+        ).validate_polars(None)

@@ -221,13 +221,18 @@ class ColSpec(
         import dataframely.exc as dy_exc
 
         dy_schema_cols = convert_to_dy_col_spec(cls)
-        dy_schema = type[dy.Schema](cls.__name__, (dy.Schema,), dy_schema_cols.copy())
         try:
+            dy_schema = type[dy.Schema](
+                cls.__name__, (dy.Schema,), dy_schema_cols.copy()
+            )
             return dy_schema.validate(data, cast=cast)
         except (dy_exc.ValidationError, dy_exc.ImplementationError) as e:
             err_type = getattr(exc, e.__class__.__name__)
             f = err_type.__new__(err_type)
-            f.__dict__.update(e.__dict__)
+            for c in dir(e):
+                if not c.startswith("_"):
+                    setattr(f, c, getattr(e, c))
+            # f.__dict__.update(e.__dict__)
             raise f from e
 
     @classmethod

@@ -5,13 +5,13 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydiverse.colspec import Collection, ColSpec, Column, Filter, Rule
+from pydiverse.colspec import Collection, ColSpec, Column, Filter, Rule, RulePolars
 
 
 def create_colspec(
     name: str,
     columns: dict[str, Column],
-    rules: dict[str, Rule] | None = None,
+    rules: dict[str, Rule | RulePolars] | None = None,
 ) -> type[ColSpec]:
     """Dynamically create a new column specification with the provided name.
 
