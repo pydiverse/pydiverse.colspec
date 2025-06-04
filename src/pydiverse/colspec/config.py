@@ -5,8 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable
 
-from pydiverse.colspec.columns._utils import classproperty
-
+from .columns._utils import classproperty
 from .optional_dependency import pdt, verb
 
 
@@ -28,23 +27,24 @@ class Config:
     #: If stop_validation_on_column_error=True, validation stops in case of column
     # type errors before looking at rows.
     stop_validation_on_column_error: bool = True
-    #: a function to materialize a pdt.Table expression returning reference to result
-    materialize_hook: Callable[[pdt.Table], pdt.Table] | None = None
+    #: A function to materialize a pdt.Table expression returning reference to result.
+    # It can also be given a second argument with a table name prefix.
+    materialize_hook: Callable[[pdt.Table, str | None], pdt.Table] | None = None
 
     @classproperty
-    def default(cls):
+    def default(cls) -> Config:
         return Config()
 
 
 @verb
-def alias_subquery(tbl: pdt.Table, cfg: Config):
+def alias_subquery(tbl: pdt.Table, cfg: Config, table_prefix: str | None = None):
     if cfg.materialize_hook is not None:
-        return cfg.materialize_hook(tbl)
-    return pdt.alias(keep_col_refs=True)
+        return cfg.materialize_hook(tbl, table_prefix)
+    return pdt.alias(table_prefix, keep_col_refs=True)
 
 
 @verb
-def alias_collection_fail(tbl: pdt.Table, cfg: Config):
+def alias_collection_fail(tbl: pdt.Table, cfg: Config, table_prefix: str | None = None):
     if cfg.materialize_hook is not None:
-        return cfg.materialize_hook(tbl)
+        return cfg.materialize_hook(tbl, table_prefix)
     return pdt.alias()

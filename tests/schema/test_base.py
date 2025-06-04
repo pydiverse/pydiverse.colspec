@@ -2,16 +2,16 @@
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
 
-import polars as pl
 import pytest
-from dataframely._rule import Rule
 
 import pydiverse.colspec as cs
+from pydiverse.colspec import Rule
 from pydiverse.colspec.exc import ImplementationError
+from pydiverse.colspec.optional_dependency import pdt
 from pydiverse.colspec.testing.factory import create_colspec
 
 
-class MySchema(cs.ColSpec):
+class MyColSpec(cs.ColSpec):
     a = cs.Integer(primary_key=True)
     b = cs.String(primary_key=True)
     c = cs.Float64()
@@ -19,14 +19,14 @@ class MySchema(cs.ColSpec):
 
 
 def test_column_names():
-    _ = MySchema.e
+    _ = MyColSpec.e
     with pytest.raises(AttributeError):
-        _ = MySchema.d
-    assert MySchema.column_names() == ["a", "b", "c", "e"]
+        _ = MyColSpec.d
+    assert MyColSpec.column_names() == ["a", "b", "c", "e"]
 
 
 def test_columns():
-    columns = MySchema.schema
+    columns = MyColSpec.columns()
     assert isinstance(columns["a"], cs.Integer)
     assert isinstance(columns["b"], cs.String)
     assert isinstance(columns["c"], cs.Float64)
@@ -34,7 +34,7 @@ def test_columns():
 
 
 def test_nullability():
-    columns = MySchema.get()
+    columns = MyColSpec.columns()
     assert not columns["a"].nullable
     assert not columns["b"].nullable
     assert columns["c"].nullable
@@ -42,13 +42,17 @@ def test_nullability():
 
 
 def test_primary_keys():
-    assert MySchema.primary_keys() == ["a", "b"]
+    assert MyColSpec.primary_keys() == ["a", "b"]
 
 
 def test_no_rule_named_primary_key():
-    with pytest.raises(ImplementationError):
+    tbl = pdt.Table(dict(a=["b", "c"]))
+    with pytest.raises(
+        ImplementationError,
+        match="@cs.rule annotated functions must not be called `_primary_key_`",
+    ):
         create_colspec(
             "test",
             {"a": cs.String()},
-            {"primary_key": Rule(pl.col("a").str.len_bytes() > 1)},
-        )
+            {"_primary_key_": Rule(tbl.a.str.len() > 1)},
+        ).validate(tbl)

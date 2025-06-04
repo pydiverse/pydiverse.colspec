@@ -16,6 +16,8 @@ from typing import Any
 
 import pytest
 
+import pydiverse.colspec.collection
+
 # Note: To properly test the typing of the library,
 # we also need to make sure that imported colspecs are properly processed.
 from pydiverse.colspec.testing.typing import MyImportedColSpec
@@ -82,7 +84,7 @@ class MySecondColSpec(ColSpec):
 
 
 @dataclass
-class MyCollection(cs.Collection):
+class MyCollection(pydiverse.colspec.collection.Collection):
     first: MyFirstColSpec
     second: MySecondColSpec
 

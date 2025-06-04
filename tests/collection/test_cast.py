@@ -6,6 +6,7 @@ import polars as pl
 import pytest
 
 import pydiverse.colspec as cs
+import pydiverse.colspec.collection
 from pydiverse.colspec.exc import ValidationError
 
 
@@ -17,7 +18,7 @@ class SecondColSpec(cs.ColSpec):
     a = cs.String()
 
 
-class Collection(cs.Collection):
+class Collection(pydiverse.colspec.collection.Collection):
     first: FirstColSpec
     second: SecondColSpec | None
 

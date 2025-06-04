@@ -6,13 +6,14 @@ import polars as pl
 import pytest
 
 import pydiverse.colspec as cs
+import pydiverse.colspec.collection
 
 
 class TestColSpec(cs.ColSpec):
     a = cs.Integer()
 
 
-class MyCollection(cs.Collection):
+class MyCollection(pydiverse.colspec.collection.Collection):
     first: TestColSpec
     second: TestColSpec | None
 

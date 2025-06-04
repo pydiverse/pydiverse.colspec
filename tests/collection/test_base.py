@@ -10,6 +10,7 @@ import pytest
 from polars.testing import assert_frame_equal
 
 import pydiverse.colspec as cs
+import pydiverse.colspec.collection
 from pydiverse.colspec.colspec import dy
 
 
@@ -22,7 +23,7 @@ class MySecondColSpec(cs.ColSpec):
     b = cs.Integer()
 
 
-class MyCollection(cs.Collection):
+class MyCollection(pydiverse.colspec.collection.Collection):
     first: MyFirstColSpec
     second: MySecondColSpec | None
 

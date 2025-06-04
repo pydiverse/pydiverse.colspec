@@ -9,6 +9,7 @@ import polars as pl
 import pytest
 
 import pydiverse.colspec as cs
+import pydiverse.colspec.collection
 from pydiverse.colspec.colspec import dy, pdt
 from pydiverse.colspec.columns import ColExpr
 from pydiverse.colspec.pdt_util import num_rows
@@ -29,7 +30,7 @@ class CarPartColSpec(cs.ColSpec):
     price = cs.Float64(primary_key=True)
 
 
-class CarFleetPolars(cs.Collection):
+class CarFleetPolars(pydiverse.colspec.collection.Collection):
     cars: CarColSpec
     car_parts: CarPartColSpec
 
@@ -62,7 +63,7 @@ def test_valid_failure_infos_polars():
 
 
 @dataclass
-class CarFleet(cs.Collection):
+class CarFleet(pydiverse.colspec.collection.Collection):
     cars: CarColSpec
     car_parts: CarPartColSpec
 

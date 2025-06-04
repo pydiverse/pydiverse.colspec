@@ -9,6 +9,7 @@ from dataclasses import dataclass
 import pytest
 
 import pydiverse.colspec as cs
+import pydiverse.colspec.collection
 import pydiverse.transform as pdt
 from pydiverse.colspec.exc import MemberValidationError
 from pydiverse.colspec.pdt_util import num_rows
@@ -30,7 +31,7 @@ class MySecondColSpec(cs.ColSpec):
 
 
 @dataclass
-class MyCollection(cs.Collection):
+class MyCollection(pydiverse.colspec.collection.Collection):
     first: MyFirstColSpec
     second: MySecondColSpec
 
@@ -51,7 +52,7 @@ class MyCollection(cs.Collection):
 
 
 @dataclass
-class SimpleCollection(cs.Collection):
+class SimpleCollection(pydiverse.colspec.collection.Collection):
     first: MyFirstColSpec
     second: MySecondColSpec
 
