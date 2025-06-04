@@ -7,7 +7,7 @@ import inspect
 import types
 import typing
 from functools import reduce
-from typing import TYPE_CHECKING, Any, Iterable, Mapping, Self, overload
+from typing import TYPE_CHECKING, Any, Iterable, Literal, Mapping, Self, overload
 
 from pydiverse.colspec._validation import validate_columns, validate_dtypes
 from pydiverse.colspec.columns._base import Column
@@ -397,7 +397,7 @@ class ColSpec(
             This method preserves the ordering of the input data frame.
         """
 
-        tbl = cls._validate_schema(tbl, cast=cast)
+        tbl = cls._validate_schema(tbl, casting=("lenient" if cast else "none"))
 
         rules, group_rules = cls._validation_rules(tbl)
         if "_primary_key_" in rules:
@@ -412,7 +412,7 @@ class ColSpec(
                 )
                 == 1
             )
-            tbl = tbl >> pdt.mutate(_pk_check_=pk_check)
+            tbl = tbl >> pdt.mutate(_pk_check_=pk_check) >> alias_subquery(cfg)
             rules["_primary_key_"] = tbl._pk_check_
         for name, group_rule in group_rules.items():
             subquery = (
@@ -442,10 +442,13 @@ class ColSpec(
         )
 
     @classmethod
-    def _validate_schema(cls, tbl: pdt.Table, *, cast: bool):
+    def _validate_schema(
+        cls, tbl: pdt.Table, *, casting: Literal["none", "lenient", "strict"]
+    ):
         cls.fail_dy_columns_in_colspec()
+
         tbl = validate_columns(tbl, expected=cls.column_names())
-        return validate_dtypes(tbl, expected=cls.columns(), cast=cast)
+        return validate_dtypes(tbl, expected=cls.columns(), casting=casting)
 
     @classmethod
     def _validation_rules(
@@ -454,7 +457,7 @@ class ColSpec(
         cls.fail_dy_columns_in_colspec()
         alias_map = cls.alias_map()
         return {
-            f"{col}|{rule_name}": rule
+            f"{col}|{rule_name}": rule.fill_null(True)
             for col in cls.column_names()
             for rule_name, rule in getattr(cls, alias_map[col])
             .validation_rules(tbl[col])

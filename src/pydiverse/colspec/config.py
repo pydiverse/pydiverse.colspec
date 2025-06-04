@@ -40,7 +40,7 @@ class Config:
 def alias_subquery(tbl: pdt.Table, cfg: Config, table_prefix: str | None = None):
     if cfg.materialize_hook is not None:
         return cfg.materialize_hook(tbl, table_prefix)
-    return pdt.alias(table_prefix)
+    return pdt.alias(table_prefix, keep_col_refs=True)
 
 
 @verb
