@@ -1,6 +1,9 @@
-# Copyright (c) QuantCo 2024-2024
-# SPDX-License-Identifier: LicenseRef-QuantCo
+# Copyright (c) QuantCo and pydiverse contributors 2025-2025
+# SPDX-License-Identifier: BSD-3-Clause
 
+from __future__ import annotations
+
+from .assert_equal import assert_table_equal
 from .const import (
     ALL_COLUMN_TYPES,
     COLUMN_TYPES,
@@ -10,7 +13,6 @@ from .const import (
 )
 from .factory import create_collection, create_collection_raw, create_colspec
 from .rules import evaluate_rules_polars, rules_from_exprs_polars
-from .assert_equal import assert_table_equal
 
 __all__ = [
     "ALL_COLUMN_TYPES",

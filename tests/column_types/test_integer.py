@@ -1,4 +1,4 @@
-# Copyright (c) QuantCo 2024-2025
+# Copyright (c) QuantCo and pydiverse contributors 2024-2025
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
 
@@ -13,8 +13,8 @@ from polars.testing import assert_frame_equal
 
 import pydiverse.colspec as cs
 from pydiverse.colspec.columns.integer import _BaseInteger
-from pydiverse.colspec.testing import INTEGER_COLUMN_TYPES
 from pydiverse.colspec.optional_dependency import pdt
+from pydiverse.colspec.testing import INTEGER_COLUMN_TYPES
 
 
 class IntegerColSpec(cs.ColSpec):

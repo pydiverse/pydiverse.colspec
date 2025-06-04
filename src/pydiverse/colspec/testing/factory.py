@@ -1,13 +1,11 @@
-# Copyright (c) QuantCo 2024-2024
-# SPDX-License-Identifier: LicenseRef-QuantCo
+# Copyright (c) QuantCo and pydiverse contributors 2025-2025
+# SPDX-License-Identifier: BSD-3-Clause
+
+from __future__ import annotations
 
 from typing import Any
 
-from pydiverse.colspec import Filter
-from pydiverse.colspec import Rule
-from pydiverse.colspec import Collection
-from pydiverse.colspec import Column
-from pydiverse.colspec import ColSpec
+from pydiverse.colspec import Collection, ColSpec, Column, Filter, Rule
 
 
 def create_colspec(

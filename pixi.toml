@@ -65,6 +65,27 @@ sphinx-copybutton = ">=0.5.2"
 docs = "cd docs && make html "
 readthedocs = "rm -rf $READTHEDOCS_OUTPUT/html && cp -r docs/build/html $READTHEDOCS_OUTPUT/html"
 
+[feature.lint.dependencies]
+#commitit-internal = "*"
+pre-commit = "*"
+insert-license-header = "*"
+docformatter = "*"
+ruff = ">=0.5.6"
+prettier = "*"
+nbstripout = "*"
+sqlfluff = "*"
+taplo = "*"
+pre-commit-hooks = "*"
+typos = "*"
+conda-deny = "*"
+
+[feature.lint.tasks]
+#commitit-install = "commitit install"
+#commitit = "commitit run --all-files"
+pre-commit-install = "pre-commit install"
+pre-commit-run = "pre-commit run -a"
+conda-deny = "conda-deny check"
+
 [feature.py311.dependencies]
 python = "3.11.*"
 [feature.py312.dependencies]
@@ -90,4 +111,5 @@ py313dy = ["py313", "dev", "dy"]
 py311all = ["py311", "dev", "pdt", "dag", "dy"]
 py313all = ["py313", "dev", "pdt", "dag", "dy"]
 docs = ["docs"]
+lint = { features = ["lint"], no-default-feature = true }
 release = { features = ["release"], no-default-feature = true }

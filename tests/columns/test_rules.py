@@ -1,10 +1,9 @@
-# Copyright (c) QuantCo 2024-2025
+# Copyright (c) QuantCo and pydiverse contributors 2024-2025
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
 
 import polars as pl
 import pytest
-from polars.testing import assert_frame_equal
-
 from dataframely.columns import Column
 from dataframely.testing import (
     COLUMN_TYPES,
@@ -12,6 +11,7 @@ from dataframely.testing import (
     evaluate_rules,
     rules_from_exprs,
 )
+from polars.testing import assert_frame_equal
 
 
 @pytest.mark.parametrize("column_type", COLUMN_TYPES + SUPERTYPE_COLUMN_TYPES)

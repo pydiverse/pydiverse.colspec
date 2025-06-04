@@ -1,11 +1,11 @@
-# Copyright (c) QuantCo 2024-2024
+# Copyright (c) QuantCo and pydiverse contributors 2024-2025
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
 
 import polars as pl
-from polars.testing import assert_frame_equal
-
 from dataframely._rule import GroupRule, Rule
 from dataframely.testing import evaluate_rules
+from polars.testing import assert_frame_equal
 
 
 def test_single_column_single_rule():

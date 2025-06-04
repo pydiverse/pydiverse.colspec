@@ -1,8 +1,11 @@
-# Copyright (c) QuantCo 2024-2024
-# SPDX-License-Identifier: LicenseRef-QuantCo
+# Copyright (c) QuantCo and pydiverse contributors 2025-2025
+# SPDX-License-Identifier: BSD-3-Clause
+
+from __future__ import annotations
 
 from .. import (
     Any,
+    ColSpec,
     Date,
     Datetime,
     Decimal,
@@ -10,7 +13,6 @@ from .. import (
     Float32,
     Int64,
     List,
-    ColSpec,
     Struct,
 )
 

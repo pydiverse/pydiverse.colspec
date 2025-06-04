@@ -1,11 +1,14 @@
+# Copyright (c) QuantCo and pydiverse contributors 2025-2025
+# SPDX-License-Identifier: BSD-3-Clause
+
 from __future__ import annotations
 
+from ._filter import Filter, FilterPolars, filter, filter_polars
+from ._rule import Rule, rule
 from .colspec import (
     Collection,
     ColSpec,
 )
-from ._filter import filter, filter_polars, Filter, FilterPolars
-from ._rule import rule, Rule
 from .columns import (
     Any,
     Bool,

@@ -1,4 +1,4 @@
-# Copyright (c) QuantCo 2024-2025
+# Copyright (c) QuantCo and pydiverse contributors 2024-2025
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
 
@@ -13,8 +13,9 @@ from polars.testing import assert_frame_equal
 import pydiverse.colspec as cs
 from pydiverse.colspec import Column
 from pydiverse.colspec.exc import DtypeValidationError
-from pydiverse.colspec.testing.factory import create_colspec
 from pydiverse.colspec.optional_dependency import pdt
+from pydiverse.colspec.testing.factory import create_colspec
+
 
 @pytest.mark.parametrize(
     ("column_type", "kwargs"),

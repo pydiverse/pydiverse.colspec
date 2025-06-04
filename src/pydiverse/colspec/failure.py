@@ -1,4 +1,7 @@
-# Copyright (c) QuantCo 2024-2025
+# Copyright (c) QuantCo and pydiverse contributors 2025-2025
+# SPDX-License-Identifier: BSD-3-Clause
+
+# Copyright (c) QuantCo and pydiverse contributors 2024-2025
 # SPDX-License-Identifier: LicenseRef-QuantCo
 from __future__ import annotations
 
@@ -8,6 +11,7 @@ from typing import IO, Self
 
 from pydiverse.colspec.pdt_util import num_rows
 
+from .config import Config
 from .optional_dependency import pdt, pl
 
 
@@ -15,24 +19,22 @@ class FailureInfo:
     """A container carrying information about rows failing validation in
     :meth:`ColSpec.filter`."""
 
-    #: The subset of the input data frame containing the *invalid* rows along with
-    #: all boolean columns used for validation. Each of these boolean columns describes
-    #: a single rule where a value of ``False``` indicates unsuccessful validation.
-    #: Thus, at least one value per row is ``False``.
-    tbl: pdt.Table
-    _invalid_rows: pdt.Table
-    #: The columns in `_tbl` which are used for validation.
-    rule_columns: dict[str, pdt.ColExpr]
-
     def __init__(
         self,
         tbl: pdt.Table,
         invalid_rows: pdt.Table,
         rule_columns: dict[str, pdt.ColExpr],
+        cfg: Config,
     ):
+        #: The subset of the input data frame containing the *invalid* rows along with
+        #: all boolean columns used for validation. Each of these boolean columns describes
+        #: a single rule where a value of ``False``` indicates unsuccessful validation.
+        #: Thus, at least one value per row is ``False``.
         self.tbl = tbl
         self._invalid_rows = invalid_rows
+        #: The columns in `_tbl` which are used for validation.
         self.rule_columns = rule_columns
+        self.cfg = cfg
 
     @property
     def invalid_rows(self) -> pdt.Table:
@@ -61,17 +63,15 @@ class FailureInfo:
         # )
         cnts: dict[str, int] = (
             self._invalid_rows
-            >> summarize(**{k: pdt.count() - C[k].sum() for k in self.rule_columns.keys()})
+            >> summarize(
+                **{k: pdt.count() - C[k].sum() for k in self.rule_columns.keys()}
+            )
             >> export(pdt.Dict)
         )
         return {k: v for k, v in cnts.items() if v is not None and v > 0}
 
     def __len__(self) -> int:
-        from pydiverse.transform.extended import collect
-
-        return num_rows(
-            self._invalid_rows >> collect()
-        )  # this can be implemented more efficiently
+        return num_rows(self._invalid_rows)
 
     # ---------------------------------- PERSISTENCE --------------------------------- #
 
