@@ -443,10 +443,10 @@ class ColSpec(
 
         tbl = validate_columns(tbl, expected=cls.column_names())
 
-        if casting == "lenient":
-            tbl >>= pdt.mutate(
-                **{f"{col.name}{_ORIGINAL_NULL_SUFFIX}": col.is_null() for col in tbl}
-            )
+        # if casting == "lenient":
+        #     tbl >>= pdt.mutate(
+        #         **{f"{col.name}{_ORIGINAL_NULL_SUFFIX}": col.is_null() for col in tbl}
+        #     )
 
         return validate_dtypes(tbl, expected=cls.columns(), casting=casting)
 
