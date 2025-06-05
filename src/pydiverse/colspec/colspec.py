@@ -400,20 +400,15 @@ class ColSpec(
         tbl = cls._validate_schema(tbl, casting=("lenient" if cast else "none"))
 
         rules, group_rules = cls._validation_rules(tbl)
-        if "_primary_key_" in rules:
+        if "_primary_key_" in rules or "_primary_key_" in group_rules:
             raise ImplementationError(
                 "@cs.rule annotated functions must not be called `_primary_key_`"
             )
         src_tbl = tbl
         if len(cls.primary_keys()) > 0:
-            pk_check = (
-                pdt.count(
-                    partition_by=[getattr(tbl, col) for col in cls.primary_keys()]
-                )
-                == 1
+            group_rules["_primary_key_"] = GroupRule(
+                pdt.count() == 1, group_columns=cls.primary_keys()
             )
-            tbl = tbl >> pdt.mutate(_pk_check_=pk_check) >> alias_subquery(cfg)
-            rules["_primary_key_"] = tbl._pk_check_
         for name, group_rule in group_rules.items():
             subquery = (
                 tbl
@@ -424,7 +419,7 @@ class ColSpec(
             tbl = tbl >> pdt.left_join(
                 subquery >> pdt.select("expr"),
                 on=pdt.all(
-                    *[tbl[col] == subquery[col] for col in group_rule.group_columns]
+                    *[src_tbl[col] == subquery[col] for col in group_rule.group_columns]
                 ),
             )
             rules[name] = subquery.expr
@@ -432,8 +427,8 @@ class ColSpec(
         ok_rows = tbl >> pdt.filter(combined)
         invalid_rows = tbl >> pdt.filter(~combined) >> pdt.mutate(**rules)
         if len(cls.primary_keys()) > 0:
-            ok_rows = ok_rows >> pdt.drop(tbl._pk_check_)
-            invalid_rows = invalid_rows >> pdt.drop(tbl._pk_check_)
+            ok_rows = ok_rows
+            invalid_rows = invalid_rows
         return ok_rows, FailureInfo(
             tbl=src_tbl,
             invalid_rows=invalid_rows,
