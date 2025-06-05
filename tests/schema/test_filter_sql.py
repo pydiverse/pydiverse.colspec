@@ -182,5 +182,4 @@ def test_filter_nondeterministic_tbl():
         >> alias()
         >> summarize(n_unique=pdt.count())
         >> export(Scalar)
-        == 1
-    )
+    ) == 1

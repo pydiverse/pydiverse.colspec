@@ -25,6 +25,8 @@ from .optional_dependency import Generator, dag, dy, pdt, pl
 if TYPE_CHECKING:
     pass
 
+_ORIGINAL_NULL_SUFFIX = "__orig_null__"
+
 
 def convert_to_dy_col_spec(base_class):
     from pydiverse.colspec import Column
@@ -406,11 +408,18 @@ class ColSpec(
                 >> pdt.summarize(expr=group_rule.expr)
                 >> alias_subquery(cfg, cls.get_subquery_name(tbl, name))
             )
-            tbl = tbl >> pdt.left_join(
-                subquery >> pdt.select("expr"),
-                on=pdt.all(
-                    *[src_tbl[col] == subquery[col] for col in group_rule.group_columns]
-                ),
+            tbl = (
+                tbl
+                >> pdt.left_join(
+                    subquery,
+                    on=pdt.all(
+                        *[
+                            src_tbl[col] == subquery[col]
+                            for col in group_rule.group_columns
+                        ]
+                    ),
+                )
+                >> pdt.select(*tbl)
             )
             rules[name] = subquery.expr
         combined = pdt.all(True, *rules.values())
@@ -433,6 +442,12 @@ class ColSpec(
         cls.fail_dy_columns_in_colspec()
 
         tbl = validate_columns(tbl, expected=cls.column_names())
+
+        if casting == "lenient":
+            tbl >>= pdt.mutate(
+                **{f"{col.name}{_ORIGINAL_NULL_SUFFIX}": col.is_null() for col in tbl}
+            )
+
         return validate_dtypes(tbl, expected=cls.columns(), casting=casting)
 
     @classmethod
