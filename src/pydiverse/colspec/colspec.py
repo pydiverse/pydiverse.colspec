@@ -389,18 +389,29 @@ class ColSpec(
             This method preserves the ordering of the input data frame.
         """
 
-        tbl = cls._validate_columns(tbl, casting=("lenient" if cast else "none"))
+        src_tbl = tbl
 
+        tbl = cls._validate_columns(tbl, casting=("lenient" if cast else "none"))
         rules, group_rules = cls._validation_rules(tbl)
+
+        if cast:
+            dtype_rules = {
+                f"{col}|dtype": (
+                    tbl[col].is_null() == tbl[f"{col}{_ORIGINAL_NULL_SUFFIX}"]
+                )
+                for col in cls.column_names()
+            }
+            rules.update(dtype_rules)
+
         if "_primary_key_" in rules or "_primary_key_" in group_rules:
             raise ImplementationError(
                 "@cs.rule annotated functions must not be called `_primary_key_`"
             )
-        src_tbl = tbl
         if len(cls.primary_keys()) > 0:
             group_rules["_primary_key_"] = GroupRule(
                 pdt.count() == 1, group_columns=cls.primary_keys()
             )
+
         for name, group_rule in group_rules.items():
             subquery = (
                 tbl
@@ -408,26 +419,44 @@ class ColSpec(
                 >> pdt.summarize(expr=group_rule.expr)
                 >> alias_subquery(cfg, cls.get_subquery_name(tbl, name))
             )
-            tbl = (
-                tbl
-                >> pdt.left_join(
-                    subquery,
-                    on=pdt.all(
-                        *[
-                            src_tbl[col] == subquery[col]
-                            for col in group_rule.group_columns
-                        ]
-                    ),
-                )
-                >> pdt.select(*tbl)
-            )
+            tbl >>= pdt.left_join(
+                subquery,
+                on=pdt.all(
+                    *[tbl[col] == subquery[col] for col in group_rule.group_columns]
+                ),
+            ) >> pdt.select(*tbl)
             rules[name] = subquery.expr
+
         combined = pdt.all(True, *rules.values())
+
+        if cast:
+            # Rules other than the "dtype rule" might not be reliable if type casting
+            # failed, i.e. if the "dtype rule" evaluated to `False`. For this reason,
+            # we set all other rule evaluations to `null` in the case of dtype casting
+            # failure.
+            all_dtype_casts_valid = pdt.all(
+                True, *(col for col in tbl if col.name[-6:] == "|dtype")
+            )
+
+            # remove original null information again
+            tbl >>= pdt.drop(
+                *(tbl[f"{col}{_ORIGINAL_NULL_SUFFIX}"] for col in cls.column_names())
+            )
+
+            rules = {
+                name: pdt.when(all_dtype_casts_valid)
+                .then(expr)
+                .otherwise(pdt.lit(None, dtype=pdt.Bool))
+                for name, expr in rules.items()
+            }
+
         ok_rows = tbl >> pdt.filter(combined)
         invalid_rows = tbl >> pdt.filter(~combined) >> pdt.mutate(**rules)
+
         if len(cls.primary_keys()) > 0:
             ok_rows = ok_rows
             invalid_rows = invalid_rows
+
         return ok_rows, FailureInfo(
             tbl=src_tbl,
             invalid_rows=invalid_rows,
@@ -443,10 +472,10 @@ class ColSpec(
 
         tbl = validate_columns(tbl, expected=cls.column_names())
 
-        # if casting == "lenient":
-        #     tbl >>= pdt.mutate(
-        #         **{f"{col.name}{_ORIGINAL_NULL_SUFFIX}": col.is_null() for col in tbl}
-        #     )
+        if casting == "lenient":
+            tbl >>= pdt.mutate(
+                **{f"{col.name}{_ORIGINAL_NULL_SUFFIX}": col.is_null() for col in tbl}
+            )
 
         return validate_dtypes(tbl, expected=cls.columns(), casting=casting)
 
