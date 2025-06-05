@@ -80,17 +80,7 @@ def convert_to_dy(value):
     from pydiverse.colspec import Column
 
     if isinstance(value, Column) and hasattr(dy, value.__class__.__name__):
-        DyColClass = getattr(dy, value.__class__.__name__)
-        param_keys = set(inspect.signature(DyColClass.__init__).parameters.keys())
-        fields = value.__dict__.copy()
-        if "inner" in fields:
-            if isinstance(value.inner, dict):
-                # this case handles struct definitions
-                fields["inner"] = {k: convert_to_dy(v) for k, v in value.inner.items()}
-            else:
-                # this case handles lists with inner types
-                fields["inner"] = convert_to_dy(value.inner)
-        return DyColClass(**{k: v for k, v in fields.items() if k in param_keys})
+        return value.to_dataframely()
     else:
         return value
 
