@@ -83,7 +83,7 @@ def validate_dtypes(
             return tbl >> mutate(
                 **{
                     name: C[name].cast(
-                        expected[name].dtype()  # , strict=(casting == "strict")
+                        expected[name].dtype(), strict=(casting == "strict")
                     )
                     for name in dtype_errors.keys()
                 }

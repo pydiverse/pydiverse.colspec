@@ -434,8 +434,14 @@ class ColSpec(
             # failed, i.e. if the "dtype rule" evaluated to `False`. For this reason,
             # we set all other rule evaluations to `null` in the case of dtype casting
             # failure.
+            # TODO: actually we should only do this for expressions containing a column
+            # that failed the cast.
             all_dtype_casts_valid = pdt.all(
-                True, *(col for col in tbl if col.name[-6:] == "|dtype")
+                True,
+                *(
+                    tbl[col].is_null() == tbl[f"{col}{_ORIGINAL_NULL_SUFFIX}"]
+                    for col in cls.column_names()
+                ),
             )
 
             # remove original null information again
@@ -443,12 +449,15 @@ class ColSpec(
                 *(tbl[f"{col}{_ORIGINAL_NULL_SUFFIX}"] for col in cls.column_names())
             )
 
-            rules = {
-                name: pdt.when(all_dtype_casts_valid)
-                .then(expr)
-                .otherwise(pdt.lit(None, dtype=pdt.Bool))
-                for name, expr in rules.items()
-            }
+            rules.update(
+                {
+                    name: pdt.when(all_dtype_casts_valid)
+                    .then(expr)
+                    .otherwise(pdt.lit(None, dtype=pdt.Bool))
+                    for name, expr in rules.items()
+                    if not name.endswith("|dtype")
+                }
+            )
 
         ok_rows = tbl >> pdt.filter(combined)
         invalid_rows = tbl >> pdt.filter(~combined) >> pdt.mutate(**rules)

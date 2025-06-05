@@ -17,7 +17,14 @@ import pydiverse.colspec as cs
 import pydiverse.transform as pdt
 from pydiverse.colspec.exc import DtypeValidationError, ValidationError
 from pydiverse.colspec.testing.assert_equal import assert_table_equal
-from pydiverse.transform.common import *
+from pydiverse.transform.common import (
+    Polars,
+    SqlAlchemy,
+    alias,
+    export,
+    group_by,
+    summarize,
+)
 
 engine = sqa.create_engine("duckdb:///:memory:")
 
@@ -151,9 +158,6 @@ def test_filter_cast():
         "a|dtype": 3,
         "a|nullability": 1,
         "b|max_length": 1,
-        # NOTE: primary key constraint is violated as failing dtype casts results in
-        # multiple null values.
-        "primary_key": 1,
     }
     # assert failures.cooccurrence_counts() == {
     #     frozenset({"a|nullability", "primary_key"}): 1,
@@ -181,5 +185,5 @@ def test_filter_nondeterministic_tbl():
         >> summarize()
         >> alias()
         >> summarize(n_unique=pdt.count())
-        >> export(Scalar)
+        >> export(pdt.Scalar)
     ) == 1
