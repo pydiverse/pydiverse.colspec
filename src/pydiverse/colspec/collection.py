@@ -191,7 +191,7 @@ class Collection:
                 f"Collection member '{name}' is not a pydiverse transform Table, but "
                 f"{type(tbl)}; collection={self}"
             )
-        if cfg.fix_table_name:
+        if cfg.fix_table_names:
             # fix the name of the table according to Collection member name
             tbl._ast.name = name
         return tbl

@@ -72,9 +72,9 @@ def validate_dtypes(
     from pydiverse.transform import C, mutate
 
     dtype_errors: dict[str, tuple[Dtype, Dtype]] = {}
-    for col in tbl:
-        if not col.dtype().is_subtype(expected[col.name].dtype()):
-            dtype_errors[col.name] = (col.dtype(), expected[col.name].dtype())
+    for name, col in expected.items():
+        if not tbl[name].dtype().is_subtype(col.dtype()):
+            dtype_errors[name] = (tbl[name].dtype(), col.dtype())
 
     if len(dtype_errors) > 0:
         if casting == "none":
@@ -83,7 +83,7 @@ def validate_dtypes(
             return tbl >> mutate(
                 **{
                     name: C[name].cast(
-                        expected[name].dtype(), strict=(casting == "strict")
+                        expected[name].dtype()  # , strict=(casting == "strict")
                     )
                     for name in dtype_errors.keys()
                 }
