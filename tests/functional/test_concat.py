@@ -10,25 +10,25 @@ import pydiverse.colspec as cs
 import pydiverse.colspec.collection
 
 
-class MySchema(cs.ColSpec):
+class MyColSpec(cs.ColSpec):
     a = cs.Int64()
 
 
 class SimpleCollection(pydiverse.colspec.collection.Collection):
-    first: MySchema
-    second: MySchema | None
-    third: MySchema | None
+    first: MyColSpec
+    second: MyColSpec | None
+    third: MyColSpec | None
 
 
 def test_concat():
-    col1 = SimpleCollection.cast({"first": pl.LazyFrame({"a": [1, 2, 3]})})
-    col2 = SimpleCollection.cast(
+    col1 = SimpleCollection.cast_polars_data({"first": pl.LazyFrame({"a": [1, 2, 3]})})
+    col2 = SimpleCollection.cast_polars_data(
         {
             "first": pl.LazyFrame({"a": [4, 5, 6]}),
             "second": pl.LazyFrame({"a": [4, 5, 6]}),
         }
     )
-    col3 = SimpleCollection.cast(
+    col3 = SimpleCollection.cast_polars_data(
         {
             "first": pl.LazyFrame({"a": [7, 8, 9]}),
             "second": pl.LazyFrame({"a": [7, 8, 9]}),

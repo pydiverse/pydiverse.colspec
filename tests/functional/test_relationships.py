@@ -11,16 +11,16 @@ import pydiverse.colspec as cs
 # -------------------------------------- SCHEMA -------------------------------------- #
 
 
-class DepartmentSchema(cs.ColSpec):
+class DepartmentColSpec(cs.ColSpec):
     department_id = cs.Int64(primary_key=True)
 
 
-class ManagerSchema(cs.ColSpec):
+class ManagerColSpec(cs.ColSpec):
     department_id = cs.Int64(primary_key=True)
     name = cs.String(nullable=False)
 
 
-class EmployeeSchema(cs.ColSpec):
+class EmployeeColSpec(cs.ColSpec):
     department_id = cs.Int64(primary_key=True)
     employee_number = cs.Int64(primary_key=True)
     name = cs.String(nullable=False)
@@ -30,20 +30,20 @@ class EmployeeSchema(cs.ColSpec):
 
 
 @pytest.fixture()
-def departments() -> dy.LazyFrame[DepartmentSchema]:
-    return DepartmentSchema.cast(pl.LazyFrame({"department_id": [1, 2]}))
+def departments() -> dy.LazyFrame[DepartmentColSpec]:
+    return DepartmentColSpec.cast_polars(pl.LazyFrame({"department_id": [1, 2]}))
 
 
 @pytest.fixture()
-def managers() -> dy.LazyFrame[ManagerSchema]:
-    return ManagerSchema.cast(
+def managers() -> dy.LazyFrame[ManagerColSpec]:
+    return ManagerColSpec.cast_polars(
         pl.LazyFrame({"department_id": [1], "name": ["Donald Duck"]})
     )
 
 
 @pytest.fixture()
-def employees() -> dy.LazyFrame[EmployeeSchema]:
-    return EmployeeSchema.cast(
+def employees() -> dy.LazyFrame[EmployeeColSpec]:
+    return EmployeeColSpec.cast_polars(
         pl.LazyFrame(
             {
                 "department_id": [2, 2, 2],
@@ -60,8 +60,8 @@ def employees() -> dy.LazyFrame[EmployeeSchema]:
 
 
 def test_one_to_one(
-    departments: dy.LazyFrame[DepartmentSchema],
-    managers: dy.LazyFrame[ManagerSchema],
+    departments: dy.LazyFrame[DepartmentColSpec],
+    managers: dy.LazyFrame[ManagerColSpec],
 ):
     actual = dy.filter_relationship_one_to_one(
         departments, managers, on="department_id"
@@ -70,8 +70,8 @@ def test_one_to_one(
 
 
 def test_one_to_at_least_one(
-    departments: dy.LazyFrame[DepartmentSchema],
-    employees: dy.LazyFrame[EmployeeSchema],
+    departments: dy.LazyFrame[DepartmentColSpec],
+    employees: dy.LazyFrame[EmployeeColSpec],
 ):
     actual = dy.filter_relationship_one_to_at_least_one(
         departments, employees, on="department_id"
