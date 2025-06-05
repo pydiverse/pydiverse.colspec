@@ -100,8 +100,11 @@ class Date(OrdinalMixin[dt.date], Column):
 
     def validation_rules(self, expr: ColExpr) -> dict[str, ColExpr]:
         result = super().validation_rules(expr)
-        if self.resolution is not None:
-            result["resolution"] = expr.dt.truncate(self.resolution) == expr
+        # # pydiverse.transform is currently not able to check resolution problems.
+        # # However, it is a problem that can be solved by convention.
+        # # pydiverse.pipedag will enforce those.
+        # if self.resolution is not None:
+        #     result["resolution"] = expr.dt.truncate(self.resolution) == expr
         return result
 
 
@@ -263,8 +266,11 @@ class Datetime(OrdinalMixin[dt.datetime], Column):
 
     def validation_rules(self, expr: ColExpr) -> dict[str, ColExpr]:
         result = super().validation_rules(expr)
-        if self.resolution is not None:
-            result["resolution"] = expr.dt.truncate(self.resolution) == expr
+        # # pydiverse.transform is currently not able to check resolution problems.
+        # # However, it is a problem that can be solved by convention.
+        # # pydiverse.pipedag will enforce those.
+        # if self.resolution is not None:
+        #     result["resolution"] = expr.dt.truncate(self.resolution) == expr
         return result
 
 
@@ -336,9 +342,13 @@ class Duration(OrdinalMixin[dt.timedelta], Column):
 
     def validation_rules(self, expr: ColExpr) -> dict[str, ColExpr]:
         result = super().validation_rules(expr)
-        if self.resolution is not None:
-            datetime = pdt.lit(EPOCH_DATETIME) + expr
-            result["resolution"] = datetime.dt.truncate(self.resolution) == datetime
+        # # pydiverse.transform is currently not able to check resolution problems.
+        # # However, it is a problem that can be solved by convention.
+        # # pydiverse.pipedag will enforce those.
+        # if self.resolution is not None:
+        #     datetime = pdt.lit(EPOCH_DATETIME) + expr
+        #     result["resolution"] = datetime.dt.truncate(self.resolution) == datetime
+
         return result
 
 

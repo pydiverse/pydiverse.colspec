@@ -12,11 +12,13 @@ from functools import reduce
 from pathlib import Path
 from typing import Iterable, Mapping, Self
 
+import polars.exceptions
 import structlog
 from dataframely._polars import FrameType
 
 from pydiverse.colspec.config import Config, alias_collection_fail, alias_subquery
 from pydiverse.colspec.exc import (
+    ColumnValidationError,
     ImplementationError,
     MemberValidationError,
     RuleValidationError,
@@ -664,7 +666,12 @@ class Collection:
     @classmethod
     def cast_polars_data(cls, data: Mapping[str, FrameType]) -> Self:
         DynCollection = convert_collection_to_dy(cls)
-        return cls.from_dy_collection(DynCollection.cast(data))
+        try:
+            return cls.from_dy_collection(DynCollection.cast(data))
+        except polars.exceptions.ColumnNotFoundError as e:
+            # TODO: improve error message by checking missing and extra columns for
+            #  all member tables
+            raise ColumnValidationError() from e
 
     # -------------------------------- Member inquiries --------------------------- #
 

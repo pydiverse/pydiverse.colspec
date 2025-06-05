@@ -8,7 +8,10 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import Literal
 
-from pydiverse.colspec.exc import DtypeValidationError, ValidationError
+from pydiverse.colspec.exc import (
+    ColumnValidationError,
+    DtypeValidationError,
+)
 from pydiverse.common import Dtype
 
 from .columns import Column
@@ -39,9 +42,8 @@ def validate_columns(
 
     missing_columns = expected_set - actual_set
     if len(missing_columns) > 0:
-        raise ValidationError(
-            f"{len(missing_columns)} columns in the schema are missing in the "
-            f"table: {sorted(missing_columns)}."
+        raise ColumnValidationError(
+            missing_columns, extra=actual_set - expected_set, actual=actual_set
         )
 
     return tbl >> pdt.select(*expected)

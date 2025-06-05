@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from typing import Iterable
 
 from pydiverse.common import Dtype
 
@@ -16,6 +17,41 @@ class ValidationError(Exception):
 
     def __str__(self) -> str:
         return self.message
+
+
+class ColumnValidationError(ValidationError):
+    """Validation error raised when columns mismatch."""
+
+    def __init__(
+        self,
+        missing: Iterable[str] = tuple(),
+        extra: Iterable[str] = tuple(),
+        actual: Iterable[str] = tuple(),
+    ):
+        msg = []
+        if missing:
+            msg.append(f"Missing columns: {', '.join(missing)}")
+        if extra:
+            msg.append(f"Additional columns: {', '.join(extra)}")
+        super().__init__(
+            f"{len(missing)} columns are missing: {', '.join(missing)}; "
+            f"found: {', '.join(actual)}"
+            if actual
+            else "; ".join(msg)
+            if msg
+            else "Column validation failed"
+        )
+        self.missing = missing
+        self.extra = extra
+        self.actual = actual
+
+    def __str__(self) -> str:
+        details = [
+            f" - Missing columns: {', '.join(self.missing)}",
+            f" - Extra columns: {', '.join(self.extra)}",
+            f" - Actual columns: {', '.join(self.actual)}",
+        ]
+        return "\n".join([f"{self.message}:"] + details)
 
 
 class DtypeValidationError(ValidationError):

@@ -20,8 +20,8 @@ def test_success():
 @pytest.mark.parametrize(
     ("actual", "expected", "error"),
     [
-        (["a"], ["a", "b"], r"1 columns in the schema are missing.*'b'"),
-        (["c"], ["a", "b"], r"2 columns in the schema are missing.*'a'.*'b'"),
+        (["a"], ["a", "b"], r"1 columns are missing: b;"),
+        (["c"], ["a", "b"], r"2 columns are missing: a, b;"),
     ],
 )
 def test_failure(actual: list[str], expected: list[str], error: str):

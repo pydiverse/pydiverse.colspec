@@ -387,7 +387,7 @@ class ColSpec(
             This method preserves the ordering of the input data frame.
         """
 
-        tbl = cls._validate_schema(tbl, casting=("lenient" if cast else "none"))
+        tbl = cls._validate_columns(tbl, casting=("lenient" if cast else "none"))
 
         rules, group_rules = cls._validation_rules(tbl)
         if "_primary_key_" in rules or "_primary_key_" in group_rules:
@@ -427,7 +427,7 @@ class ColSpec(
         )
 
     @classmethod
-    def _validate_schema(
+    def _validate_columns(
         cls, tbl: pdt.Table, *, casting: Literal["none", "lenient", "strict"]
     ):
         cls.fail_dy_columns_in_colspec()
