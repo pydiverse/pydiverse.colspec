@@ -109,8 +109,21 @@ class Column(ABC, ColExpr, metaclass=ColumnMeta):
         """
         import dataframely as dy
 
+        def convert(value):
+            if isinstance(value, Column):
+                return value.to_dataframely()
+            if isinstance(value, dict):
+                return {k: convert(v) for k, v in value.items()}
+            if isinstance(value, list):
+                return [convert(v) for v in value]
+            if isinstance(value, tuple):
+                return tuple(convert(v) for v in value)
+            return value
+
         # Get all non-private attributes
-        attrs = {k: v for k, v in self.__dict__.items() if not k.startswith("_")}
+        attrs = {
+            k: convert(v) for k, v in self.__dict__.items() if not k.startswith("_")
+        }
         return getattr(dy, self.__class__.__name__)(**attrs)
 
     def validate_polars_dtype(self, dtype: PolarsDataType) -> bool:
