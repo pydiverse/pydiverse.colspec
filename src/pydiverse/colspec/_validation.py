@@ -43,7 +43,9 @@ def validate_columns(
     missing_columns = expected_set - actual_set
     if len(missing_columns) > 0:
         raise ColumnValidationError(
-            missing_columns, extra=actual_set - expected_set, actual=actual_set
+            list(sorted(missing_columns)),
+            extra=list(sorted(actual_set - expected_set)),
+            actual=list(sorted(actual_set)),
         )
 
     return tbl >> pdt.select(*expected)
