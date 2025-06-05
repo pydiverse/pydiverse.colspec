@@ -53,7 +53,7 @@ def test_invalid_inner_type():
     ],
 )
 def test_validate_dtype(column: Column, dtype: pl.DataType, is_valid_polars: bool):
-    assert column.validate_dtype(dtype) == is_valid_polars
+    assert column.validate_dtype_polars(dtype) == is_valid_polars
 
 
 def test_nested_lists():

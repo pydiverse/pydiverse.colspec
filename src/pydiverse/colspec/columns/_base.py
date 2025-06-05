@@ -126,7 +126,7 @@ class Column(ABC, ColExpr, metaclass=ColumnMeta):
         }
         return getattr(dy, self.__class__.__name__)(**attrs)
 
-    def validate_polars_dtype(self, dtype: PolarsDataType) -> bool:
+    def validate_dtype_polars(self, dtype: PolarsDataType) -> bool:
         """Validate if the :mod:`polars` data type satisfies the column definition.
 
         This function requires dataframely to be installed since this is used as colspec

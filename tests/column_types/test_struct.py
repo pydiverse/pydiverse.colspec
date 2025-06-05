@@ -75,7 +75,7 @@ def test_simple_struct():
     ],
 )
 def test_validate_dtype(column: Column, dtype: pl.DataType, is_valid: bool):
-    assert column.validate_dtype(dtype) == is_valid
+    assert column.validate_dtype_polars(dtype) == is_valid
 
 
 def test_invalid_inner_type():

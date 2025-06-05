@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import copy
 import decimal
 import math
 from collections.abc import Callable
@@ -10,6 +11,7 @@ from typing import TYPE_CHECKING
 
 import pydiverse.common as pdc
 
+from ..optional_dependency import dy
 from ._base import Column
 from ._mixins import OrdinalMixin
 
@@ -86,6 +88,29 @@ class Decimal(OrdinalMixin[decimal.Decimal], Column):
 
     def dtype(self) -> pdc.Decimal:
         return pdc.Decimal()
+
+    def to_dataframely(self) -> dy.Column:
+        if any(
+            isinstance(x, float | int)
+            for x in [self.min, self.max, self.min_exclusive, self.max_exclusive]
+        ):
+            ret = copy.copy(self)
+            # in colspec we don't use python decimals for defining boundaries
+            ret.min = decimal.Decimal(ret.min) if ret.min is not None else None
+            ret.max = decimal.Decimal(ret.max) if ret.max is not None else None
+            ret.min_exclusive = (
+                decimal.Decimal(ret.min_exclusive)
+                if ret.min_exclusive is not None
+                else None
+            )
+            ret.max_exclusive = (
+                decimal.Decimal(ret.max_exclusive)
+                if ret.max_exclusive is not None
+                else None
+            )
+            return ret.to_dataframely()
+        else:
+            return super().to_dataframely()
 
 
 # --------------------------------------- UTILS -------------------------------------- #

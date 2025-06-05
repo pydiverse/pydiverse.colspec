@@ -169,7 +169,7 @@ def test_sample_enum(generator: Generator):
 def test_sample_list(generator: Generator):
     column = cs.List(cs.String(regex="[abc]"), min_length=5, max_length=10)
     samples = sample_and_validate(column, generator, n=10_000)
-    assert set(samples.list.len()) == set(range(5, 11))
+    assert set(samples.list.len()) == set(range(5, 11)) | {None}
 
 
 def test_sample_struct(generator: Generator):

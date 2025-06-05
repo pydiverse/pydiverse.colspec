@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 
 import pydiverse.common as pdc
 
+from ..optional_dependency import dy
 from ._base import Column
 
 if TYPE_CHECKING:
@@ -36,3 +37,6 @@ class Any(Column):
 
     def dtype(self) -> pdc.Any:
         return pdc.Any()
+
+    def to_dataframely(self):
+        return dy.Any(check=self.check, alias=self.alias)
