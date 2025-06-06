@@ -1,9 +1,12 @@
-# Copyright (c) QuantCo 2024-2025
+# Copyright (c) QuantCo and pydiverse contributors 2024-2025
 # SPDX-License-Identifier: BSD-3-Clause
 
 import pydiverse.common as pdc
-
-from pydiverse.colspec.exc import DtypeValidationError, RuleValidationError, ValidationError
+from pydiverse.colspec.exc import (
+    DtypeValidationError,
+    RuleValidationError,
+    ValidationError,
+)
 
 
 def test_validation_error_str():

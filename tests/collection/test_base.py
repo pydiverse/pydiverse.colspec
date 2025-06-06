@@ -1,4 +1,4 @@
-# Copyright (c) QuantCo 2024-2025
+# Copyright (c) QuantCo and pydiverse contributors 2024-2025
 # SPDX-License-Identifier: BSD-3-Clause
 
 from collections.abc import Callable
@@ -7,7 +7,11 @@ from pathlib import Path
 import polars as pl
 import pytest
 from polars.testing import assert_frame_equal
+
 import pydiverse.colspec as cs
+import pydiverse.colspec.collection
+from pydiverse.colspec.colspec import dy
+
 
 class MyFirstColSpec(cs.ColSpec):
     a = cs.UInt8(primary_key=True)
@@ -18,7 +22,7 @@ class MySecondColSpec(cs.ColSpec):
     b = cs.Integer()
 
 
-class MyCollection(cs.Collection):
+class MyCollection(pydiverse.colspec.collection.Collection):
     first: MyFirstColSpec
     second: MySecondColSpec | None
 
@@ -48,6 +52,7 @@ def test_optional_members():
     assert optional_members == {"second"}
 
 
+@pytest.mark.skipif(dy is None, reason="dataframely not installed")
 def test_cast():
     collection = MyCollection.cast_polars_data(
         {
@@ -55,11 +60,18 @@ def test_cast():
             "second": pl.LazyFrame({"a": [1, 2, 3], "b": [4, 5, 6]}),
         },
     )
-    assert collection.first.collect_schema() == MyFirstColSpec.create_empty_polars().collect_schema()
+    assert (
+        collection.first.collect_schema()
+        == MyFirstColSpec.create_empty_polars().collect_schema()
+    )
     assert collection.second is not None
-    assert collection.second.collect_schema() == MySecondColSpec.create_empty_polars().collect_schema()
+    assert (
+        collection.second.collect_schema()
+        == MySecondColSpec.create_empty_polars().collect_schema()
+    )
 
 
+@pytest.mark.skipif(dy is None, reason="dataframely not installed")
 def test_cast2():
     collection = MyCollection._init_polars_data(
         {
@@ -68,11 +80,18 @@ def test_cast2():
         },
     )
     collection = collection.cast_polars()
-    assert collection.first.collect_schema() == MyFirstColSpec.create_empty_polars().collect_schema()
+    assert (
+        collection.first.collect_schema()
+        == MyFirstColSpec.create_empty_polars().collect_schema()
+    )
     assert collection.second is not None
-    assert collection.second.collect_schema() == MySecondColSpec.create_empty_polars().collect_schema()
+    assert (
+        collection.second.collect_schema()
+        == MySecondColSpec.create_empty_polars().collect_schema()
+    )
 
 
+@pytest.mark.skipif(dy is None, reason="dataframely not installed")
 @pytest.mark.parametrize(
     "expected",
     [
@@ -98,6 +117,7 @@ def test_to_dict(expected: dict[str, pl.LazyFrame]):
     assert MyCollection.is_valid_polars_data(observed)
 
 
+@pytest.mark.skipif(dy is None, reason="dataframely not installed")
 def test_collect_all():
     collection = MyCollection.cast_polars_data(
         {
@@ -117,8 +137,11 @@ def test_collect_all():
     assert len(out.second.collect()) == 2
 
 
+@pytest.mark.skipif(dy is None, reason="dataframely not installed")
 def test_collect_all_optional():
-    collection = MyCollection.cast_polars_data({"first": pl.LazyFrame({"a": [1, 2, 3]})})
+    collection = MyCollection.cast_polars_data(
+        {"first": pl.LazyFrame({"a": [1, 2, 3]})}
+    )
     out = collection.collect_all_polars()
 
     assert isinstance(out, MyCollection)
@@ -126,6 +149,7 @@ def test_collect_all_optional():
     assert out.second is None
 
 
+@pytest.mark.skipif(dy is None, reason="dataframely not installed")
 @pytest.mark.parametrize(
     "read_fn", [MyCollection.scan_parquet, MyCollection.read_parquet]
 )
@@ -145,13 +169,16 @@ def test_read_write_parquet(tmp_path: Path, read_fn: Callable[[Path], MyCollecti
     assert_frame_equal(collection.second, read.second)
 
 
+@pytest.mark.skipif(dy is None, reason="dataframely not installed")
 @pytest.mark.parametrize(
     "read_fn", [MyCollection.scan_parquet, MyCollection.read_parquet]
 )
 def test_read_write_parquet_optional(
     tmp_path: Path, read_fn: Callable[[Path], MyCollection]
 ):
-    collection = MyCollection.cast_polars_data({"first": pl.LazyFrame({"a": [1, 2, 3]})})
+    collection = MyCollection.cast_polars_data(
+        {"first": pl.LazyFrame({"a": [1, 2, 3]})}
+    )
     collection.write_parquet(tmp_path)
 
     read = read_fn(tmp_path)

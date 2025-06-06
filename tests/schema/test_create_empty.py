@@ -1,18 +1,18 @@
-# Copyright (c) QuantCo 2024-2024
+# Copyright (c) QuantCo and pydiverse contributors 2024-2025
 # SPDX-License-Identifier: BSD-3-Clause
 
 import polars as pl
 
-import dataframely as dy
+import pydiverse.colspec as cs
 
 
-class MySchema(cs.ColSpec):
-    a = dy.Int64()
-    b = dy.String()
+class MyColSpec(cs.ColSpec):
+    a = cs.Int64()
+    b = cs.String()
 
 
 def test_create_empty():
-    df = MySchema.create_empty()
+    df = MyColSpec.create_empty_polars()
     assert df.columns == ["a", "b"]
     assert df.dtypes == [pl.Int64, pl.String]
     assert len(df) == 0

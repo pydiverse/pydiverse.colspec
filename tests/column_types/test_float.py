@@ -1,22 +1,24 @@
-# Copyright (c) QuantCo 2024-2025
+# Copyright (c) QuantCo and pydiverse contributors 2024-2025
 # SPDX-License-Identifier: BSD-3-Clause
 
 import sys
 from typing import Any
 
+import dataframely as dy
 import polars as pl
 import pytest
 from polars.datatypes import DataTypeClass
 from polars.datatypes.group import FLOAT_DTYPES, INTEGER_DTYPES
-from polars.testing import assert_frame_equal
 
-import dataframely as dy
-from dataframely.columns.float import _BaseFloat
-from dataframely.testing import FLOAT_COLUMN_TYPES, evaluate_rules, rules_from_exprs
+import pydiverse.colspec as cs
+from pydiverse.colspec.columns.float import _BaseFloat
+from pydiverse.colspec.optional_dependency import pdt
+from pydiverse.colspec.testing import FLOAT_COLUMN_TYPES
+from pydiverse.colspec.testing.rules import evaluate_rules
 
 
-class IntegerSchema(cs.ColSpec):
-    a = dy.Float()
+class FloatColSpec(cs.ColSpec):
+    a = cs.Float()
 
 
 @pytest.mark.parametrize("column_type", FLOAT_COLUMN_TYPES)
@@ -57,13 +59,13 @@ def test_invalid_args(column_type: type[_BaseFloat], kwargs: dict[str, Any]):
 @pytest.mark.parametrize("dtype", FLOAT_DTYPES)
 def test_any_integer_dtype_passes(dtype: DataTypeClass):
     df = pl.DataFrame(schema={"a": dtype})
-    assert IntegerSchema.is_valid(df)
+    assert FloatColSpec.is_valid_polars(df)
 
 
 @pytest.mark.parametrize("dtype", [pl.Boolean, pl.String] + list(INTEGER_DTYPES))
 def test_non_integer_dtype_fails(dtype: DataTypeClass):
     df = pl.DataFrame(schema={"a": dtype})
-    assert not IntegerSchema.is_valid(df)
+    assert not FloatColSpec.is_valid_polars(df)
 
 
 @pytest.mark.parametrize("column_type", FLOAT_COLUMN_TYPES)
@@ -79,10 +81,9 @@ def test_validate_min(
 ):
     kwargs = {("min" if inclusive else "min_exclusive"): 3}
     column = column_type(**kwargs)  # type: ignore
-    lf = pl.LazyFrame({"a": [1, 2, 3, 4, 5]})
-    actual = evaluate_rules(lf, rules_from_exprs(column.validation_rules(pl.col("a"))))
-    expected = pl.LazyFrame(valid)
-    assert_frame_equal(actual, expected)
+    tbl = pdt.Table({"a": [1, 2, 3, 4, 5]})
+    actual = evaluate_rules(tbl, column.validation_rules(tbl.a))
+    assert actual == valid
 
 
 @pytest.mark.parametrize("column_type", FLOAT_COLUMN_TYPES)
@@ -98,10 +99,9 @@ def test_validate_max(
 ):
     kwargs = {("max" if inclusive else "max_exclusive"): 3}
     column = column_type(**kwargs)  # type: ignore
-    lf = pl.LazyFrame({"a": [1, 2, 3, 4, 5]})
-    actual = evaluate_rules(lf, rules_from_exprs(column.validation_rules(pl.col("a"))))
-    expected = pl.LazyFrame(valid)
-    assert_frame_equal(actual, expected)
+    tbl = pdt.Table({"a": [1, 2, 3, 4, 5]})
+    actual = evaluate_rules(tbl, column.validation_rules(tbl.a))
+    assert actual == valid
 
 
 @pytest.mark.parametrize("column_type", FLOAT_COLUMN_TYPES)
@@ -153,10 +153,9 @@ def test_validate_range(
         ("max" if max_inclusive else "max_exclusive"): 4,
     }
     column = column_type(**kwargs)  # type: ignore
-    lf = pl.LazyFrame({"a": [1, 2, 3, 4, 5]})
-    actual = evaluate_rules(lf, rules_from_exprs(column.validation_rules(pl.col("a"))))
-    expected = pl.LazyFrame(valid)
-    assert_frame_equal(actual, expected)
+    tbl = pdt.Table({"a": [1, 2, 3, 4, 5]})
+    actual = evaluate_rules(tbl, column.validation_rules(tbl.a))
+    assert actual == valid
 
 
 def test_sample_unchecked_min_0():

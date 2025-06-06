@@ -1,22 +1,17 @@
-# Copyright (c) QuantCo 2024-2025
+# Copyright (c) QuantCo and pydiverse contributors 2024-2025
 # SPDX-License-Identifier: BSD-3-Clause
-
-from __future__ import annotations
 
 import datetime as dt
 from collections.abc import Callable
-from typing import TYPE_CHECKING
 
 import pydiverse.common as pdc
 
+from ..optional_dependency import ColExpr
 from ._base import (
     EPOCH_DATETIME,
     Column,
 )
 from ._mixins import OrdinalMixin
-
-if TYPE_CHECKING:
-    from pydiverse.colspec.columns import ColExpr
 
 try:
     import pydiverse.transform as pdt
@@ -95,14 +90,16 @@ class Date(OrdinalMixin[dt.date], Column):
         )
         self.resolution = resolution
 
-    @property
     def dtype(self) -> pdc.Date:
         return pdc.Date()
 
     def validation_rules(self, expr: ColExpr) -> dict[str, ColExpr]:
         result = super().validation_rules(expr)
-        if self.resolution is not None:
-            result["resolution"] = expr.dt.truncate(self.resolution) == expr
+        # # pydiverse.transform is currently not able to check resolution problems.
+        # # However, it is a problem that can be solved by convention.
+        # # pydiverse.pipedag will enforce those.
+        # if self.resolution is not None:
+        #     result["resolution"] = expr.dt.truncate(self.resolution) == expr
         return result
 
 
@@ -144,6 +141,9 @@ class Time(OrdinalMixin[dt.time], Column):
                 this option does _not_ allow to refer to the column with two different
                 names, the specified alias is the only valid name.
         """
+        # # pydiverse.transform is currently not able to check resolution problems.
+        # # However, it is a problem that can be solved by convention.
+        # # pydiverse.pipedag will enforce those.
         # if resolution is not None:
         #     offset_date = pl.Series([EPOCH_DATETIME]).dt.offset_by(resolution) \
         #       .dt.date()
@@ -174,20 +174,22 @@ class Time(OrdinalMixin[dt.time], Column):
         )
         self.resolution = resolution
 
-    @property
     def dtype(self) -> pdc.Time:
         return pdc.Time()
 
     def validation_rules(self, expr: ColExpr) -> dict[str, ColExpr]:
         result = super().validation_rules(expr)
-        if self.resolution is not None:
-            rounded_expr = (
-                pdt.lit(EPOCH_DATETIME.date())
-                .dt.combine(expr)
-                .dt.truncate(self.resolution)
-                .dt.time()
-            )
-            result["resolution"] = rounded_expr == expr
+        # # pydiverse.transform is currently not able to check resolution problems.
+        # # However, it is a problem that can be solved by convention.
+        # # pydiverse.pipedag will enforce those.
+        # if self.resolution is not None:
+        #     rounded_expr = (
+        #         pdt.lit(EPOCH_DATETIME.date())
+        #         .dt.combine(expr)
+        #         .dt.truncate(self.resolution)
+        #         .dt.time()
+        #     )
+        #     result["resolution"] = rounded_expr == expr
         return result
 
 
@@ -254,14 +256,16 @@ class Datetime(OrdinalMixin[dt.datetime], Column):
         )
         self.resolution = resolution
 
-    @property
     def dtype(self) -> pdc.Datetime:
         return pdc.Datetime()
 
     def validation_rules(self, expr: ColExpr) -> dict[str, ColExpr]:
         result = super().validation_rules(expr)
-        if self.resolution is not None:
-            result["resolution"] = expr.dt.truncate(self.resolution) == expr
+        # # pydiverse.transform is currently not able to check resolution problems.
+        # # However, it is a problem that can be solved by convention.
+        # # pydiverse.pipedag will enforce those.
+        # if self.resolution is not None:
+        #     result["resolution"] = expr.dt.truncate(self.resolution) == expr
         return result
 
 
@@ -328,15 +332,18 @@ class Duration(OrdinalMixin[dt.timedelta], Column):
         )
         self.resolution = resolution
 
-    @property
     def dtype(self) -> pdc.Duration:
         return pdc.Duration()
 
     def validation_rules(self, expr: ColExpr) -> dict[str, ColExpr]:
         result = super().validation_rules(expr)
-        if self.resolution is not None:
-            datetime = pdt.lit(EPOCH_DATETIME) + expr
-            result["resolution"] = datetime.dt.truncate(self.resolution) == datetime
+        # # pydiverse.transform is currently not able to check resolution problems.
+        # # However, it is a problem that can be solved by convention.
+        # # pydiverse.pipedag will enforce those.
+        # if self.resolution is not None:
+        #     datetime = pdt.lit(EPOCH_DATETIME) + expr
+        #     result["resolution"] = datetime.dt.truncate(self.resolution) == datetime
+
         return result
 
 

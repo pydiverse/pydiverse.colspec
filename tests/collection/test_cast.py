@@ -1,10 +1,11 @@
-# Copyright (c) QuantCo 2025-2025
+# Copyright (c) QuantCo and pydiverse contributors 2025-2025
 # SPDX-License-Identifier: BSD-3-Clause
 
 import polars as pl
 import pytest
 
 import pydiverse.colspec as cs
+import pydiverse.colspec.collection
 from pydiverse.colspec.exc import ValidationError
 
 
@@ -16,7 +17,7 @@ class SecondColSpec(cs.ColSpec):
     a = cs.String()
 
 
-class Collection(cs.Collection):
+class Collection(pydiverse.colspec.collection.Collection):
     first: FirstColSpec
     second: SecondColSpec | None
 
@@ -26,16 +27,25 @@ def test_cast_valid(df_type: type[pl.DataFrame] | type[pl.LazyFrame]):
     first = df_type({"a": [3]})
     second = df_type({"a": [1]})
     out = Collection.cast_polars_data({"first": first, "second": second})  # type: ignore
-    assert out.first.collect_schema() == FirstColSpec.create_empty_polars().collect_schema()
+    assert (
+        out.first.collect_schema()
+        == FirstColSpec.create_empty_polars().collect_schema()
+    )
     assert out.second is not None
-    assert out.second.collect_schema() == SecondColSpec.create_empty_polars().collect_schema()
+    assert (
+        out.second.collect_schema()
+        == SecondColSpec.create_empty_polars().collect_schema()
+    )
 
 
 @pytest.mark.parametrize("df_type", [pl.DataFrame, pl.LazyFrame])
 def test_cast_valid_optional(df_type: type[pl.DataFrame] | type[pl.LazyFrame]):
     first = df_type({"a": [3]})
     out = Collection.cast_polars_data({"first": first})  # type: ignore
-    assert out.first.collect_schema() == FirstColSpec.create_empty_polars().collect_schema()
+    assert (
+        out.first.collect_schema()
+        == FirstColSpec.create_empty_polars().collect_schema()
+    )
     assert out.second is None
 
 

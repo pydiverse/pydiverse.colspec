@@ -1,20 +1,16 @@
-# Copyright (c) QuantCo 2024-2025
+# Copyright (c) QuantCo and pydiverse contributors 2024-2025
 # SPDX-License-Identifier: BSD-3-Clause
 
-from __future__ import annotations
-
+import copy
 import decimal
 import math
 from collections.abc import Callable
-from typing import TYPE_CHECKING
 
 import pydiverse.common as pdc
 
+from ..optional_dependency import ColExpr, dy
 from ._base import Column
 from ._mixins import OrdinalMixin
-
-if TYPE_CHECKING:
-    from pydiverse.colspec.columns import ColExpr
 
 
 class Decimal(OrdinalMixin[decimal.Decimal], Column):
@@ -27,10 +23,10 @@ class Decimal(OrdinalMixin[decimal.Decimal], Column):
         *,
         nullable: bool = True,
         primary_key: bool = False,
-        min: decimal.Decimal | None = None,
-        min_exclusive: decimal.Decimal | None = None,
-        max: decimal.Decimal | None = None,
-        max_exclusive: decimal.Decimal | None = None,
+        min: decimal.Decimal | float | int | None = None,
+        min_exclusive: decimal.Decimal | float | int | None = None,
+        max: decimal.Decimal | float | int | None = None,
+        max_exclusive: decimal.Decimal | float | int | None = None,
         check: Callable[[ColExpr], ColExpr] | None = None,
         alias: str | None = None,
     ):
@@ -56,12 +52,20 @@ class Decimal(OrdinalMixin[decimal.Decimal], Column):
         """
         if min is not None:
             _validate(min, precision, scale, "min")
+            if isinstance(min, decimal.Decimal):
+                min = float(min)  # noqa: A001, Decimal is more a RDBMS thing
         if min_exclusive is not None:
             _validate(min_exclusive, precision, scale, "min_exclusive")
+            if isinstance(min_exclusive, decimal.Decimal):
+                min_exclusive = float(min_exclusive)  # Decimal is more a RDBMS thing
         if max is not None:
             _validate(max, precision, scale, "max")
+            if isinstance(max, decimal.Decimal):
+                max = float(max)  # noqa: A001, Decimal is more a RDBMS thing
         if max_exclusive is not None:
             _validate(max_exclusive, precision, scale, "max_exclusive")
+            if isinstance(max_exclusive, decimal.Decimal):
+                max_exclusive = float(max_exclusive)  # Decimal is more a RDBMS thing
 
         super().__init__(
             nullable=nullable,
@@ -79,11 +83,38 @@ class Decimal(OrdinalMixin[decimal.Decimal], Column):
     def dtype(self) -> pdc.Decimal:
         return pdc.Decimal()
 
+    def to_dataframely(self) -> dy.Column:
+        if any(
+            isinstance(x, float | int)
+            for x in [self.min, self.max, self.min_exclusive, self.max_exclusive]
+        ):
+            ret = copy.copy(self)
+            # in colspec we don't use python decimals for defining boundaries
+            ret.min = decimal.Decimal(ret.min) if ret.min is not None else None
+            ret.max = decimal.Decimal(ret.max) if ret.max is not None else None
+            ret.min_exclusive = (
+                decimal.Decimal(ret.min_exclusive)
+                if ret.min_exclusive is not None
+                else None
+            )
+            ret.max_exclusive = (
+                decimal.Decimal(ret.max_exclusive)
+                if ret.max_exclusive is not None
+                else None
+            )
+            return ret.to_dataframely()
+        else:
+            return super().to_dataframely()
+
 
 # --------------------------------------- UTILS -------------------------------------- #
 
 
-def _validate(value: decimal.Decimal, precision: int | None, scale: int, name: str):
+def _validate(
+    value: decimal.Decimal | int | float, precision: int | None, scale: int, name: str
+):
+    if not isinstance(value, decimal.Decimal):
+        value = decimal.Decimal(value)
     exponent = value.as_tuple().exponent
     if not isinstance(exponent, int):
         raise ValueError(f"Encountered 'inf' or 'NaN' for `{name}`.")

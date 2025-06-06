@@ -1,8 +1,11 @@
-# Copyright (c) QuantCo 2023-2025
+# Copyright (c) QuantCo and pydiverse contributors 2023-2025
 # SPDX-License-Identifier: BSD-3-Clause
 
 from collections import defaultdict
+from collections.abc import Iterable
+
 from pydiverse.common import Dtype
+
 
 class ValidationError(Exception):
     """Error raised when :mod:`dataframely` validation encounters an issue."""
@@ -13,6 +16,41 @@ class ValidationError(Exception):
 
     def __str__(self) -> str:
         return self.message
+
+
+class ColumnValidationError(ValidationError):
+    """Validation error raised when columns mismatch."""
+
+    def __init__(
+        self,
+        missing: Iterable[str] = tuple(),
+        extra: Iterable[str] = tuple(),
+        actual: Iterable[str] = tuple(),
+    ):
+        msg = []
+        if missing:
+            msg.append(f"Missing columns: {', '.join(missing)}")
+        if extra:
+            msg.append(f"Additional columns: {', '.join(extra)}")
+        super().__init__(
+            f"{len(missing)} columns are missing: {', '.join(missing)}; "
+            f"found: {', '.join(actual)}"
+            if actual
+            else "; ".join(msg)
+            if msg
+            else "Column validation failed"
+        )
+        self.missing = missing
+        self.extra = extra
+        self.actual = actual
+
+    def __str__(self) -> str:
+        details = [
+            f" - Missing columns: {', '.join(self.missing)}",
+            f" - Extra columns: {', '.join(self.extra)}",
+            f" - Actual columns: {', '.join(self.actual)}",
+        ]
+        return "\n".join([f"{self.message}:"] + details)
 
 
 class DtypeValidationError(ValidationError):
@@ -88,13 +126,19 @@ class ImplementationError(Exception):
     """Error raised when a schema is implemented incorrectly."""
 
 
+class AnnotationImplementationErrorDetail(ImplementationError):
+    def __init__(self, message: str, _type: type):
+        self._type = _type
+        super().__init__(message)
+
+
 class AnnotationImplementationError(ImplementationError):
     """Error raised when the annotations of a collection are invalid."""
 
     def __init__(self, attr: str, kls: type):
         message = (
             "Annotations of a 'dy.Collection' may only be an (optional) "
-            f"'dy.LazyFrame', but \"{attr}\" has type '{kls}'."
+            f"'ColSpec', but \"{attr}\" has type '{kls}'."
         )
         super().__init__(message)
 
@@ -106,8 +150,8 @@ class RuleImplementationError(ImplementationError):
         if is_group_rule:
             details = (
                 " When implementing a group rule (i.e. when using the `group_by` "
-                "parameter), make sure to use an aggregation function such as `.any()`, "
-                "`.all()`, and others to reduce an expression evaluated on multiple "
+                "parameter), make sure to use an aggregation function such as `.any()`,"
+                " `.all()`, and others to reduce an expression evaluated on multiple "
                 "rows in the same group to a single boolean value for the group."
             )
         else:

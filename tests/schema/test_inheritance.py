@@ -1,22 +1,22 @@
-# Copyright (c) QuantCo 2024-2024
+# Copyright (c) QuantCo and pydiverse contributors 2024-2025
 # SPDX-License-Identifier: BSD-3-Clause
 
-import dataframely as dy
+import pydiverse.colspec as cs
 
 
-class ParentSchema(cs.ColSpec):
-    a = dy.Integer()
+class ParentColSpec(cs.ColSpec):
+    a = cs.Integer()
 
 
-class ChildSchema(ParentSchema):
-    b = dy.Integer()
+class ChildColSpec(ParentColSpec):
+    b = cs.Integer()
 
 
-class GrandchildSchema(ChildSchema):
-    c = dy.Integer()
+class GrandchildColSpec(ChildColSpec):
+    c = cs.Integer()
 
 
 def test_columns():
-    assert ParentSchema.column_names() == ["a"]
-    assert ChildSchema.column_names() == ["a", "b"]
-    assert GrandchildSchema.column_names() == ["a", "b", "c"]
+    assert ParentColSpec.column_names() == ["a"]
+    assert ChildColSpec.column_names() == ["a", "b"]
+    assert GrandchildColSpec.column_names() == ["a", "b", "c"]

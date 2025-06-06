@@ -1,18 +1,13 @@
-# Copyright (c) QuantCo 2023-2025
+# Copyright (c) QuantCo and pydiverse contributors 2023-2025
 # SPDX-License-Identifier: BSD-3-Clause
 
-from __future__ import annotations
-
 import datetime as dt
-from abc import ABC, abstractmethod
+from abc import ABC, ABCMeta, abstractmethod
 from collections.abc import Callable
-from typing import TYPE_CHECKING
 
 from pydiverse.common import Dtype
-from pydiverse.colspec.columns import ColExpr
 
-if TYPE_CHECKING:
-    from ..colspec import pl, Generator, PolarsDataType
+from ..optional_dependency import ColExpr, Generator, PolarsDataType, pl
 
 EPOCH_DATETIME = dt.datetime(1970, 1, 1)
 SECONDS_PER_DAY = 86400
@@ -22,10 +17,17 @@ SECONDS_PER_DAY = 86400
 # ------------------------------------------------------------------------------------ #
 
 
-class Column(ABC, ColExpr):
+class ColumnMeta(ABCMeta):
+    def __new__(cls, clsname, bases, attribs):
+        # change bases (only ABC is a real base)
+        bases = tuple([base for base in bases if not issubclass(base, ColExpr)])
+        return super().__new__(cls, clsname, bases, attribs)
+
+
+class Column(ABC, ColExpr, metaclass=ColumnMeta):
     """Abstract base class for data frame column definitions.
 
-    This class is merely supposed to be used in :class:`~colspec.Schema`
+    This class is merely supposed to be used in :class:`~colspec.ColSpec`
     definitions.
     """
 
@@ -57,7 +59,6 @@ class Column(ABC, ColExpr):
 
     # ------------------------------------- DTYPE ------------------------------------ #
 
-    @property
     @abstractmethod
     def dtype(self) -> Dtype:
         """The common dtype of this column definition.
@@ -103,11 +104,24 @@ class Column(ABC, ColExpr):
         """
         import dataframely as dy
 
+        def convert(value):
+            if isinstance(value, Column):
+                return value.to_dataframely()
+            if isinstance(value, dict):
+                return {k: convert(v) for k, v in value.items()}
+            if isinstance(value, list):
+                return [convert(v) for v in value]
+            if isinstance(value, tuple):
+                return tuple(convert(v) for v in value)
+            return value
+
         # Get all non-private attributes
-        attrs = {k: v for k, v in self.__dict__.items() if not k.startswith("_")}
+        attrs = {
+            k: convert(v) for k, v in self.__dict__.items() if not k.startswith("_")
+        }
         return getattr(dy, self.__class__.__name__)(**attrs)
 
-    def validate_polars_dtype(self, dtype: PolarsDataType) -> bool:
+    def validate_dtype_polars(self, dtype: PolarsDataType) -> bool:
         """Validate if the :mod:`polars` data type satisfies the column definition.
 
         This function requires dataframely to be installed since this is used as colspec

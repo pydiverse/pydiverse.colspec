@@ -1,4 +1,4 @@
-# Copyright (c) QuantCo 2024-2025
+# Copyright (c) QuantCo and pydiverse contributors 2024-2025
 # SPDX-License-Identifier: BSD-3-Clause
 
 import decimal
@@ -8,14 +8,14 @@ import polars as pl
 import pytest
 from polars.datatypes import DataTypeClass
 from polars.datatypes.group import FLOAT_DTYPES, INTEGER_DTYPES
-from polars.testing import assert_frame_equal
 
-import dataframely as dy
-from dataframely.testing import evaluate_rules, rules_from_exprs
+import pydiverse.colspec as cs
+from pydiverse.colspec.optional_dependency import pdt
+from pydiverse.colspec.testing.rules import evaluate_rules
 
 
-class DecimalSchema(cs.ColSpec):
-    a = dy.Decimal()
+class DecimalColSpec(cs.ColSpec):
+    a = cs.Decimal()
 
 
 @pytest.mark.parametrize(
@@ -31,7 +31,7 @@ class DecimalSchema(cs.ColSpec):
 )
 def test_args_consistency_min_max(kwargs: dict[str, Any]):
     with pytest.raises(ValueError):
-        dy.Decimal(**kwargs)
+        cs.Decimal(**kwargs)
 
 
 @pytest.mark.parametrize(
@@ -49,7 +49,7 @@ def test_args_consistency_min_max(kwargs: dict[str, Any]):
 )
 def test_invalid_args(kwargs: dict[str, Any]):
     with pytest.raises(ValueError):
-        dy.Decimal(**kwargs)
+        cs.Decimal(**kwargs)
 
 
 @pytest.mark.parametrize(
@@ -57,15 +57,20 @@ def test_invalid_args(kwargs: dict[str, Any]):
 )
 def test_any_decimal_dtype_passes(dtype: DataTypeClass):
     df = pl.DataFrame(schema={"a": dtype})
-    assert DecimalSchema.is_valid(df)
+    tbl = pdt.Table(df)
+    assert DecimalColSpec.is_valid(tbl)
 
 
 @pytest.mark.parametrize(
     "dtype", [pl.Boolean, pl.String] + list(INTEGER_DTYPES) + list(FLOAT_DTYPES)
 )
 def test_non_decimal_dtype_fails(dtype: DataTypeClass):
+    if dtype == pl.Int128:
+        # this type is not supported by pydiverse libraries, yet
+        return
     df = pl.DataFrame(schema={"a": dtype})
-    assert not DecimalSchema.is_valid(df)
+    tbl = pdt.Table(df)
+    assert not DecimalColSpec.is_valid(tbl)
 
 
 @pytest.mark.parametrize(
@@ -76,12 +81,11 @@ def test_non_decimal_dtype_fails(dtype: DataTypeClass):
     ],
 )
 def test_validate_min(inclusive: bool, valid: dict[str, list[bool]]):
-    kwargs = {("min" if inclusive else "min_exclusive"): decimal.Decimal(3)}
-    column = dy.Decimal(**kwargs)  # type: ignore
-    lf = pl.LazyFrame({"a": [1, 2, 3, 4, 5]})
-    actual = evaluate_rules(lf, rules_from_exprs(column.validation_rules(pl.col("a"))))
-    expected = pl.LazyFrame(valid)
-    assert_frame_equal(actual, expected)
+    kwargs = {("min" if inclusive else "min_exclusive"): 3}
+    column = cs.Decimal(**kwargs)  # type: ignore
+    tbl = pdt.Table({"a": [1, 2, 3, 4, 5]})
+    actual = evaluate_rules(tbl, column.validation_rules(tbl.a))
+    assert actual == valid
 
 
 @pytest.mark.parametrize(
@@ -93,11 +97,10 @@ def test_validate_min(inclusive: bool, valid: dict[str, list[bool]]):
 )
 def test_validate_max(inclusive: bool, valid: dict[str, list[bool]]):
     kwargs = {("max" if inclusive else "max_exclusive"): decimal.Decimal(3)}
-    column = dy.Decimal(**kwargs)  # type: ignore
-    lf = pl.LazyFrame({"a": [1, 2, 3, 4, 5]})
-    actual = evaluate_rules(lf, rules_from_exprs(column.validation_rules(pl.col("a"))))
-    expected = pl.LazyFrame(valid)
-    assert_frame_equal(actual, expected)
+    column = cs.Decimal(**kwargs)  # type: ignore
+    tbl = pdt.Table({"a": [1, 2, 3, 4, 5]})
+    actual = evaluate_rules(tbl, column.validation_rules(tbl.a))
+    assert actual == valid
 
 
 @pytest.mark.parametrize(
@@ -146,8 +149,7 @@ def test_validate_range(
         ("min" if min_inclusive else "min_exclusive"): decimal.Decimal(2),
         ("max" if max_inclusive else "max_exclusive"): decimal.Decimal(4),
     }
-    column = dy.Decimal(**kwargs)  # type: ignore
-    lf = pl.LazyFrame({"a": [1, 2, 3, 4, 5]})
-    actual = evaluate_rules(lf, rules_from_exprs(column.validation_rules(pl.col("a"))))
-    expected = pl.LazyFrame(valid)
-    assert_frame_equal(actual, expected)
+    column = cs.Decimal(**kwargs)  # type: ignore
+    tbl = pdt.Table({"a": [1, 2, 3, 4, 5]})
+    actual = evaluate_rules(tbl, column.validation_rules(tbl.a))
+    assert actual == valid

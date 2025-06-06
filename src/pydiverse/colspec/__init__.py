@@ -1,11 +1,10 @@
-from __future__ import annotations
+# Copyright (c) QuantCo and pydiverse contributors 2025-2025
+# SPDX-License-Identifier: BSD-3-Clause
 
-from .colspec import (
-    Collection,
-    ColSpec,
-)
-from ._filter import Filter
-from ._rule import rule, Rule
+from ._filter import Filter, FilterPolars, filter, filter_polars  # noqa: A004
+from ._rule import GroupRule, GroupRulePolars, Rule, RulePolars, rule, rule_polars
+from .collection import Collection
+from .colspec import ColSpec
 from .columns import (
     Any,
     Bool,
@@ -36,9 +35,16 @@ from .columns import (
 __all__ = [
     "ColSpec",
     "Collection",
+    "filter",
     "Filter",
+    "filter_polars",
+    "FilterPolars",
     "rule",
+    "rule_polars",
     "Rule",
+    "RulePolars",
+    "GroupRule",
+    "GroupRulePolars",
     "Column",
     "Any",
     "Bool",

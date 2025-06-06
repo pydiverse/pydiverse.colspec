@@ -1,21 +1,23 @@
-# Copyright (c) QuantCo 2024-2025
+# Copyright (c) QuantCo and pydiverse contributors 2024-2025
 # SPDX-License-Identifier: BSD-3-Clause
 
 from typing import Any
 
+import dataframely as dy
 import polars as pl
 import pytest
 from polars.datatypes import DataTypeClass
 from polars.datatypes.group import FLOAT_DTYPES, INTEGER_DTYPES
-from polars.testing import assert_frame_equal
 
-import dataframely as dy
-from dataframely.columns.integer import _BaseInteger
-from dataframely.testing import INTEGER_COLUMN_TYPES, evaluate_rules, rules_from_exprs
+import pydiverse.colspec as cs
+from pydiverse.colspec.columns.integer import _BaseInteger
+from pydiverse.colspec.optional_dependency import pdt
+from pydiverse.colspec.testing import INTEGER_COLUMN_TYPES
+from pydiverse.colspec.testing.rules import evaluate_rules
 
 
-class IntegerSchema(cs.ColSpec):
-    a = dy.Integer()
+class IntegerColSpec(cs.ColSpec):
+    a = cs.Integer()
 
 
 @pytest.mark.parametrize("column_type", INTEGER_COLUMN_TYPES)
@@ -59,16 +61,35 @@ def test_invalid_args_is_in(column_type: type[_BaseInteger], kwargs: dict[str, A
         column_type(**kwargs)
 
 
+@pytest.mark.skipif(dy is None, reason="dataframely not installed")
+@pytest.mark.parametrize("dtype", INTEGER_DTYPES)
+def test_any_integer_dtype_passes_polars(dtype: DataTypeClass):
+    df = pl.DataFrame(schema={"a": dtype})
+    assert IntegerColSpec.is_valid_polars(df)
+
+
+@pytest.mark.skipif(pdt is None, reason="pydiverse.transform not installed")
 @pytest.mark.parametrize("dtype", INTEGER_DTYPES)
 def test_any_integer_dtype_passes(dtype: DataTypeClass):
+    if dtype == pl.Int128:
+        # this type is not supported by pydiverse libraries, yet
+        return
     df = pl.DataFrame(schema={"a": dtype})
-    assert IntegerSchema.is_valid(df)
+    tbl = pdt.Table(df)
+    assert IntegerColSpec.is_valid(tbl)
+
+
+@pytest.mark.parametrize("dtype", [pl.Boolean, pl.String] + list(FLOAT_DTYPES))
+def test_non_integer_dtype_fails_polars(dtype: DataTypeClass):
+    df = pl.DataFrame(schema={"a": dtype})
+    assert not IntegerColSpec.is_valid_polars(df)
 
 
 @pytest.mark.parametrize("dtype", [pl.Boolean, pl.String] + list(FLOAT_DTYPES))
 def test_non_integer_dtype_fails(dtype: DataTypeClass):
     df = pl.DataFrame(schema={"a": dtype})
-    assert not IntegerSchema.is_valid(df)
+    tbl = pdt.Table(df)
+    assert not IntegerColSpec.is_valid(tbl)
 
 
 @pytest.mark.parametrize("column_type", INTEGER_COLUMN_TYPES)
@@ -76,11 +97,11 @@ def test_non_integer_dtype_fails(dtype: DataTypeClass):
 def test_validate_min(column_type: type[_BaseInteger], inclusive: bool):
     kwargs = {("min" if inclusive else "min_exclusive"): 3}
     column = column_type(**kwargs)  # type: ignore
-    lf = pl.LazyFrame({"a": [1, 2, 3, 4, 5]})
-    actual = evaluate_rules(lf, rules_from_exprs(column.validation_rules(pl.col("a"))))
+    tbl = pdt.Table({"a": [1, 2, 3, 4, 5]})
+    actual = evaluate_rules(tbl, column.validation_rules(tbl.a))
     key = "min" if inclusive else "min_exclusive"
-    expected = pl.LazyFrame({key: [False, False, inclusive, True, True]})
-    assert_frame_equal(actual, expected)
+    expected = {key: [False, False, inclusive, True, True]}
+    assert actual == expected
 
 
 @pytest.mark.parametrize("column_type", INTEGER_COLUMN_TYPES)
@@ -88,11 +109,11 @@ def test_validate_min(column_type: type[_BaseInteger], inclusive: bool):
 def test_validate_max(column_type: type[_BaseInteger], inclusive: bool):
     kwargs = {("max" if inclusive else "max_exclusive"): 3}
     column = column_type(**kwargs)  # type: ignore
-    lf = pl.LazyFrame({"a": [1, 2, 3, 4, 5]})
-    actual = evaluate_rules(lf, rules_from_exprs(column.validation_rules(pl.col("a"))))
+    tbl = pdt.Table({"a": [1, 2, 3, 4, 5]})
+    actual = evaluate_rules(tbl, column.validation_rules(tbl.a))
     key = "max" if inclusive else "max_exclusive"
-    expected = pl.LazyFrame({key: [True, True, inclusive, False, False]})
-    assert_frame_equal(actual, expected)
+    expected = {key: [True, True, inclusive, False, False]}
+    assert actual == expected
 
 
 @pytest.mark.parametrize("column_type", INTEGER_COLUMN_TYPES)
@@ -106,26 +127,24 @@ def test_validate_range(
         ("max" if max_inclusive else "max_exclusive"): 4,
     }
     column = column_type(**kwargs)  # type: ignore
-    lf = pl.LazyFrame({"a": [1, 2, 3, 4, 5]})
-    actual = evaluate_rules(lf, rules_from_exprs(column.validation_rules(pl.col("a"))))
+    tbl = pdt.Table({"a": [1, 2, 3, 4, 5]})
+    actual = evaluate_rules(tbl, column.validation_rules(tbl.a))
     key_min = "min" if min_inclusive else "min_exclusive"
     key_max = "max" if max_inclusive else "max_exclusive"
-    expected = pl.LazyFrame(
-        {
-            key_min: [False, min_inclusive, True, True, True],
-            key_max: [True, True, True, max_inclusive, False],
-        }
-    )
-    assert_frame_equal(actual, expected)
+    expected = {
+        key_min: [False, min_inclusive, True, True, True],
+        key_max: [True, True, True, max_inclusive, False],
+    }
+    assert actual == expected
 
 
 @pytest.mark.parametrize("column_type", INTEGER_COLUMN_TYPES)
 def test_validate_is_in(column_type: type[_BaseInteger]):
     column = column_type(is_in=[3, 5])
-    lf = pl.LazyFrame({"a": [1, 2, 3, 4, 5]})
-    actual = evaluate_rules(lf, rules_from_exprs(column.validation_rules(pl.col("a"))))
-    expected = pl.LazyFrame({"is_in": [False, False, True, False, True]})
-    assert_frame_equal(actual, expected)
+    tbl = pdt.Table({"a": [1, 2, 3, 4, 5]})
+    actual = evaluate_rules(tbl, column.validation_rules(tbl.a))
+    expected = {"is_in": [False, False, True, False, True]}
+    assert actual == expected
 
 
 @pytest.mark.parametrize(
