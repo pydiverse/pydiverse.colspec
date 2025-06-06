@@ -27,7 +27,7 @@ class ColumnMeta(ABCMeta):
 class Column(ABC, ColExpr, metaclass=ColumnMeta):
     """Abstract base class for data frame column definitions.
 
-    This class is merely supposed to be used in :class:`~colspec.Schema`
+    This class is merely supposed to be used in :class:`~colspec.ColSpec`
     definitions.
     """
 

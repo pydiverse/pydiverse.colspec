@@ -27,32 +27,37 @@ class CheckColSpec(cs.ColSpec):
     b = cs.UInt64()
 
     @cs.rule_polars()
+    @staticmethod
     def a_ge_b() -> pl.Expr:
         return pl.col("a") >= pl.col("b")
 
 
-class ComplexSchema(cs.ColSpec):
+class ComplexColSpec(cs.ColSpec):
     a = cs.UInt8(primary_key=True)
     b = cs.UInt8(primary_key=True)
 
     @cs.rule_polars()
+    @staticmethod
     def a_greater_b() -> pl.Expr:
         return pl.col("a") > pl.col("b")
 
     @cs.rule_polars(group_by=["a"])
+    @staticmethod
     def minimum_two_per_a() -> pl.Expr:
         return pl.len() >= 2
 
 
-class LimitedComplexSchema(cs.ColSpec):
+class LimitedComplexColSpec(cs.ColSpec):
     a = cs.UInt8(primary_key=True)
     b = cs.UInt8(primary_key=True)
 
     @cs.rule_polars()
+    @staticmethod
     def a_greater_b() -> pl.Expr:
         return pl.col("a") > pl.col("b")
 
     @cs.rule_polars(group_by=["a"])
+    @staticmethod
     def minimum_two_per_a() -> pl.Expr:
         # We cannot generate more than 768 rows with this rule
         return pl.len() <= 3
@@ -70,7 +75,7 @@ def test_sample_deterministic(n: int):
         MySimpleColSpec.validate(tbl)
 
 
-@pytest.mark.parametrize("col_spec", [PrimaryKeyColSpec, CheckColSpec, ComplexSchema])
+@pytest.mark.parametrize("col_spec", [PrimaryKeyColSpec, CheckColSpec, ComplexColSpec])
 @pytest.mark.parametrize("n", [0, 1000])
 def test_sample_fuzzy(col_spec, n: int):
     df = col_spec.sample_polars(n, generator=Generator(seed=42))
@@ -83,7 +88,7 @@ def test_sample_fuzzy(col_spec, n: int):
 def test_sample_fuzzy_failure():
     with pytest.raises(ValueError):
         with dy.Config(max_sampling_iterations=5):
-            ComplexSchema.sample_polars(1000, generator=Generator(seed=42))
+            ComplexColSpec.sample_polars(1000, generator=Generator(seed=42))
 
 
 @pytest.mark.parametrize("n", [1, 1000])
@@ -100,10 +105,10 @@ def test_sample_overrides_with_removing_groups():
     generator = Generator()
     n = 333  # we cannot use something too large here or we'll never return
     overrides = np.random.randint(100, size=n)
-    df = LimitedComplexSchema.sample_polars(n, generator, overrides={"b": overrides})
-    LimitedComplexSchema.validate_polars(df)
+    df = LimitedComplexColSpec.sample_polars(n, generator, overrides={"b": overrides})
+    LimitedComplexColSpec.validate_polars(df)
     tbl = pdt.Table(df)
-    LimitedComplexSchema.validate(tbl)
+    LimitedComplexColSpec.validate(tbl)
     assert len(df) == n
     assert df.get_column("b").to_list() == list(overrides)
 

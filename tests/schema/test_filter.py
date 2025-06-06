@@ -138,18 +138,18 @@ def test_filter_failure(
 
 @pytest.mark.parametrize("df_type", [pl.DataFrame, pl.LazyFrame])
 def test_filter_no_rules(df_type: type[pl.DataFrame] | type[pl.LazyFrame]):
-    class TestSchema(cs.ColSpec):
+    class TestColSpec(cs.ColSpec):
         a = cs.Int64(nullable=True)
 
     df = df_type({"a": [1, 2, 3]})
-    df_valid, failures = TestSchema.filter_polars(df)
+    df_valid, failures = TestColSpec.filter_polars(df)
     assert isinstance(df_valid, pl.DataFrame)
     assert_frame_equal(df.lazy().collect(), df_valid)
     assert len(failures) == 0
     assert failures.counts() == {}
     assert failures.cooccurrence_counts() == {}
     tbl = pdt.Table(df)
-    df_valid, failures = TestSchema.filter(tbl)
+    df_valid, failures = TestColSpec.filter(tbl)
     assert isinstance(df_valid, pdt.Table)
     assert_frame_equal(df.lazy().collect(), df_valid >> pdt.export(pdt.Polars()))
     # assert len(failures) == 0

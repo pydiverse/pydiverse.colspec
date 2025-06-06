@@ -4,19 +4,19 @@
 import pydiverse.colspec as cs
 
 
-class ParentSchema(cs.ColSpec):
+class ParentColSpec(cs.ColSpec):
     a = cs.Integer()
 
 
-class ChildSchema(ParentSchema):
+class ChildColSpec(ParentColSpec):
     b = cs.Integer()
 
 
-class GrandchildSchema(ChildSchema):
+class GrandchildColSpec(ChildColSpec):
     c = cs.Integer()
 
 
 def test_columns():
-    assert ParentSchema.column_names() == ["a"]
-    assert ChildSchema.column_names() == ["a", "b"]
-    assert GrandchildSchema.column_names() == ["a", "b", "c"]
+    assert ParentColSpec.column_names() == ["a"]
+    assert ChildColSpec.column_names() == ["a", "b"]
+    assert GrandchildColSpec.column_names() == ["a", "b", "c"]

@@ -30,7 +30,7 @@ def sql_table(df: pl.DataFrame, *, name: str) -> pdt.Table:
     return pdt.Table(name, SqlAlchemy(engine))
 
 
-class MySchema(cs.ColSpec):
+class MyColSpec(cs.ColSpec):
     a = cs.Int64(primary_key=True)
     b = cs.String(max_length=3)
 
@@ -48,7 +48,7 @@ def test_filter_extra_columns(
 ):
     tbl = sql_table(pl.DataFrame(schema=schema), name="tbl")
     try:
-        filtered, _ = MySchema.filter(tbl)
+        filtered, _ = MyColSpec.filter(tbl)
         filtered >>= export(Polars)
         assert expected_columns is not None
         assert set(filtered.columns) == set(expected_columns)
@@ -66,7 +66,7 @@ def test_filter_extra_columns(
 def test_filter_dtypes(schema: dict[str, DataTypeClass], cast: bool, success: bool):
     tbl = sql_table(pl.DataFrame(schema=schema), name="tbl")
     try:
-        MySchema.filter(tbl, cast=cast)
+        MyColSpec.filter(tbl, cast=cast)
         assert success
     except DtypeValidationError:
         assert not success
@@ -103,7 +103,7 @@ def test_filter_failure(
     cooccurrence_counts: dict[frozenset[str], int],
 ):
     tbl = sql_table(pl.DataFrame({"a": data_a, "b": data_b}), name="tbl")
-    tbl_valid, failures = MySchema.filter(tbl)
+    tbl_valid, failures = MyColSpec.filter(tbl)
     assert isinstance(tbl_valid, pdt.Table)
     assert_frame_equal(
         (tbl >> export(Polars)).filter(pl.Series(failure_mask)),
@@ -115,11 +115,11 @@ def test_filter_failure(
 
 
 def test_filter_no_rules():
-    class TestSchema(cs.ColSpec):
+    class TestColSpec(cs.ColSpec):
         a = cs.Int64(nullable=True)
 
     tbl = sql_table(pl.DataFrame({"a": [1, 2, 3]}), name="tbl")
-    df_valid, failures = TestSchema.filter(tbl)
+    df_valid, failures = TestColSpec.filter(tbl)
     assert isinstance(df_valid, pdt.Table)
     assert_table_equal(tbl, df_valid)
     assert len(failures) == 0
@@ -127,11 +127,11 @@ def test_filter_no_rules():
 
 
 def test_filter_with_rule_all_valid():
-    class TestSchema(cs.ColSpec):
+    class TestColSpec(cs.ColSpec):
         a = cs.String(min_length=3)
 
     tbl = sql_table(pl.DataFrame({"a": ["foo", "foobar"]}), name="tbl")
-    tbl_valid, failures = TestSchema.filter(tbl)
+    tbl_valid, failures = TestColSpec.filter(tbl)
     assert isinstance(tbl_valid, pdt.Table)
     assert_table_equal(tbl, tbl_valid)
     assert len(failures) == 0
@@ -146,9 +146,9 @@ def test_filter_cast():
         "b": [20, 2000, None, 30, 3000, 50],
     }
     tbl = sql_table(pl.DataFrame(data), name="tbl")
-    tbl_valid, failures = MySchema.filter(tbl, cast=True)
+    tbl_valid, failures = MyColSpec.filter(tbl, cast=True)
     assert isinstance(tbl_valid, pdt.Table)
-    assert [col.name for col in tbl_valid] == MySchema.column_names()
+    assert [col.name for col in tbl_valid] == MyColSpec.column_names()
     assert len(failures) == 5
     assert failures.counts() == {
         "a|dtype": 3,
@@ -174,7 +174,7 @@ def test_filter_nondeterministic_tbl():
         name="tbl",
     )
 
-    filtered, _ = MySchema.filter(tbl)
+    filtered, _ = MyColSpec.filter(tbl)
     assert (
         filtered
         >> group_by(filtered.b)
