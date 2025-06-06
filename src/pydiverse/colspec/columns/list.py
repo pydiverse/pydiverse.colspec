@@ -1,18 +1,13 @@
 # Copyright (c) QuantCo and pydiverse contributors 2024-2025
 # SPDX-License-Identifier: BSD-3-Clause
 
-from __future__ import annotations
-
 from collections.abc import Callable
-from typing import TYPE_CHECKING
 
 import pydiverse.common as pdc
 
+from ..optional_dependency import ColExpr
 from ._base import Column
 from .struct import Struct
-
-if TYPE_CHECKING:
-    from pydiverse.colspec.columns import ColExpr
 
 
 class List(Column):
@@ -53,9 +48,11 @@ class List(Column):
         self.max_length = max_length
 
     def dtype(self) -> pdc.List:
-        return pdc.List()
+        return pdc.List(self.inner.dtype())
 
     def validation_rules(self, expr: ColExpr) -> dict[str, ColExpr]:
+        raise NotImplementedError()
+
         import polars as pl  # needs to be replaced with pydiverse.transform
 
         inner_rules = {

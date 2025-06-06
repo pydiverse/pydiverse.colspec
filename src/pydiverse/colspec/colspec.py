@@ -1,13 +1,12 @@
 # Copyright (c) QuantCo and pydiverse contributors 2025-2025
 # SPDX-License-Identifier: BSD-3-Clause
 
-from __future__ import annotations
-
 import inspect
 import types
 import typing
+from collections.abc import Iterable, Mapping
 from functools import reduce
-from typing import TYPE_CHECKING, Any, Iterable, Literal, Mapping, Self, overload
+from typing import TYPE_CHECKING, Any, Literal, Self, overload
 
 from pydiverse.colspec._validation import validate_columns, validate_dtypes
 from pydiverse.colspec.columns._base import Column
@@ -245,8 +244,6 @@ class ColSpec(
 
         Args:
             tbl: The table to check for validity.
-            allow_extra_columns: Whether to allow the data frame to contain columns
-                that are not defined in the schema.
             cast: Whether columns with a wrong data type in the input data frame are
                 cast to the schema's defined data type before running validation. If set
                 to ``False``, a wrong data type will result in a return value of
@@ -278,8 +275,6 @@ class ColSpec(
 
         Args:
             df: The data frame to check for validity.
-            allow_extra_columns: Whether to allow the data frame to contain columns
-                that are not defined in the schema.
             cast: Whether columns with a wrong data type in the input data frame are
                 cast to the schema's defined data type before running validation. If set
                 to ``False``, a wrong data type will result in a return value of

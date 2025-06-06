@@ -1,17 +1,12 @@
 # Copyright (c) QuantCo and pydiverse contributors 2023-2025
 # SPDX-License-Identifier: BSD-3-Clause
 
-from __future__ import annotations
-
 from collections.abc import Callable
-from typing import TYPE_CHECKING
 
 import pydiverse.common as pdc
 
+from ..optional_dependency import ColExpr
 from ._base import Column
-
-if TYPE_CHECKING:
-    from pydiverse.colspec.columns import ColExpr
 
 # ------------------------------------------------------------------------------------ #
 

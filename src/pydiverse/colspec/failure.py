@@ -1,10 +1,6 @@
 # Copyright (c) QuantCo and pydiverse contributors 2025-2025
 # SPDX-License-Identifier: BSD-3-Clause
 
-# Copyright (c) QuantCo and pydiverse contributors 2024-2025
-# SPDX-License-Identifier: LicenseRef-QuantCo
-from __future__ import annotations
-
 import json
 from pathlib import Path
 from typing import IO, Self
@@ -61,7 +57,7 @@ class FailureInfo:
         cnts: dict[str, int] = (
             self._invalid_rows
             >> summarize(**{k: (~C[k]).sum() for k in self.rule_columns.keys()})
-            >> export(pdt.Dict)
+            >> export(pdt.Dict())
         )
 
         return {k: v for k, v in cnts.items() if v is not None and v > 0}
@@ -79,8 +75,8 @@ class FailureInfo:
         """
         # NOTE: We add a dummy column with metadata in the column name to allow writing
         #  the rule columns to the same file.
-        rule_columns_json = json.dumps({"rule_columns": self._rule_columns})
-        self._df.with_columns(
+        rule_columns_json = json.dumps({"rule_columns": self.rule_columns})
+        (self._invalid_rows >> pdt.export(pdt.Polars())).with_columns(
             pl.lit(None).alias(rule_columns_json),
         ).write_parquet(file)
 
@@ -99,7 +95,12 @@ class FailureInfo:
         #  column.
         last_column = lf.collect_schema().names()[-1]
         rule_columns = json.loads(last_column)["rule_columns"]
-        return cls(lf.drop(last_column), rule_columns)
+        return cls(
+            pdt.Table(pl.DataFrame()),
+            pdt.Table(lf.drop(last_column)),
+            rule_columns,
+            Config.default,
+        )
 
 
 # ------------------------------------ COMPUTATION ----------------------------------- #
@@ -129,7 +130,9 @@ def _compute_cooccurrence_counts(
     counts = group_lengths.get_column("len")
     return {
         frozenset(
-            name for name, success in zip(rule_columns, row) if not success
+            name
+            for name, success in zip(rule_columns, row, strict=False)
+            if not success
         ): count
-        for row, count in zip(groups.iter_rows(), counts)
+        for row, count in zip(groups.iter_rows(), counts, strict=False)
     }

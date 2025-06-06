@@ -6,7 +6,6 @@
 # we add 'type: ignore' markers here but, paired with "warn_unused_ignores = true", this
 # allows testing that typing fails where we want it to without failing pre-commit
 # checks.
-from __future__ import annotations
 
 import datetime
 import decimal
@@ -130,6 +129,7 @@ class MyColSpec(ColSpec):
     custom_col_list = cs.List(Flags())
 
     @cs.rule()
+    @staticmethod
     def b_greater_a() -> ColExpr:
         return C.b > C.a
 

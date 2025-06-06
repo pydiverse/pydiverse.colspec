@@ -1,16 +1,15 @@
 # Copyright (c) QuantCo and pydiverse contributors 2025-2025
 # SPDX-License-Identifier: BSD-3-Clause
 
-from __future__ import annotations
-
 import inspect
 import operator
 import types
 import typing
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from functools import reduce
 from pathlib import Path
-from typing import Iterable, Mapping, Self
+from typing import Self
 
 import polars.exceptions
 import structlog
@@ -30,32 +29,6 @@ from pydiverse.colspec.optional_dependency import dy, pdt, pl
 from . import exc
 from ._filter import Filter, FilterPolars
 from .colspec import ColSpec, convert_to_dy_anno_dict
-
-
-def convert_filter_to_dy(f: FilterPolars):
-    return dy._filter.Filter(f.logic)
-
-
-def convert_collection_to_dy(
-    collection: Collection | type[Collection],
-) -> type[dy.Collection]:
-    from pydiverse.colspec import FilterPolars
-
-    cls = collection.__class__ if isinstance(collection, Collection) else collection
-    filters = {
-        k: convert_filter_to_dy(v)
-        for k, v in collection.__dict__.items()
-        if isinstance(v, FilterPolars)
-    }
-    DynCollection = type[dy.Collection](
-        cls.__name__,
-        (dy.Collection,),
-        {
-            "__annotations__": convert_to_dy_anno_dict(typing.get_type_hints(cls)),
-            **filters,
-        },
-    )  # type:type[dy.Collection]
-    return DynCollection
 
 
 @dataclass
@@ -255,12 +228,12 @@ class Collection:
                 "Dataframely raised column specification implementation error"
             )
             if not fault_tolerant:
-                raise exc.ImplementationError(e.message)  # noqa: B904
+                raise exc.ImplementationError(str(e))  # noqa: B904
         except plexc.InvalidOperationError as e:
             logger = structlog.getLogger(logger_name)
             logger.exception("Dataframely validation failed within polars expression")
             if not fault_tolerant:
-                raise ValidationError(e.message)  # noqa: B904
+                raise ValidationError(str(e))  # noqa: B904
         except dy_exc.ValidationError as e:
             logger = structlog.getLogger(logger_name)
             logger.exception("Dataframely validation failed")
@@ -276,7 +249,7 @@ class Collection:
                     new_e.column_errors = e.column_errors
                     raise new_e  # noqa: B904
                 else:
-                    raise ValidationError(e.message)  # noqa: B904
+                    raise ValidationError(str(e))  # noqa: B904
         return cls._init_polars_data(data)  # ignore validation if fault_tolerant
 
     def is_valid(
@@ -408,7 +381,7 @@ class Collection:
 
             for name in self.members().keys():
                 tbl = members[name].col_spec
-                join = self.get_join(name, set(expr_tbl_names) - set([name]), cfg=cfg)
+                join = self.get_join(name, set(expr_tbl_names) - {name}, cfg=cfg)
                 pk_overlap = expr_pk_union.intersection(tbl.primary_keys())
                 requires_grouping = (
                     len(expr_pk_union.difference(tbl.primary_keys())) > 0
@@ -426,7 +399,7 @@ class Collection:
                         group_subqueries[key].join_tbls |= set(expr_tbl_names)
                         group_subqueries[key].cols[pred_name] = logic
                     else:
-                        join_members[name] |= set(expr_tbl_names) - set([name])
+                        join_members[name] |= set(expr_tbl_names) - {name}
                         extra_rules[name][pred.logic_fn.__name__] = logic
 
         join_subqueries: dict[str, list[tuple[pdt.Table, set[str]]]] = {
@@ -538,7 +511,7 @@ class Collection:
         return rules
 
     def _pk_overlap(
-        self, tbl: str | type[ColSpec], *more_tbls: str | types[ColSpec]
+        self, tbl: str | type[ColSpec], *more_tbls: str | type[ColSpec]
     ) -> set[str]:
         tbls: list[ColSpec] = [
             self.member_col_specs()[t] if isinstance(t, str) else t
@@ -549,7 +522,7 @@ class Collection:
         )
 
     def _pk_union(
-        self, tbl: str | types[ColSpec], *more_tbls: Iterable[str | type[ColSpec]]
+        self, tbl: str | type[ColSpec], *more_tbls: Iterable[str | type[ColSpec]]
     ) -> set[str]:
         tbls: list[ColSpec] = [
             self.member_col_specs()[t] if isinstance(t, str) else t
@@ -560,7 +533,7 @@ class Collection:
         )
 
     def _get_join(
-        self, *tbls: Iterable[str], fix_table_name: bool = True
+        self, *tbls: Iterable[str], cfg: Config = Config.default
     ) -> pdt.Table | None:
         """
         Similar to get_join(), but without given leftmost table.
@@ -577,7 +550,7 @@ class Collection:
         ordered_tbls = sorted(
             primary_keyss.keys(), key=lambda name: (len(primary_keyss[name]), name)
         )
-        return self.get_join(*ordered_tbls, fix_table_name=fix_table_name)
+        return self.get_join(*ordered_tbls, cfg=cfg)
 
     def get_join(
         self, tbl: str, *more_tbls: Iterable[str], cfg: Config = Config.default
@@ -862,3 +835,29 @@ class Collection:
     def pk_is_null(self, tbl: pdt.Table) -> pdt.ColExpr:
         tbl_name = next(attr for attr in dir(self) if getattr(self, attr) == tbl)
         return tbl[self.member_col_specs()[tbl_name].primary_keys()[0]].is_null()
+
+
+def convert_filter_to_dy(f: FilterPolars):
+    return dy._filter.Filter(f.logic)
+
+
+def convert_collection_to_dy(
+    collection: Collection | type[Collection],
+) -> type[dy.Collection]:
+    from pydiverse.colspec import FilterPolars
+
+    cls = collection.__class__ if isinstance(collection, Collection) else collection
+    filters = {
+        k: convert_filter_to_dy(v)
+        for k, v in collection.__dict__.items()
+        if isinstance(v, FilterPolars)
+    }
+    DynCollection = type[dy.Collection](
+        cls.__name__,
+        (dy.Collection,),
+        {
+            "__annotations__": convert_to_dy_anno_dict(typing.get_type_hints(cls)),
+            **filters,
+        },
+    )  # type:type[dy.Collection]
+    return DynCollection

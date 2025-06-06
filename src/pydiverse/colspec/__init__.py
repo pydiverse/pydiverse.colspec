@@ -1,8 +1,6 @@
 # Copyright (c) QuantCo and pydiverse contributors 2025-2025
 # SPDX-License-Identifier: BSD-3-Clause
 
-from __future__ import annotations
-
 from ._filter import Filter, FilterPolars, filter, filter_polars  # noqa: A004
 from ._rule import GroupRule, GroupRulePolars, Rule, RulePolars, rule, rule_polars
 from .collection import Collection

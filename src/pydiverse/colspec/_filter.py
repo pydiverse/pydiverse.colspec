@@ -1,10 +1,6 @@
 # Copyright (c) QuantCo and pydiverse contributors 2025-2025
 # SPDX-License-Identifier: BSD-3-Clause
 
-# Copyright (c) QuantCo and pydiverse contributors 2024-2025
-# SPDX-License-Identifier: LicenseRef-QuantCo
-from __future__ import annotations
-
 from collections.abc import Callable
 from typing import Generic, TypeVar
 
@@ -53,7 +49,7 @@ class FilterPolars(Generic[C]):
         self.logic = logic
 
 
-def filter_polars() -> Callable[[Callable[[C], pl.LazyFrame]], Filter[C]]:
+def filter_polars() -> Callable[[Callable[[C], pl.LazyFrame]], FilterPolars[C]]:
     """Mark a function as filters for rows in the members of a collection.
 
     The name of the function will be used as the name of the filter. The name must not

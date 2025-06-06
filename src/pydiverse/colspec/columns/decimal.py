@@ -1,22 +1,16 @@
 # Copyright (c) QuantCo and pydiverse contributors 2024-2025
 # SPDX-License-Identifier: BSD-3-Clause
 
-from __future__ import annotations
-
 import copy
 import decimal
 import math
 from collections.abc import Callable
-from typing import TYPE_CHECKING
 
 import pydiverse.common as pdc
 
-from ..optional_dependency import dy
+from ..optional_dependency import ColExpr, dy
 from ._base import Column
 from ._mixins import OrdinalMixin
-
-if TYPE_CHECKING:
-    from pydiverse.colspec.columns import ColExpr
 
 
 class Decimal(OrdinalMixin[decimal.Decimal], Column):

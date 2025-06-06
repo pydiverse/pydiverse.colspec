@@ -1,8 +1,6 @@
 # Copyright (c) QuantCo and pydiverse contributors 2025-2025
 # SPDX-License-Identifier: BSD-3-Clause
 
-from __future__ import annotations
-
 from collections import defaultdict
 from collections.abc import Callable
 
@@ -27,7 +25,7 @@ class RulePolars:
 
     @staticmethod
     def append_rules_polars(
-        lf: pl.LazyFrame, rules: dict[str, RulePolars]
+        lf: pl.LazyFrame, rules: dict[str, "RulePolars"]
     ) -> pl.LazyFrame:
         return _with_evaluation_rules(lf, rules)
 
@@ -161,10 +159,10 @@ def _with_evaluation_rules(
     simple_exprs = {
         name: rule.expr
         for name, rule in rules.items()
-        if not isinstance(rule, GroupRule)
+        if not isinstance(rule, GroupRulePolars)
     }
     group_rules = {
-        name: rule for name, rule in rules.items() if isinstance(rule, GroupRule)
+        name: rule for name, rule in rules.items() if isinstance(rule, GroupRulePolars)
     }
 
     # Before we can select all of the simple expressions, we need to turn the

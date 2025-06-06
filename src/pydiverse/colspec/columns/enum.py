@@ -1,17 +1,12 @@
 # Copyright (c) QuantCo and pydiverse contributors 2024-2025
 # SPDX-License-Identifier: BSD-3-Clause
 
-from __future__ import annotations
-
 from collections.abc import Callable, Sequence
-from typing import TYPE_CHECKING
 
 import pydiverse.common as pdc
 
+from ..optional_dependency import ColExpr
 from ._base import Column
-
-if TYPE_CHECKING:
-    from pydiverse.colspec.columns import ColExpr
 
 
 class Enum(Column):
@@ -44,5 +39,7 @@ class Enum(Column):
         )
         self.categories = categories
 
-    def dtype(self) -> pdc.Enum:
-        return pdc.Enum()
+    def dtype(self) -> pdc.Dtype:
+        raise NotImplementedError(
+            "Enum column type is not yet implemented in pydiverse libraries."
+        )

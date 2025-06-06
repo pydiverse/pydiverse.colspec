@@ -1,18 +1,13 @@
 # Copyright (c) QuantCo and pydiverse contributors 2023-2025
 # SPDX-License-Identifier: BSD-3-Clause
 
-from __future__ import annotations
-
 import datetime as dt
 from abc import ABC, ABCMeta, abstractmethod
 from collections.abc import Callable
-from typing import TYPE_CHECKING
 
-from pydiverse.colspec.columns import ColExpr
 from pydiverse.common import Dtype
 
-if TYPE_CHECKING:
-    from ..colspec import Generator, PolarsDataType, pl
+from ..optional_dependency import ColExpr, Generator, PolarsDataType, pl
 
 EPOCH_DATETIME = dt.datetime(1970, 1, 1)
 SECONDS_PER_DAY = 86400

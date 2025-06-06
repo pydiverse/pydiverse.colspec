@@ -1,22 +1,17 @@
 # Copyright (c) QuantCo and pydiverse contributors 2023-2025
 # SPDX-License-Identifier: BSD-3-Clause
 
-from __future__ import annotations
-
 from abc import abstractmethod
 from collections.abc import Callable
-from typing import TYPE_CHECKING
 
 import numpy as np
 
 import pydiverse.common as pdc
 
+from ..optional_dependency import ColExpr
 from ._base import Column
 from ._mixins import OrdinalMixin
 from ._utils import classproperty
-
-if TYPE_CHECKING:
-    from pydiverse.colspec.columns import ColExpr
 
 
 class _BaseFloat(OrdinalMixin[float], Column):

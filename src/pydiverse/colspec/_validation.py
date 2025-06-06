@@ -1,10 +1,6 @@
 # Copyright (c) QuantCo and pydiverse contributors 2025-2025
 # SPDX-License-Identifier: BSD-3-Clause
 
-# Copyright (c) QuantCo 2025-2025
-# SPDX-License-Identifier: BSD-3-Clause
-from __future__ import annotations
-
 from collections.abc import Iterable
 from typing import Literal
 
@@ -28,7 +24,6 @@ def validate_columns(
 
     Args:
         tbl: The table whose list of columns to validate.
-        actual: The list of columns that _are_ observed.
         expected: The list of columns that _should_ be observed.
 
     Raises:
@@ -60,7 +55,7 @@ def validate_dtypes(
     """Validate the dtypes of all expected columns in a table.
 
     Args:
-        lf: The table whose column dtypes to validate.
+        tbl: The table whose column dtypes to validate.
         expected: The column definitions carrying the expected dtypes.
         casting: The strategy for casting dtypes.
 

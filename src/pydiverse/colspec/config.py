@@ -1,9 +1,8 @@
 # Copyright (c) QuantCo and pydiverse contributors 2025-2025
 # SPDX-License-Identifier: BSD-3-Clause
-from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable
 
 from .columns._utils import classproperty
 from .optional_dependency import pdt, verb
@@ -32,7 +31,7 @@ class Config:
     materialize_hook: Callable[[pdt.Table, str | None], pdt.Table] | None = None
 
     @classproperty
-    def default(cls) -> Config:
+    def default(cls) -> "Config":
         return Config()
 
 
