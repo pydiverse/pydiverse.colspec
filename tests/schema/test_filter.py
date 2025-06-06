@@ -12,9 +12,11 @@ from polars.testing import assert_frame_equal
 
 import pydiverse.colspec as cs
 from pydiverse.colspec.exc import DtypeValidationError, ValidationError
+from pydiverse.colspec.optional_dependency import pdt
+from pydiverse.transform._internal.pipe.verbs import summarize
 
 
-class MySchema(cs.ColSpec):
+class MyColSpec(cs.ColSpec):
     a = cs.Int64(primary_key=True)
     b = cs.String(max_length=3)
 
@@ -32,9 +34,18 @@ def test_filter_extra_columns(
 ):
     df = pl.DataFrame(schema=schema)
     try:
-        filtered, _ = MySchema.filter_polars(df)
+        filtered, _ = MyColSpec.filter_polars(df)
         assert expected_columns is not None
         assert set(filtered.columns) == set(expected_columns)
+    except ValidationError:
+        assert expected_columns is None
+    except Exception as e:
+        raise AssertionError() from e
+    tbl = pdt.Table(df)
+    try:
+        filtered, _ = MyColSpec.filter(tbl)
+        assert expected_columns is not None
+        assert set(c.name for c in filtered) == set(expected_columns)
     except ValidationError:
         assert expected_columns is None
     except Exception as e:
@@ -51,12 +62,26 @@ def test_filter_extra_columns(
 def test_filter_dtypes(schema: dict[str, DataTypeClass], cast: bool, success: bool):
     df = pl.DataFrame(schema=schema)
     try:
-        MySchema.filter_polars(df, cast=cast)
+        MyColSpec.filter_polars(df, cast=cast)
         assert success
     except DtypeValidationError:
         assert not success
     except Exception as e:
         raise AssertionError() from e
+    tbl = pdt.Table(df)
+    try:
+        MyColSpec.filter(tbl, cast=cast)
+        assert success
+    except DtypeValidationError:
+        assert not success
+    except Exception as e:
+        raise AssertionError() from e
+
+
+def fix(counts: dict[str, int]) -> dict[str, int]:
+    """Fix the counts to be compatible with the expected output."""
+    ret = {k.replace("_primary_key_", "primary_key"): v for k, v in counts.items()}
+    return {k: v for k, v in sorted(ret.items(), key=lambda item: item[0])}
 
 
 @pytest.mark.parametrize("df_type", [pl.DataFrame, pl.LazyFrame])
@@ -92,13 +117,24 @@ def test_filter_failure(
     cooccurrence_counts: dict[frozenset[str], int],
 ):
     df = df_type({"a": data_a, "b": data_b})
-    df_valid, failures = MySchema.filter_polars(df)
+    df_valid, failures = MyColSpec.filter_polars(df)
     assert isinstance(df_valid, pl.DataFrame)
     assert_frame_equal(df.filter(pl.Series(failure_mask)).lazy().collect(), df_valid)
     assert validation_mask(df, failures).to_list() == failure_mask
     assert len(failures) == (len(failure_mask) - sum(failure_mask))
     assert failures.counts() == counts
     assert failures.cooccurrence_counts() == cooccurrence_counts
+    tbl = pdt.Table(df)
+    df_valid, failures = MyColSpec.filter(tbl)
+    assert isinstance(df_valid, pdt.Table)
+    assert_frame_equal(
+        df.filter(pl.Series(failure_mask)).lazy().collect(),
+        df_valid >> pdt.export(pdt.Polars()),
+    )
+    # assert validation_mask(df, failures).to_list() == failure_mask
+    # assert len(failures) == (len(failure_mask) - sum(failure_mask))
+    assert fix(failures.counts()) == fix(counts)
+    # assert failures.cooccurrence_counts() == cooccurrence_counts
 
 
 @pytest.mark.parametrize("df_type", [pl.DataFrame, pl.LazyFrame])
@@ -113,20 +149,34 @@ def test_filter_no_rules(df_type: type[pl.DataFrame] | type[pl.LazyFrame]):
     assert len(failures) == 0
     assert failures.counts() == {}
     assert failures.cooccurrence_counts() == {}
+    tbl = pdt.Table(df)
+    df_valid, failures = TestSchema.filter(tbl)
+    assert isinstance(df_valid, pdt.Table)
+    assert_frame_equal(df.lazy().collect(), df_valid >> pdt.export(pdt.Polars()))
+    # assert len(failures) == 0
+    assert failures.counts() == {}
+    # assert failures.cooccurrence_counts() == {}
 
 
 @pytest.mark.parametrize("df_type", [pl.DataFrame, pl.LazyFrame])
 def test_filter_with_rule_all_valid(df_type: type[pl.DataFrame] | type[pl.LazyFrame]):
-    class TestSchema(cs.ColSpec):
+    class TestColSpec(cs.ColSpec):
         a = cs.String(min_length=3)
 
     df = df_type({"a": ["foo", "foobar"]})
-    df_valid, failures = TestSchema.filter_polars(df)
+    df_valid, failures = TestColSpec.filter_polars(df)
     assert isinstance(df_valid, pl.DataFrame)
     assert_frame_equal(df.lazy().collect(), df_valid)
     assert len(failures) == 0
     assert failures.counts() == {}
     assert failures.cooccurrence_counts() == {}
+    tbl = pdt.Table(df)
+    df_valid, failures = TestColSpec.filter(tbl)
+    assert isinstance(df_valid, pdt.Table)
+    assert_frame_equal(df.lazy().collect(), df_valid >> pdt.export(pdt.Polars()))
+    # assert len(failures) == 0
+    assert failures.counts() == {}
+    # assert failures.cooccurrence_counts() == {}
 
 
 @pytest.mark.parametrize("df_type", [pl.DataFrame, pl.LazyFrame])
@@ -138,9 +188,9 @@ def test_filter_cast(df_type: type[pl.DataFrame] | type[pl.LazyFrame]):
         "b": [20, 2000, None, 30, 3000, 50],
     }
     df = df_type(data)
-    df_valid, failures = MySchema.filter_polars(df, cast=True)
+    df_valid, failures = MyColSpec.filter_polars(df, cast=True)
     assert isinstance(df_valid, pl.DataFrame)
-    assert df_valid.collect_schema().names() == MySchema.column_names()
+    assert df_valid.collect_schema().names() == MyColSpec.column_names()
     assert len(failures) == 5
     assert failures.counts() == {
         "a|dtype": 3,
@@ -155,6 +205,24 @@ def test_filter_cast(df_type: type[pl.DataFrame] | type[pl.LazyFrame]):
         frozenset({"b|max_length"}): 1,
         frozenset({"a|dtype"}): 3,
     }
+    tbl = pdt.Table(df)
+    df_valid, failures = MyColSpec.filter(tbl, cast=True)
+    assert isinstance(df_valid, pdt.Table)
+    assert [c.name for c in df_valid] == MyColSpec.column_names()
+    assert (
+        failures.invalid_rows >> summarize(x=pdt.count()) >> pdt.export(pdt.Scalar())
+        == 5
+    )
+    assert failures.counts() == {
+        "a|dtype": 3,
+        "a|nullability": 1,
+        "b|max_length": 1,
+    }
+    # assert failures.cooccurrence_counts() == {
+    #     frozenset({"a|nullability", "primary_key"}): 1,
+    #     frozenset({"b|max_length"}): 1,
+    #     frozenset({"a|dtype"}): 3,
+    # }
 
 
 def test_filter_nondeterministic_lazyframe():
@@ -166,5 +234,15 @@ def test_filter_nondeterministic_lazyframe():
         }
     ).select(pl.all().shuffle())
 
-    filtered, _ = MySchema.filter_polars(lf)
+    filtered, _ = MyColSpec.filter_polars(lf)
     assert filtered.select(pl.col("b").n_unique()).item() == 1
+    tbl = pdt.Table(lf)
+    filtered, _ = MyColSpec.filter(tbl)
+    assert (
+        filtered
+        >> pdt.group_by(filtered.b)
+        >> summarize()
+        >> summarize(x=pdt.count())
+        >> pdt.export(pdt.Scalar)
+        == 1
+    )

@@ -36,7 +36,9 @@ class Any(Column):
         super().__init__(nullable=True, primary_key=False, check=check, alias=alias)
 
     def dtype(self) -> pdc.Any:
-        return pdc.Any()
+        raise NotImplementedError(
+            "The Type Any is intentionally not implemented in pydiverse libraries."
+        )
 
     def to_dataframely(self):
         return dy.Any(check=self.check, alias=self.alias)

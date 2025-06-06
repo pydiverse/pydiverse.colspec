@@ -5,7 +5,6 @@ from __future__ import annotations
 import polars as pl
 import pytest
 
-import pydiverse.common as pdc
 from pydiverse.colspec import Column
 from pydiverse.colspec.optional_dependency import pdt
 from pydiverse.colspec.testing import COLUMN_TYPES, SUPERTYPE_COLUMN_TYPES
@@ -29,16 +28,7 @@ def test_nullability_rule_for_primary_key(column_type: type[Column]):
 def test_nullability_rule(column_type: type[Column]):
     column = column_type(nullable=False)
     dtype = column.dtype()
-    if isinstance(dtype, pdc.Decimal):
-        polars_type = pl.Float64
-    elif isinstance(dtype, pdc.Time):
-        pytest.skip("Time is not supported in pydiverse libraries, yet")
-    elif isinstance(dtype, pdc.Float):
-        polars_type = pl.Float64
-    elif isinstance(dtype, pdc.Int):
-        polars_type = pl.Int64
-    else:
-        polars_type = dtype.to_polars()
+    polars_type = dtype.to_polars()
     lf = pl.LazyFrame({"a": [None]}, schema={"a": polars_type})
     tbl = pdt.Table(lf)
     actual = evaluate_rules(tbl, column.validation_rules(tbl.a))

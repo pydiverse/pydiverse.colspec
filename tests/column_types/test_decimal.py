@@ -53,7 +53,6 @@ def test_invalid_args(kwargs: dict[str, Any]):
         cs.Decimal(**kwargs)
 
 
-@pytest.mark.skip("Currently Dtype.from_polars does not support Decimal")
 @pytest.mark.parametrize(
     "dtype", [pl.Decimal, pl.Decimal(12), pl.Decimal(None, 8), pl.Decimal(6, 2)]
 )

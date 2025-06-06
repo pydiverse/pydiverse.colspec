@@ -7,13 +7,13 @@ import polars as pl
 import pydiverse.colspec as cs
 
 
-class MySchema(cs.ColSpec):
+class MyColSpec(cs.ColSpec):
     a = cs.Int64()
     b = cs.String()
 
 
 def test_create_empty():
-    df = MySchema.create_empty_polars()
+    df = MyColSpec.create_empty_polars()
     assert df.columns == ["a", "b"]
     assert df.dtypes == [pl.Int64, pl.String]
     assert len(df) == 0

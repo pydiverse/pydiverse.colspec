@@ -11,7 +11,7 @@ import pytest
 import pydiverse.colspec as cs
 
 
-class MySchema(cs.ColSpec):
+class MyColSpec(cs.ColSpec):
     a = cs.Float64()
     b = cs.String()
 
@@ -28,19 +28,19 @@ def test_cast_valid(
     df_type: type[pl.DataFrame] | type[pl.LazyFrame], data: dict[str, Any]
 ):
     df = df_type(data)
-    out = MySchema.cast_polars(df)
+    out = MyColSpec.cast_polars(df)
     assert isinstance(out, df_type)
-    assert out.lazy().collect_schema() == MySchema.polars_schema()
+    assert out.lazy().collect_schema() == MyColSpec.polars_schema()
 
 
 def test_cast_invalid_schema_eager():
     df = pl.DataFrame({"a": [1]})
     with pytest.raises(plexc.ColumnNotFoundError):
-        MySchema.cast_polars(df)
+        MyColSpec.cast_polars(df)
 
 
 def test_cast_invalid_schema_lazy():
     lf = pl.LazyFrame({"a": [1]})
-    lf = MySchema.cast_polars(lf)
+    lf = MyColSpec.cast_polars(lf)
     with pytest.raises(plexc.ColumnNotFoundError):
         lf.collect()

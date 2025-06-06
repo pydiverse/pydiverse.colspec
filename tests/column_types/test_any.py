@@ -8,9 +8,10 @@ import polars as pl
 import pytest
 
 import pydiverse.colspec as cs
+from pydiverse.colspec.optional_dependency import pdt
 
 
-class AnySchema(cs.ColSpec):
+class AnyColSpec(cs.ColSpec):
     a = cs.Any()
 
 
@@ -20,4 +21,7 @@ class AnySchema(cs.ColSpec):
 )
 def test_any_dtype_passes(data: dict[str, Any]):
     df = pl.DataFrame(data)
-    assert AnySchema.is_valid_polars(df)
+    assert AnyColSpec.is_valid_polars(df)
+    tbl = pdt.Table(df)
+    with pytest.raises(NotImplementedError, match="intentionally not implemented"):
+        assert AnyColSpec.is_valid(tbl)
