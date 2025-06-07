@@ -11,9 +11,7 @@ from functools import reduce
 from pathlib import Path
 from typing import Self
 
-import polars.exceptions
 import structlog
-from dataframely._polars import FrameType
 
 from pydiverse.colspec.config import Config, alias_collection_fail, alias_subquery
 from pydiverse.colspec.exc import (
@@ -24,7 +22,7 @@ from pydiverse.colspec.exc import (
     ValidationError,
 )
 from pydiverse.colspec.failure import FailureInfo
-from pydiverse.colspec.optional_dependency import dy, pdt, pl
+from pydiverse.colspec.optional_dependency import ColExpr, FrameType, dy, pdt, pl
 
 from . import exc
 from ._filter import Filter, FilterPolars
@@ -42,7 +40,7 @@ class MemberInfo:
 
     @staticmethod
     def is_member(anno: type):
-        if dy is not None:
+        if dy.Column is not None:
             if inspect.isclass(anno) and issubclass(anno, dy.Schema):
                 raise exc.AnnotationImplementationErrorDetail(
                     "Table annotations in Collections must not be a "
@@ -52,7 +50,7 @@ class MemberInfo:
 
         if isinstance(anno, types.UnionType):
             union_types = typing.get_args(anno)
-            if dy is not None:
+            if dy.Column is not None:
                 dy_schemas_in_union = sum(
                     1 if (inspect.isclass(t) and issubclass(t, dy.Schema)) else 0
                     for t in union_types
@@ -348,7 +346,7 @@ class Collection:
 
         # join tables needed for executing filter rules
         join_members: dict[str, set[str]] = {name: set() for name in members}
-        extra_rules: dict[str, dict[str, pdt.ColExpr]] = {name: {} for name in members}
+        extra_rules: dict[str, dict[str, ColExpr]] = {name: {} for name in members}
 
         # for reuse of subqueries across different tables:
         @dataclass
@@ -360,7 +358,7 @@ class Collection:
             # table names joined in subquery
             join_tbls: set[str]
             # dict[filter name, filter expression]
-            cols: dict[str, pdt.ColExpr]
+            cols: dict[str, ColExpr]
 
             @staticmethod
             def build():
@@ -459,7 +457,7 @@ class Collection:
                 table_level_fail, name
             )._invalid_rows
 
-            rule_columns: dict[str, pdt.ColExpr] = (
+            rule_columns: dict[str, ColExpr] = (
                 getattr(table_level_fail, name).rule_columns | extra_rules[name]
             )
 
@@ -641,7 +639,7 @@ class Collection:
         DynCollection = convert_collection_to_dy(cls)
         try:
             return cls.from_dy_collection(DynCollection.cast(data))
-        except polars.exceptions.ColumnNotFoundError as e:
+        except pl.exceptions.ColumnNotFoundError as e:
             # TODO: improve error message by checking missing and extra columns for
             #  all member tables
             raise ColumnValidationError() from e
@@ -832,7 +830,7 @@ class Collection:
                 f"ignored: {', '.join(superfluous)}."
             )
 
-    def pk_is_null(self, tbl: pdt.Table) -> pdt.ColExpr:
+    def pk_is_null(self, tbl: pdt.Table) -> ColExpr:
         tbl_name = next(attr for attr in dir(self) if getattr(self, attr) == tbl)
         return tbl[self.member_col_specs()[tbl_name].primary_keys()[0]].is_null()
 

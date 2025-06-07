@@ -38,7 +38,7 @@ class CarFleetPolars(pydiverse.colspec.collection.Collection):
         return self.cars.filter(pl.col("vin") != pl.lit("123"))
 
 
-@pytest.mark.skipif(dy is None, reason="dataframely not installed")
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_valid_failure_infos_polars():
     cars = {"vin": ["123", "456"], "manufacturer": ["BMW", "Mercedes"]}
     car_parts: dict[str, list[Any]] = {
@@ -67,7 +67,7 @@ class CarFleet(pydiverse.colspec.collection.Collection):
     car_parts: CarPartColSpec
 
     @cs.filter()
-    def not_car_with_vin_123(self) -> pdt.ColExpr:
+    def not_car_with_vin_123(self) -> ColExpr:
         return self.cars.vin != "123"
 
 

@@ -61,7 +61,7 @@ def test_invalid_args_is_in(column_type: type[_BaseInteger], kwargs: dict[str, A
         column_type(**kwargs)
 
 
-@pytest.mark.skipif(dy is None, reason="dataframely not installed")
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 @pytest.mark.parametrize("dtype", INTEGER_DTYPES)
 def test_any_integer_dtype_passes_polars(dtype: DataTypeClass):
     df = pl.DataFrame(schema={"a": dtype})

@@ -21,7 +21,7 @@ def perform_dataframely_operation():
     C.validate_polars(df)
 
 
-@pytest.mark.skipif(dy is None, reason="dataframely not installed")
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_config_global():
     try:
         dy.Config.set_max_sampling_iterations(50)
@@ -31,7 +31,7 @@ def test_config_global():
         dy.Config.restore_defaults()
 
 
-@pytest.mark.skipif(dy is None, reason="dataframely not installed")
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_config_local():
     try:
         with dy.Config(max_sampling_iterations=35):
@@ -42,7 +42,7 @@ def test_config_local():
         dy.Config.restore_defaults()
 
 
-@pytest.mark.skipif(dy is None, reason="dataframely not installed")
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_config_local_nested():
     try:
         with dy.Config(max_sampling_iterations=35):
@@ -56,7 +56,7 @@ def test_config_local_nested():
         dy.Config.restore_defaults()
 
 
-@pytest.mark.skipif(dy is None, reason="dataframely not installed")
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_config_global_local():
     try:
         dy.Config.set_max_sampling_iterations(50)

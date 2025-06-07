@@ -4,15 +4,19 @@
 import sys
 from typing import Any
 
-import dataframely as dy
-import polars as pl
 import pytest
-from polars.datatypes import DataTypeClass
-from polars.datatypes.group import FLOAT_DTYPES, INTEGER_DTYPES
 
 import pydiverse.colspec as cs
 from pydiverse.colspec.columns.float import _BaseFloat
-from pydiverse.colspec.optional_dependency import pdt
+from pydiverse.colspec.optional_dependency import (
+    FLOAT_DTYPES,
+    INTEGER_DTYPES,
+    C,
+    DataTypeClass,
+    dy,
+    pdt,
+    pl,
+)
 from pydiverse.colspec.testing import FLOAT_COLUMN_TYPES
 from pydiverse.colspec.testing.rules import evaluate_rules
 
@@ -56,18 +60,21 @@ def test_invalid_args(column_type: type[_BaseFloat], kwargs: dict[str, Any]):
         column_type(**kwargs)
 
 
+@pytest.mark.skipif(pl.Expr is None, reason="polars is required for this test")
 @pytest.mark.parametrize("dtype", FLOAT_DTYPES)
 def test_any_integer_dtype_passes(dtype: DataTypeClass):
     df = pl.DataFrame(schema={"a": dtype})
     assert FloatColSpec.is_valid_polars(df)
 
 
+@pytest.mark.skipif(pl.Expr is None, reason="polars is required for this test")
 @pytest.mark.parametrize("dtype", [pl.Boolean, pl.String] + list(INTEGER_DTYPES))
 def test_non_integer_dtype_fails(dtype: DataTypeClass):
     df = pl.DataFrame(schema={"a": dtype})
     assert not FloatColSpec.is_valid_polars(df)
 
 
+@pytest.mark.skipif(C is None, reason="pydiverse-transform is required for this test")
 @pytest.mark.parametrize("column_type", FLOAT_COLUMN_TYPES)
 @pytest.mark.parametrize(
     ("inclusive", "valid"),
@@ -86,6 +93,7 @@ def test_validate_min(
     assert actual == valid
 
 
+@pytest.mark.skipif(C is None, reason="pydiverse-transform is required for this test")
 @pytest.mark.parametrize("column_type", FLOAT_COLUMN_TYPES)
 @pytest.mark.parametrize(
     ("inclusive", "valid"),
@@ -104,6 +112,7 @@ def test_validate_max(
     assert actual == valid
 
 
+@pytest.mark.skipif(C is None, reason="pydiverse-transform is required for this test")
 @pytest.mark.parametrize("column_type", FLOAT_COLUMN_TYPES)
 @pytest.mark.parametrize(
     ("min_inclusive", "max_inclusive", "valid"),
@@ -158,6 +167,9 @@ def test_validate_range(
     assert actual == valid
 
 
+@pytest.mark.skipif(
+    dy.DataFrame is None, reason="dataframely is required for this test"
+)
 def test_sample_unchecked_min_0():
     column = dy.Float(min=0, max=10)
     actual = column._sample_unchecked(dy.random.Generator(), n=10000)

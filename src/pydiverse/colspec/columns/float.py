@@ -4,11 +4,9 @@
 from abc import abstractmethod
 from collections.abc import Callable
 
-import numpy as np
-
 import pydiverse.common as pdc
 
-from ..optional_dependency import ColExpr
+from ..optional_dependency import ColExpr, np
 from ._base import Column
 from ._mixins import OrdinalMixin
 from ._utils import classproperty

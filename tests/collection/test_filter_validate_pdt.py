@@ -11,6 +11,7 @@ import pydiverse.colspec as cs
 import pydiverse.colspec.collection
 import pydiverse.transform as pdt
 from pydiverse.colspec.exc import MemberValidationError
+from pydiverse.colspec.optional_dependency import ColExpr
 from pydiverse.colspec.pdt_util import num_rows
 from pydiverse.colspec.testing.assert_equal import assert_table_equal
 
@@ -35,14 +36,14 @@ class MyCollection(pydiverse.colspec.collection.Collection):
     second: MySecondColSpec
 
     @cs.filter()
-    def equal_primary_keys(self) -> pdt.ColExpr:
+    def equal_primary_keys(self) -> ColExpr:
         return functools.reduce(
             operator.and_,
             (self.first[key] == self.second[key] for key in self.common_primary_keys()),
         )
 
     @cs.filter()
-    def first_b_greater_second_b(self) -> pdt.ColExpr:
+    def first_b_greater_second_b(self) -> ColExpr:
         return (
             (self.first.b > self.second.b)
             | self.pk_is_null(self.first)

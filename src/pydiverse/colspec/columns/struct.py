@@ -3,11 +3,9 @@
 
 from collections.abc import Callable
 
-import polars as pl
-
 import pydiverse.common as pdc
 
-from ..optional_dependency import ColExpr
+from ..optional_dependency import ColExpr, pl
 from ._base import Column
 
 

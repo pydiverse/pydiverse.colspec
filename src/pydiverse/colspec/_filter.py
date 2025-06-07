@@ -4,7 +4,7 @@
 from collections.abc import Callable
 from typing import Generic, TypeVar
 
-from .optional_dependency import pdt, pl
+from .optional_dependency import ColExpr, pl
 
 C = TypeVar("C")
 
@@ -12,11 +12,11 @@ C = TypeVar("C")
 class Filter(Generic[C]):
     """Internal class representing logic for filtering members of a collection."""
 
-    def __init__(self, logic_fn: Callable[[C], pdt.ColExpr]):
-        self.logic_fn: Callable[[C], pdt.ColExpr] = logic_fn
+    def __init__(self, logic_fn: Callable[[C], ColExpr]):
+        self.logic_fn: Callable[[C], ColExpr] = logic_fn
 
 
-def filter() -> Callable[[Callable[[C], pdt.ColExpr]], Filter[C]]:  # noqa: A001
+def filter() -> Callable[[Callable[[C], ColExpr]], Filter[C]]:  # noqa: A001
     """Mark a function as filters for rows in the members of a collection.
 
     The name of the function will be used as the name of the filter. The name must not
@@ -36,7 +36,7 @@ def filter() -> Callable[[Callable[[C], pdt.ColExpr]], Filter[C]]:  # noqa: A001
         might introduce duplicate rows.
     """
 
-    def decorator(pred: Callable[[C], pdt.ColExpr]) -> Filter[C]:
+    def decorator(pred: Callable[[C], ColExpr]) -> Filter[C]:
         return Filter(logic_fn=pred)
 
     return decorator

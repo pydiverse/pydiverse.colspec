@@ -19,7 +19,7 @@ from .exc import (
     ValidationError,
 )
 from .failure import FailureInfo
-from .optional_dependency import Generator, dag, dy, pdt, pl
+from .optional_dependency import ColExpr, Generator, dag, dy, pdt, pl
 
 if TYPE_CHECKING:
     pass
@@ -133,7 +133,7 @@ class ColSpec(
 
     @classmethod
     def fail_dy_columns_in_colspec(cls):
-        if dy is not None:
+        if dy.Column is not None:
             if any(
                 [
                     isinstance(getattr(cls, c), dy.Column | dy._rule.Rule)
@@ -486,7 +486,7 @@ class ColSpec(
     @classmethod
     def _validation_rules(
         cls, tbl: pdt.Table
-    ) -> tuple[dict[str, pdt.ColExpr], dict[str, GroupRule]]:
+    ) -> tuple[dict[str, ColExpr], dict[str, GroupRule]]:
         cls.fail_dy_columns_in_colspec()
         alias_map = cls.alias_map()
         return {

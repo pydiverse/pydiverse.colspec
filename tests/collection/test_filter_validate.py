@@ -3,13 +3,16 @@
 
 import dataclasses
 
-import polars as pl
 import pytest
-from polars.testing import assert_frame_equal
 
 import pydiverse.colspec as cs
 import pydiverse.colspec.collection
 from pydiverse.colspec.exc import MemberValidationError
+from pydiverse.colspec.optional_dependency import assert_frame_equal, dy, pl
+
+pytestmark = pytest.mark.skipif(
+    dy.Column is None, reason="dataframely is required for this test"
+)
 
 # ------------------------------------------------------------------------------------ #
 #                                        SCHEMA                                        #

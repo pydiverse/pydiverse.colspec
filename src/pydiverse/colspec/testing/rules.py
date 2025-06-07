@@ -4,7 +4,7 @@
 import polars as pl
 
 from pydiverse.colspec import RulePolars
-from pydiverse.colspec.optional_dependency import pdt
+from pydiverse.colspec.optional_dependency import ColExpr, pdt
 
 
 def rules_from_exprs_polars(exprs: dict[str, pl.Expr]) -> dict[str, RulePolars]:
@@ -36,7 +36,7 @@ def evaluate_rules_polars(
     return RulePolars.append_rules_polars(lf, rules).drop(lf.collect_schema())
 
 
-def evaluate_rules(tbl: pdt.Table, rules: dict[str, pdt.ColExpr]):
+def evaluate_rules(tbl: pdt.Table, rules: dict[str, ColExpr]):
     return {
         k: (tbl >> pdt.select() >> pdt.mutate(out=v) >> pdt.export(pdt.DictOfLists()))[
             "out"

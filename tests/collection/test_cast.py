@@ -1,12 +1,12 @@
 # Copyright (c) QuantCo and pydiverse contributors 2025-2025
 # SPDX-License-Identifier: BSD-3-Clause
 
-import polars as pl
 import pytest
 
 import pydiverse.colspec as cs
 import pydiverse.colspec.collection
 from pydiverse.colspec.exc import ValidationError
+from pydiverse.colspec.optional_dependency import pl
 
 
 class FirstColSpec(cs.ColSpec):

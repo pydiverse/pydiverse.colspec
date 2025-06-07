@@ -15,33 +15,18 @@ from typing import Any
 
 import pytest
 
+import pydiverse.colspec as cs
 import pydiverse.colspec.collection
+from pydiverse.colspec import ColSpec
+from pydiverse.colspec.columns import ColExpr
+from pydiverse.colspec.optional_dependency import C, dy, pl
 
 # Note: To properly test the typing of the library,
 # we also need to make sure that imported colspecs are properly processed.
 from pydiverse.colspec.testing.typing import MyImportedColSpec
 
-try:
-    # optional dependency to pydiverse-transform
-    from pydiverse.transform.extended import C
-except ImportError:
-    C = None
-try:
-    # optional dependency to dataframely and polars
-    import dataframely as dy
-    import polars as pl
-except ImportError:
-    dy = None
-    pl = None
-
-import pydiverse.colspec as cs
-from pydiverse.colspec import ColSpec
-from pydiverse.colspec.columns import ColExpr
-
 # pytestmark = pytest.mark.skip(reason="typing-only tests")
 
-
-# ------------------------------------------------------------------------------------ #
 #                                        FRAMES                                        #
 # ------------------------------------------------------------------------------------ #
 

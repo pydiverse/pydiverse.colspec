@@ -8,7 +8,7 @@ from typing import IO, Self
 from pydiverse.colspec.pdt_util import num_rows
 
 from .config import Config, alias_subquery
-from .optional_dependency import pdt, pl
+from .optional_dependency import ColExpr, pdt, pl
 
 
 class FailureInfo:
@@ -19,7 +19,7 @@ class FailureInfo:
         self,
         tbl: pdt.Table,
         invalid_rows: pdt.Table,
-        rule_columns: dict[str, pdt.ColExpr],
+        rule_columns: dict[str, ColExpr],
         cfg: Config,
     ):
         #: The subset of the input data frame containing the *invalid* rows along with

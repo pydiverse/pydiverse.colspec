@@ -2,11 +2,11 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import dataframely as dy
-import polars as pl
 import pytest
 
 import pydiverse.colspec as cs
 import pydiverse.colspec.collection
+from pydiverse.colspec.optional_dependency import pl
 
 
 class MyColSpec(cs.ColSpec):
