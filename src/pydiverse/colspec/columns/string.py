@@ -54,7 +54,7 @@ class String(Column):
     def validation_rules(self, expr: ColExpr) -> dict[str, ColExpr]:
         result = super().validation_rules(expr)
 
-        import polars as pl
+        from pydiverse.colspec.optional_dependency import pl
 
         len_fn = "len_bytes" if isinstance(expr, pl.Expr) else "len"
 

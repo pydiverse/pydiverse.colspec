@@ -3,10 +3,10 @@
 
 from typing import Any
 
-import polars as pl
 import pytest
 
 import pydiverse.colspec as cs
+from pydiverse.colspec.optional_dependency import pl
 from pydiverse.colspec.testing.factory import create_colspec
 
 

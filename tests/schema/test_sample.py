@@ -1,15 +1,17 @@
 # Copyright (c) QuantCo and pydiverse contributors 2025-2025
 # SPDX-License-Identifier: BSD-3-Clause
 
-import dataframely as dy
-import numpy as np
-import polars as pl
 import pytest
-from dataframely.random import Generator
-from polars.testing import assert_frame_equal
 
 import pydiverse.colspec as cs
-from pydiverse.colspec.optional_dependency import pdt
+from pydiverse.colspec.optional_dependency import (
+    Generator,
+    assert_frame_equal,
+    dy,
+    np,
+    pdt,
+    pl,
+)
 
 
 class MySimpleColSpec(cs.ColSpec):

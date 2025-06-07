@@ -4,13 +4,12 @@
 from dataclasses import dataclass
 from typing import Any
 
-import polars as pl
 import pytest
 
 import pydiverse.colspec as cs
 import pydiverse.colspec.collection
-from pydiverse.colspec.colspec import dy, pdt
 from pydiverse.colspec.columns import ColExpr
+from pydiverse.colspec.optional_dependency import dy, pdt, pl
 from pydiverse.colspec.pdt_util import num_rows
 
 

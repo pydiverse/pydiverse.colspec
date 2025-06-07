@@ -1,17 +1,15 @@
 # Copyright (c) QuantCo and pydiverse contributors 2024-2025
 # SPDX-License-Identifier: BSD-3-Clause
 
-import polars as pl
 import pytest
-from dataframely.columns._base import Column
-from dataframely.testing import validation_mask
 
 import pydiverse.colspec as cs
+from pydiverse.colspec.optional_dependency import dy, pl, validation_mask
 from pydiverse.colspec.testing import create_colspec
 
 
 @pytest.mark.parametrize("inner", [cs.Int64(), cs.Integer()])
-def test_integer_list(inner: Column):
+def test_integer_list(inner: dy.Column):
     spec = create_colspec("test", {"a": cs.List(inner)})
     assert spec.is_valid_polars(pl.DataFrame({"a": [[1], [2], [3]]}))
 
@@ -51,7 +49,7 @@ def test_invalid_inner_type():
         ),
     ],
 )
-def test_validate_dtype(column: Column, dtype: pl.DataType, is_valid_polars: bool):
+def test_validate_dtype(column: dy.Column, dtype: pl.DataType, is_valid_polars: bool):
     assert column.validate_dtype_polars(dtype) == is_valid_polars
 
 

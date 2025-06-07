@@ -3,11 +3,10 @@
 
 from typing import Any
 
-import polars as pl
 import pytest
 
 import pydiverse.colspec as cs
-from pydiverse.colspec.optional_dependency import pdt
+from pydiverse.colspec.optional_dependency import pdt, pl
 
 
 class AnyColSpec(cs.ColSpec):

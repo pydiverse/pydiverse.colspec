@@ -4,14 +4,12 @@
 import datetime as dt
 from typing import Any
 
-import polars as pl
 import pytest
-from dataframely.random import Generator
 
 import pydiverse.colspec as cs
 from pydiverse.colspec import Column
 from pydiverse.colspec.exc import DtypeValidationError
-from pydiverse.colspec.optional_dependency import pdt
+from pydiverse.colspec.optional_dependency import Generator, pdt, pl
 from pydiverse.colspec.testing.factory import create_colspec
 from pydiverse.colspec.testing.rules import evaluate_rules
 

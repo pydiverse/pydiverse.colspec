@@ -1,9 +1,7 @@
 # Copyright (c) QuantCo and pydiverse contributors 2024-2025
 # SPDX-License-Identifier: BSD-3-Clause
 
-import polars as pl
 import pytest
-from polars.testing import assert_frame_equal
 
 import pydiverse.colspec as cs
 from pydiverse.colspec.exc import (
@@ -11,7 +9,13 @@ from pydiverse.colspec.exc import (
     RuleValidationError,
     ValidationError,
 )
-from pydiverse.colspec.optional_dependency import C, ColExpr, pdt
+from pydiverse.colspec.optional_dependency import (
+    C,
+    ColExpr,
+    assert_frame_equal,
+    pdt,
+    pl,
+)
 
 
 class MyColSpec(cs.ColSpec):

@@ -1,11 +1,10 @@
 # Copyright (c) QuantCo and pydiverse contributors 2024-2025
 # SPDX-License-Identifier: BSD-3-Clause
 
-import polars as pl
 import pytest
 
 from pydiverse.colspec import Column
-from pydiverse.colspec.optional_dependency import pdt
+from pydiverse.colspec.optional_dependency import pdt, pl
 from pydiverse.colspec.testing import COLUMN_TYPES, SUPERTYPE_COLUMN_TYPES
 from pydiverse.colspec.testing.rules import evaluate_rules
 

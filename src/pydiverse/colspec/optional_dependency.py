@@ -25,7 +25,7 @@ except ImportError:
 
     DataTypeClass = None
     PolarsDataType = None
-    FLOAT_DTYPES, INTEGER_DTYPES = None, None
+    FLOAT_DTYPES, INTEGER_DTYPES = [], []
     assert_frame_equal = None
     # Create a new module with the given name.
     pl = types.ModuleType("polars")
@@ -48,6 +48,15 @@ except ImportError:
         "Float64",
         "Boolean",
         "Utf8",
+        "Decimal",
+        "Enum",
+        "Struct",
+        "List",
+        "Date",
+        "Datetime",
+        "Time",
+        "Duration",
+        "String",
     ]:
         setattr(pl, _type, DummyClass)
 
@@ -57,6 +66,7 @@ try:
     import dataframely as dy
     from dataframely._polars import FrameType
     from dataframely.random import Generator
+    from dataframely.testing import validation_mask
 except ImportError:
 
     class Generator:
@@ -67,13 +77,42 @@ except ImportError:
     class DyDataFrame(Generic[T]):
         pass
 
+    class DyDummyClass:
+        pass
+
     FrameType = None
+    validation_mask = None
     dy = types.ModuleType("dataframely")
     dy.DataFrame = DyDataFrame
     dy.LazyFrame = DyDataFrame
     dy.FailureInfo = None
     dy.Column = None
     dy.Collection = None
+    for _type in [
+        "Int8",
+        "Int16",
+        "Int32",
+        "Int64",
+        "UInt8",
+        "UInt16",
+        "UInt32",
+        "UInt64",
+        "Float32",
+        "Float64",
+        "Bool",
+        "String",
+        "Decimal",
+        "Enum",
+        "Struct",
+        "List",
+        "Date",
+        "Datetime",
+        "Time",
+        "Duration",
+        "Float",
+        "Integer",
+    ]:
+        setattr(dy, _type, DyDummyClass)
 
 
 try:

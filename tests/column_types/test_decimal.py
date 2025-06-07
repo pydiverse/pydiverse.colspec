@@ -4,13 +4,16 @@
 import decimal
 from typing import Any
 
-import polars as pl
 import pytest
-from polars.datatypes import DataTypeClass
-from polars.datatypes.group import FLOAT_DTYPES, INTEGER_DTYPES
 
 import pydiverse.colspec as cs
-from pydiverse.colspec.optional_dependency import pdt
+from pydiverse.colspec.optional_dependency import (
+    FLOAT_DTYPES,
+    INTEGER_DTYPES,
+    DataTypeClass,
+    pdt,
+    pl,
+)
 from pydiverse.colspec.testing.rules import evaluate_rules
 
 

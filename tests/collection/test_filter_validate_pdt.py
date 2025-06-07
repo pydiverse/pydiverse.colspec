@@ -9,9 +9,8 @@ import pytest
 
 import pydiverse.colspec as cs
 import pydiverse.colspec.collection
-import pydiverse.transform as pdt
 from pydiverse.colspec.exc import MemberValidationError
-from pydiverse.colspec.optional_dependency import ColExpr
+from pydiverse.colspec.optional_dependency import ColExpr, pdt
 from pydiverse.colspec.pdt_util import num_rows
 from pydiverse.colspec.testing.assert_equal import assert_table_equal
 

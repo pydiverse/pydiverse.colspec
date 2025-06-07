@@ -3,16 +3,14 @@
 
 import random
 
-import polars as pl
 import pytest
 from dataframely.testing import validation_mask
 from polars.datatypes import DataTypeClass
-from polars.testing import assert_frame_equal
 
 import pydiverse.colspec as cs
 from pydiverse.colspec.exc import DtypeValidationError, ValidationError
-from pydiverse.colspec.optional_dependency import pdt
-from pydiverse.transform._internal.pipe.verbs import summarize
+from pydiverse.colspec.optional_dependency import assert_frame_equal, pdt, pl
+from pydiverse.transform import summarize
 
 
 class MyColSpec(cs.ColSpec):

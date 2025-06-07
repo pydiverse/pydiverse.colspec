@@ -358,7 +358,7 @@ def _next_date(t: dt.date, resolution: str | None) -> dt.date | None:
 
 
 def _next_datetime(t: dt.datetime, resolution: str | None) -> dt.datetime | None:
-    import polars as pl
+    from pydiverse.colspec.optional_dependency import pl
 
     result = pl.Series([t]).dt.offset_by(resolution or "1us")
     if result.dt.year().item() >= 10000:
@@ -368,7 +368,7 @@ def _next_datetime(t: dt.datetime, resolution: str | None) -> dt.datetime | None
 
 
 def _next_time(t: dt.time, resolution: str | None) -> dt.time | None:
-    import polars as pl
+    from pydiverse.colspec.optional_dependency import pl
 
     result = pl.cast(
         # `None` can never happen as we can never reach another day by adding time
@@ -380,7 +380,7 @@ def _next_time(t: dt.time, resolution: str | None) -> dt.time | None:
 
 
 def _next_timedelta(t: dt.timedelta, resolution: str | None) -> dt.timedelta | None:
-    import polars as pl
+    from pydiverse.colspec.optional_dependency import pl
 
     result = pl.cast(
         dt.datetime,  # We run into out-of-date issues before reaching `None`

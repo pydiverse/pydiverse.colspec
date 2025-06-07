@@ -3,15 +3,18 @@
 
 from typing import Any
 
-import dataframely as dy
-import polars as pl
 import pytest
-from polars.datatypes import DataTypeClass
-from polars.datatypes.group import FLOAT_DTYPES, INTEGER_DTYPES
 
 import pydiverse.colspec as cs
 from pydiverse.colspec.columns.integer import _BaseInteger
-from pydiverse.colspec.optional_dependency import pdt
+from pydiverse.colspec.optional_dependency import (
+    FLOAT_DTYPES,
+    INTEGER_DTYPES,
+    DataTypeClass,
+    dy,
+    pdt,
+    pl,
+)
 from pydiverse.colspec.testing import INTEGER_COLUMN_TYPES
 from pydiverse.colspec.testing.rules import evaluate_rules
 

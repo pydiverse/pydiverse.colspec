@@ -3,15 +3,13 @@
 
 import random
 
-import polars as pl
 import pytest
 import sqlalchemy as sqa
 from polars.datatypes import DataTypeClass
-from polars.testing import assert_frame_equal
 
 import pydiverse.colspec as cs
-import pydiverse.transform as pdt
 from pydiverse.colspec.exc import DtypeValidationError, ValidationError
+from pydiverse.colspec.optional_dependency import assert_frame_equal, pdt, pl
 from pydiverse.colspec.testing.assert_equal import assert_table_equal
 from pydiverse.transform.common import (
     Polars,

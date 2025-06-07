@@ -1,12 +1,12 @@
 # Copyright (c) QuantCo and pydiverse contributors 2024-2025
 # SPDX-License-Identifier: BSD-3-Clause
 
-import polars as pl
 import pytest
 
 import pydiverse.colspec as cs
 from pydiverse.colspec._rule import GroupRulePolars, RulePolars
 from pydiverse.colspec.exc import ImplementationError, RuleImplementationError
+from pydiverse.colspec.optional_dependency import pl
 from pydiverse.colspec.testing.factory import create_colspec
 
 

@@ -53,7 +53,9 @@ class List(Column):
     def validation_rules(self, expr: ColExpr) -> dict[str, ColExpr]:
         raise NotImplementedError()
 
-        import polars as pl  # needs to be replaced with pydiverse.transform
+        from pydiverse.colspec.optional_dependency import (
+            pl,  # needs to be replaced with pydiverse.transform
+        )
 
         inner_rules = {
             f"inner_{rule_name}": expr.list.eval(inner_expr).list.all()

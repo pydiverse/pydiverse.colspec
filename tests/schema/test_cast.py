@@ -3,11 +3,11 @@
 
 from typing import Any
 
-import polars as pl
 import polars.exceptions as plexc
 import pytest
 
 import pydiverse.colspec as cs
+from pydiverse.colspec.optional_dependency import pl
 
 
 class MyColSpec(cs.ColSpec):

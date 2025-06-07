@@ -3,14 +3,13 @@
 
 import re
 
-import dataframely as dy
-import polars as pl
 import polars.exceptions as plexc
 import pytest
 from dataframely._validation import DtypeCasting, validate_dtypes
 from dataframely.columns import Column
 from dataframely.exc import DtypeValidationError
-from polars.testing import assert_frame_equal
+
+from pydiverse.colspec.optional_dependency import assert_frame_equal, dy, pl
 
 
 @pytest.mark.parametrize(

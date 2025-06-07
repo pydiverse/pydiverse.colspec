@@ -1,10 +1,8 @@
 # Copyright (c) QuantCo and pydiverse contributors 2025-2025
 # SPDX-License-Identifier: BSD-3-Clause
 
-import polars as pl
-
 from pydiverse.colspec import RulePolars
-from pydiverse.colspec.optional_dependency import ColExpr, pdt
+from pydiverse.colspec.optional_dependency import ColExpr, pdt, pl
 
 
 def rules_from_exprs_polars(exprs: dict[str, pl.Expr]) -> dict[str, RulePolars]:
