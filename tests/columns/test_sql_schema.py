@@ -159,8 +159,10 @@ def test_sql_multiple_columns(dialect: sa.Dialect):
     assert len(schema.sql_schema(dialect)) == 2
 
 
-# @pytest.mark.skipif(sa.Column is None or pyodbc is None, reason="sqlalchemy and
-#   pyodbc are needed for this test")
+@pytest.mark.skipif(
+    sa.Column is None or pyodbc is None,
+    reason="sqlalchemy and pyodbc are needed for this test",
+)
 @pytest.mark.parametrize("dialect", [MSDialect_pyodbc(), PGDialect_psycopg2()])
 def test_raise_for_list_column(dialect: sa.Dialect):
     # TODO: this probably should raise for MSSQL
