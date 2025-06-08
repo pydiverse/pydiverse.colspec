@@ -25833,6 +25833,8 @@ packages:
   - tzdata
   constrains:
   - python_abi 3.11.* *_cp311
+  arch: x86_64
+  platform: linux
   license: Python-2.0
   size: 30629559
   timestamp: 1749050021812
@@ -25885,6 +25887,8 @@ packages:
   - tzdata
   constrains:
   - python_abi 3.12.* *_cp312
+  arch: x86_64
+  platform: linux
   license: Python-2.0
   size: 31445023
   timestamp: 1749050216615
@@ -25936,6 +25940,8 @@ packages:
   - readline >=8.2,<9.0a0
   - tk >=8.6.13,<8.7.0a0
   - tzdata
+  arch: x86_64
+  platform: linux
   license: Python-2.0
   size: 33268245
   timestamp: 1744665022734
@@ -25962,6 +25968,8 @@ packages:
   - tzdata
   constrains:
   - python_abi 3.11.* *_cp311
+  arch: aarch64
+  platform: linux
   license: Python-2.0
   size: 15306062
   timestamp: 1749048115706
@@ -25987,6 +25995,8 @@ packages:
   - tzdata
   constrains:
   - python_abi 3.12.* *_cp312
+  arch: aarch64
+  platform: linux
   license: Python-2.0
   size: 13738751
   timestamp: 1749047852768
@@ -26036,6 +26046,8 @@ packages:
   - readline >=8.2,<9.0a0
   - tk >=8.6.13,<8.7.0a0
   - tzdata
+  arch: aarch64
+  platform: linux
   license: Python-2.0
   size: 33727843
   timestamp: 1744663385273
@@ -26058,6 +26070,8 @@ packages:
   - tzdata
   constrains:
   - python_abi 3.11.* *_cp311
+  arch: x86_64
+  platform: osx
   license: Python-2.0
   size: 15423460
   timestamp: 1749049420299
@@ -26100,6 +26114,8 @@ packages:
   - tzdata
   constrains:
   - python_abi 3.12.* *_cp312
+  arch: x86_64
+  platform: osx
   license: Python-2.0
   size: 13571569
   timestamp: 1749049058713
@@ -26145,6 +26161,8 @@ packages:
   - readline >=8.2,<9.0a0
   - tk >=8.6.13,<8.7.0a0
   - tzdata
+  arch: x86_64
+  platform: osx
   license: Python-2.0
   size: 13875464
   timestamp: 1744664784298
@@ -26167,6 +26185,8 @@ packages:
   - tzdata
   constrains:
   - python_abi 3.11.* *_cp311
+  arch: arm64
+  platform: osx
   license: Python-2.0
   size: 14573820
   timestamp: 1749048947732
@@ -26188,6 +26208,8 @@ packages:
   - tzdata
   constrains:
   - python_abi 3.12.* *_cp312
+  arch: arm64
+  platform: osx
   license: Python-2.0
   size: 13009234
   timestamp: 1749048134449
@@ -26233,6 +26255,8 @@ packages:
   - readline >=8.2,<9.0a0
   - tk >=8.6.13,<8.7.0a0
   - tzdata
+  arch: arm64
+  platform: osx
   license: Python-2.0
   size: 12136505
   timestamp: 1744663807953
@@ -26255,6 +26279,8 @@ packages:
   - vc14_runtime >=14.29.30139
   constrains:
   - python_abi 3.11.* *_cp311
+  arch: x86_64
+  platform: win
   license: Python-2.0
   size: 18242669
   timestamp: 1749048351218
@@ -26276,6 +26302,8 @@ packages:
   - vc14_runtime >=14.29.30139
   constrains:
   - python_abi 3.12.* *_cp312
+  arch: x86_64
+  platform: win
   license: Python-2.0
   size: 15829289
   timestamp: 1749047682640
@@ -26321,6 +26349,8 @@ packages:
   - ucrt >=10.0.20348.0
   - vc >=14.2,<15
   - vc14_runtime >=14.29.30139
+  arch: x86_64
+  platform: win
   license: Python-2.0
   size: 16614435
   timestamp: 1744663103022

@@ -81,14 +81,14 @@ def test_nullability_information(column_type: type[cs.Column], nullable: bool):
     assert ("not null" in str(schema.pyarrow_schema())) != nullable
 
 
-@pytest.mark.skipif(pa.Field is None, reason="pyarrow is required for this test")
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 @pytest.mark.parametrize("nullable", [True, False])
 def test_nullability_information_enum(nullable: bool):
     schema = create_colspec("test", {"a": cs.Enum(["a", "b"], nullable=nullable)})
     assert ("not null" in str(schema.pyarrow_schema())) != nullable
 
 
-@pytest.mark.skipif(pa.Field is None, reason="pyarrow is required for this test")
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 @pytest.mark.parametrize(
     "inner",
     [c() for c in ALL_COLUMN_TYPES]
@@ -101,7 +101,7 @@ def test_nullability_information_list(inner: cs.Column, nullable: bool):
     assert ("not null" in str(schema.pyarrow_schema())) != nullable
 
 
-@pytest.mark.skipif(pa.Field is None, reason="pyarrow is required for this test")
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 @pytest.mark.parametrize(
     "inner",
     [c() for c in ALL_COLUMN_TYPES]

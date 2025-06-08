@@ -354,7 +354,7 @@ def test_validate_min_max(
     assert actual == valid
 
 
-@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
+@pytest.mark.skipif(C is None, reason="pydiverse.transform is required for this test")
 @pytest.mark.parametrize(
     ("column", "values", "valid"),
     [
