@@ -32,21 +32,20 @@ jobs:
         os:
           - ubuntu-latest
         environment:
-          - py310
           - py311
-          - py312
           - py313
-          - py310pl
+          - py311pl
           - py313pl
-          - py310sa
+          - py311sa
           - py313sa
-          - py310pdt
+          - py311pdt
           - py313pdt
-          - py310dag
+          - py311dag
           - py313dag
-          - py310dy
+          - py311dy
           - py313dy
-          - py310all
+          - py311all
+          - py312all
           - py313all
     timeout-minutes: 5
     steps:
