@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import pytest
+from sqlalchemy.dialects.mssql.base import MS_2017_VERSION
 
 import pydiverse.colspec as cs
 from pydiverse.colspec.optional_dependency import pyodbc, sa
@@ -25,22 +26,22 @@ except ImportError:
         # (cs.Any(), "SQL_VARIANT"),
         (cs.Bool(), "BIT"),
         (cs.Date(), "DATE"),
-        (cs.Datetime(), "DATETIME2(6)"),
-        (cs.Time(), "TIME(6)"),
-        (cs.Duration(), "DATETIME2(6)"),
+        (cs.Datetime(), "DATETIME"),  # consider DATETIME2(6)
+        (cs.Time(), "TIME"),  # consider TIME(6)
+        (cs.Duration(), "DATETIME"),  # consider DATETIME2(6)
         (cs.Decimal(), "NUMERIC"),
-        (cs.Decimal(12), "NUMERIC(12, 0)"),
+        (cs.Decimal(12), "NUMERIC(12)"),
         (cs.Decimal(None, 8), "NUMERIC(38, 8)"),
         (cs.Decimal(6, 2), "NUMERIC(6, 2)"),
-        (cs.Float(), "FLOAT"),
-        (cs.Float32(), "REAL"),
-        (cs.Float64(), "FLOAT"),
-        (cs.Integer(), "INTEGER"),
+        (cs.Float(), "FLOAT(53)"),
+        (cs.Float32(), "FLOAT(24)"),
+        (cs.Float64(), "FLOAT(53)"),
+        (cs.Integer(), "BIGINT"),
         (cs.Int8(), "SMALLINT"),
         (cs.Int16(), "SMALLINT"),
         (cs.Int32(), "INTEGER"),
         (cs.Int64(), "BIGINT"),
-        (cs.UInt8(), "TINYINT"),
+        (cs.UInt8(), "SMALLINT"),  # consider TINYINT
         (cs.UInt16(), "INTEGER"),
         (cs.UInt32(), "BIGINT"),
         (cs.UInt64(), "BIGINT"),
@@ -50,8 +51,8 @@ except ImportError:
         (cs.String(min_length=3, max_length=5), "VARCHAR(5)"),
         (cs.String(min_length=5, max_length=5), "CHAR(5)"),
         (cs.String(regex="[abc]de"), "VARCHAR(max)"),
-        (cs.String(regex="^[abc]d$"), "CHAR(2)"),
-        (cs.String(regex="^[abc]{1,3}d$"), "VARCHAR(4)"),
+        (cs.String(regex="^[abc]d$"), "VARCHAR(max)"),
+        (cs.String(regex="^[abc]{1,3}d$"), "VARCHAR(max)"),
         (cs.Enum(["foo", "bar"]), "CHAR(3)"),
         (cs.Enum(["a", "abc"]), "VARCHAR(3)"),
     ],
@@ -60,6 +61,7 @@ def test_mssql_datatype(column: cs.Column, datatype: str):
     from sqlalchemy.dialects.mssql.pyodbc import MSDialect_pyodbc
 
     dialect = MSDialect_pyodbc()
+    dialect.server_version_info = MS_2017_VERSION
     schema = create_colspec("test", {"a": column})
     columns = schema.sql_schema(dialect)
     assert len(columns) == 1
@@ -79,13 +81,13 @@ def test_mssql_datatype(column: cs.Column, datatype: str):
         (cs.Time(), "TIME WITHOUT TIME ZONE"),
         (cs.Duration(), "INTERVAL"),
         (cs.Decimal(), "NUMERIC"),
-        (cs.Decimal(12), "NUMERIC(12, 0)"),
+        (cs.Decimal(12), "NUMERIC(12)"),
         (cs.Decimal(None, 8), "NUMERIC(38, 8)"),
         (cs.Decimal(6, 2), "NUMERIC(6, 2)"),
-        (cs.Float(), "FLOAT"),
-        (cs.Float32(), "REAL"),
-        (cs.Float64(), "FLOAT"),
-        (cs.Integer(), "INTEGER"),
+        (cs.Float(), "FLOAT(53)"),
+        (cs.Float32(), "FLOAT(24)"),
+        (cs.Float64(), "FLOAT(53)"),
+        (cs.Integer(), "BIGINT"),
         (cs.Int8(), "SMALLINT"),
         (cs.Int16(), "SMALLINT"),
         (cs.Int32(), "INTEGER"),
@@ -100,8 +102,8 @@ def test_mssql_datatype(column: cs.Column, datatype: str):
         (cs.String(min_length=3, max_length=5), "VARCHAR(5)"),
         (cs.String(min_length=5, max_length=5), "CHAR(5)"),
         (cs.String(regex="[abc]de"), "VARCHAR"),
-        (cs.String(regex="^[abc]d$"), "CHAR(2)"),
-        (cs.String(regex="^[abc]{1,3}d$"), "VARCHAR(4)"),
+        (cs.String(regex="^[abc]d$"), "VARCHAR"),
+        (cs.String(regex="^[abc]{1,3}d$"), "VARCHAR"),
         (cs.Enum(["foo", "bar"]), "CHAR(3)"),
         (cs.Enum(["a", "abc"]), "VARCHAR(3)"),
     ],

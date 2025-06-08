@@ -4,6 +4,8 @@
 from collections.abc import Callable
 from typing import Any, Concatenate, Literal, ParamSpec, TypeVar, overload
 
+from pydiverse.colspec.optional_dependency import pa
+
 
 class classproperty(property):  # noqa: N801
     """Replacement for the deprecated @classmethod @property decorator combination.
@@ -58,3 +60,17 @@ def first_non_null(
     if allow_null_response:
         return None
     return default
+
+
+def pydiverse_type_opinions(_type: pa.DataType):
+    return (
+        pa.string()
+        if _type == pa.large_string()
+        else pa.time64("us")
+        if _type == pa.time64("ns")
+        else pa.decimal128(35, 10)
+        if pa.types.is_decimal(_type)
+        else pa.list_(pydiverse_type_opinions(_type.value_type))
+        if pa.types.is_large_list(_type)
+        else _type
+    )

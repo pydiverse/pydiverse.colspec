@@ -23,11 +23,9 @@ else:
     engine = None
 
 
-@pytest.fixture(scope="module")
 def sql_table(df: pl.DataFrame, *, name: str) -> pdt.Table:
     df.write_database(name, engine, if_table_exists="replace")
-    yield pdt.Table(name, pdt.SqlAlchemy(engine))
-    engine.dispose()
+    return pdt.Table(name, pdt.SqlAlchemy(engine))
 
 
 class MyColSpec(cs.ColSpec):
@@ -35,6 +33,7 @@ class MyColSpec(cs.ColSpec):
     b = cs.String(max_length=3)
 
 
+@pytest.mark.skipif(C is None, reason="pydiverse.transform not installed")
 @pytest.mark.parametrize(
     ("schema", "expected_columns"),
     [
@@ -43,7 +42,6 @@ class MyColSpec(cs.ColSpec):
         ({"a": pl.Int64, "b": pl.String, "c": pl.String}, ["a", "b"]),
     ],
 )
-@pytest.mark.skipif(C is None, reason="pydiverse.transform not installed")
 def test_filter_extra_columns(
     schema: dict[str, DataTypeClass], expected_columns: list[str] | None
 ):

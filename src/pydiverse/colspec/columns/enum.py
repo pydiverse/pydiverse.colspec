@@ -5,8 +5,9 @@ from collections.abc import Callable, Sequence
 
 import pydiverse.common as pdc
 
-from ..optional_dependency import ColExpr
+from ..optional_dependency import ColExpr, sa
 from ._base import Column
+from .string import String
 
 
 class Enum(Column):
@@ -43,3 +44,22 @@ class Enum(Column):
         raise NotImplementedError(
             "Enum column type is not yet implemented in pydiverse libraries."
         )
+
+    def sqlalchemy_column(self, name: str, dialect: sa.Dialect) -> sa.Column:
+        """Obtain the SQL column specification of this column definition.
+
+        Args:
+            name: The name of the column.
+            dialect: The SQL dialect for which to generate the column specification.
+
+        Returns:
+            The column as specified in :mod:`sqlalchemy`.
+        """
+        _ = dialect  # may be used in the future
+        str_type = String(
+            nullable=self.nullable,
+            primary_key=self.primary_key,
+            min_length=min(len(cat) for cat in self.categories),
+            max_length=max(len(cat) for cat in self.categories),
+        )
+        return str_type.sqlalchemy_column(name, dialect)

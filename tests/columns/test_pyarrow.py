@@ -4,6 +4,7 @@
 import pytest
 
 import pydiverse.colspec as cs
+from pydiverse.colspec.columns._utils import pydiverse_type_opinions
 from pydiverse.colspec.optional_dependency import dy, pa
 from pydiverse.colspec.testing import (
     ALL_COLUMN_TYPES,
@@ -19,20 +20,8 @@ def test_equal_to_polars_schema(column_type: type[cs.Column]):
     schema = create_colspec("test", {"a": column_type()})
     actual = schema.pyarrow_schema()
     expected = schema.create_empty_polars().to_arrow().schema
-    import pyarrow as pa
 
     actual_dict = {f.name: f.type for f in actual}
-
-    def pydiverse_type_opinions(_type: pa.DataType):
-        return (
-            pa.string()
-            if _type == pa.large_string()
-            else pa.time64("us")
-            if _type == pa.time64("ns")
-            else pa.decimal128(35, 10)
-            if pa.types.is_decimal(_type)
-            else _type
-        )
 
     expected_dict = {f.name: pydiverse_type_opinions(f.type) for f in expected}
     assert actual_dict == expected_dict
@@ -57,6 +46,16 @@ def test_equal_polars_schema_list(inner: cs.Column):
     schema = create_colspec("test", {"a": cs.List(inner)})
     actual = schema.pyarrow_schema()
     expected = schema.create_empty_polars().to_arrow().schema
+    # replace large_list with list
+    expected = pa.schema(
+        [
+            pa.field(
+                expected[0].name,
+                pydiverse_type_opinions(expected[0].type),
+                nullable=expected[0].nullable,
+            )
+        ]
+    )
     assert actual == expected
 
 

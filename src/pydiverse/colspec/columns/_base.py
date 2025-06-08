@@ -9,6 +9,7 @@ from pydiverse.colspec.optional_dependency import dy
 from pydiverse.common import Dtype
 
 from ..optional_dependency import ColExpr, Generator, PolarsDataType, pa, pl, sa
+from ._utils import pydiverse_type_opinions
 
 EPOCH_DATETIME = dt.datetime(1970, 1, 1)
 SECONDS_PER_DAY = 86400
@@ -168,7 +169,7 @@ class Column(ABC, ColExpr, metaclass=ColumnMeta):
         Returns:
             The column as specified in :mod:`sqlalchemy`.
         """
-        _ = dialect  # may be used in the future by pydiverse.common
+        _ = dialect  # may be used in the future
         return sa.Column(
             name,
             self.dtype().to_sql(),
@@ -192,7 +193,9 @@ class Column(ABC, ColExpr, metaclass=ColumnMeta):
             return pa.field(name, self.dtype().to_arrow(), nullable=self.nullable)
         except NotImplementedError:
             return pa.field(
-                name, self.to_dataframely().pyarrow_dtype, nullable=self.nullable
+                name,
+                pydiverse_type_opinions(self.to_dataframely().pyarrow_dtype),
+                nullable=self.nullable,
             )
 
     # -------------------------------- DUNDER METHODS -------------------------------- #

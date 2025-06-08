@@ -5,7 +5,7 @@ from collections.abc import Callable
 
 import pydiverse.common as pdc
 
-from ..optional_dependency import ColExpr
+from ..optional_dependency import ColExpr, sa
 from ._base import Column
 
 # ------------------------------------------------------------------------------------ #
@@ -65,3 +65,26 @@ class String(Column):
         if self.regex is not None:
             result["regex"] = expr.str.contains(self.regex)
         return result
+
+    def sqlalchemy_column(self, name: str, dialect: sa.Dialect) -> sa.Column:
+        """Obtain the SQL column specification of this column definition.
+
+        Args:
+            name: The name of the column.
+            dialect: The SQL dialect for which to generate the column specification.
+
+        Returns:
+            The column as specified in :mod:`sqlalchemy`.
+        """
+        _ = dialect  # may be used in the future
+        return sa.Column(
+            name,
+            sa.VARCHAR
+            if self.max_length is None
+            else sa.CHAR(self.min_length)
+            if self.min_length == self.max_length
+            else sa.VARCHAR(self.max_length),
+            nullable=self.nullable,
+            primary_key=self.primary_key,
+            autoincrement=False,
+        )

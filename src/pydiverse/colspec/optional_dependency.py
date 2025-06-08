@@ -161,6 +161,7 @@ except ImportError:
     pa = types.ModuleType("pyarrow")
     pa.Schema = None
     pa.Field = None
+    pa.DataType = None
 
 
 try:

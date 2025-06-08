@@ -47,8 +47,8 @@ def test_args_consistency_min_max(kwargs: dict[str, Any]):
         dict(scale=1, max_exclusive=decimal.Decimal("3.14")),
         dict(min=decimal.Decimal(float("inf"))),
         dict(max=decimal.Decimal(float("inf"))),
-        dict(precision=2, min=decimal.Decimal("100")),
-        dict(precision=2, max=decimal.Decimal("100")),
+        dict(scale=0, precision=2, min=decimal.Decimal("100")),
+        dict(scale=0, precision=2, max=decimal.Decimal("100")),
     ],
 )
 def test_invalid_args(kwargs: dict[str, Any]):

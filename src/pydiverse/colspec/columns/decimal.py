@@ -8,7 +8,7 @@ from collections.abc import Callable
 
 import pydiverse.common as pdc
 
-from ..optional_dependency import ColExpr, dy
+from ..optional_dependency import ColExpr, dy, sa
 from ._base import Column
 from ._mixins import OrdinalMixin
 
@@ -19,7 +19,7 @@ class Decimal(OrdinalMixin[decimal.Decimal], Column):
     def __init__(
         self,
         precision: int | None = None,
-        scale: int = 0,
+        scale: int | None = None,
         *,
         nullable: bool = True,
         primary_key: bool = False,
@@ -84,7 +84,7 @@ class Decimal(OrdinalMixin[decimal.Decimal], Column):
         return pdc.Decimal()
 
     def to_dataframely(self) -> dy.Column:
-        if any(
+        if self.scale is None or any(
             isinstance(x, float | int)
             for x in [self.min, self.max, self.min_exclusive, self.max_exclusive]
         ):
@@ -102,25 +102,55 @@ class Decimal(OrdinalMixin[decimal.Decimal], Column):
                 if ret.max_exclusive is not None
                 else None
             )
+            # polars cannot deal with scale=None as opposed to SQL
+            ret.scale = ret.scale or 0
             return ret.to_dataframely()
         else:
             return super().to_dataframely()
+
+    def sqlalchemy_column(self, name: str, dialect: sa.Dialect) -> sa.Column:
+        """Obtain the SQL column specification of this column definition.
+
+        Args:
+            name: The name of the column.
+            dialect: The SQL dialect for which to generate the column specification.
+
+        Returns:
+            The column as specified in :mod:`sqlalchemy`.
+        """
+        _ = dialect  # may be used in the future
+        return sa.Column(
+            name,
+            sa.Numeric(
+                self.precision or (38 if self.scale is not None else None), self.scale
+            ),
+            nullable=self.nullable,
+            primary_key=self.primary_key,
+            autoincrement=False,
+        )
 
 
 # --------------------------------------- UTILS -------------------------------------- #
 
 
 def _validate(
-    value: decimal.Decimal | int | float, precision: int | None, scale: int, name: str
+    value: decimal.Decimal | int | float,
+    precision: int | None,
+    scale: int | None,
+    name: str,
 ):
     if not isinstance(value, decimal.Decimal):
         value = decimal.Decimal(value)
     exponent = value.as_tuple().exponent
     if not isinstance(exponent, int):
         raise ValueError(f"Encountered 'inf' or 'NaN' for `{name}`.")
-    if -exponent > scale:
+    if exponent is not None and scale is not None and -exponent > scale:
         raise ValueError(f"Scale of `{name}` exceeds scale of column.")
-    if precision is not None and _num_digits(int(value)) > precision - scale:
+    if (
+        precision is not None
+        and scale is not None
+        and _num_digits(int(value)) > precision - scale
+    ):
         raise ValueError(f"`{name}` exceeds precision of column.")
 
 
