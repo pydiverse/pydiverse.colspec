@@ -24,9 +24,9 @@ class OrdinalMixin(Generic[T], Column):
     def __init__(
         self,
         *,
-        min: T | None = None,
+        min: T | None = None,  # noqa: A002
         min_exclusive: T | None = None,
-        max: T | None = None,
+        max: T | None = None,  # noqa: A002
         max_exclusive: T | None = None,
         **kwargs: Any,
     ):

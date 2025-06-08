@@ -23,9 +23,9 @@ class Decimal(OrdinalMixin[decimal.Decimal], Column):
         *,
         nullable: bool = True,
         primary_key: bool = False,
-        min: decimal.Decimal | float | int | None = None,
+        min: decimal.Decimal | float | int | None = None,  # noqa: A002
         min_exclusive: decimal.Decimal | float | int | None = None,
-        max: decimal.Decimal | float | int | None = None,
+        max: decimal.Decimal | float | int | None = None,  # noqa: A002
         max_exclusive: decimal.Decimal | float | int | None = None,
         check: Callable[[ColExpr], ColExpr] | None = None,
         alias: str | None = None,

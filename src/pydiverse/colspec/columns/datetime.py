@@ -29,9 +29,9 @@ class Date(OrdinalMixin[dt.date], Column):
         *,
         nullable: bool = True,
         primary_key: bool = False,
-        min: dt.date | None = None,
+        min: dt.date | None = None,  # noqa: A002
         min_exclusive: dt.date | None = None,
-        max: dt.date | None = None,
+        max: dt.date | None = None,  # noqa: A002
         max_exclusive: dt.date | None = None,
         resolution: str | None = None,
         check: Callable[[ColExpr], ColExpr] | None = None,
@@ -111,9 +111,9 @@ class Time(OrdinalMixin[dt.time], Column):
         *,
         nullable: bool = True,
         primary_key: bool = False,
-        min: dt.time | None = None,
+        min: dt.time | None = None,  # noqa: A002
         min_exclusive: dt.time | None = None,
-        max: dt.time | None = None,
+        max: dt.time | None = None,  # noqa: A002
         max_exclusive: dt.time | None = None,
         resolution: str | None = None,
         check: Callable[[ColExpr], ColExpr] | None = None,
@@ -201,9 +201,9 @@ class Datetime(OrdinalMixin[dt.datetime], Column):
         *,
         nullable: bool = True,
         primary_key: bool = False,
-        min: dt.datetime | None = None,
+        min: dt.datetime | None = None,  # noqa: A002
         min_exclusive: dt.datetime | None = None,
-        max: dt.datetime | None = None,
+        max: dt.datetime | None = None,  # noqa: A002
         max_exclusive: dt.datetime | None = None,
         resolution: str | None = None,
         check: Callable[[ColExpr], ColExpr] | None = None,
@@ -277,9 +277,9 @@ class Duration(OrdinalMixin[dt.timedelta], Column):
         *,
         nullable: bool = True,
         primary_key: bool = False,
-        min: dt.timedelta | None = None,
+        min: dt.timedelta | None = None,  # noqa: A002
         min_exclusive: dt.timedelta | None = None,
-        max: dt.timedelta | None = None,
+        max: dt.timedelta | None = None,  # noqa: A002
         max_exclusive: dt.timedelta | None = None,
         resolution: str | None = None,
         check: Callable[[ColExpr], ColExpr] | None = None,
