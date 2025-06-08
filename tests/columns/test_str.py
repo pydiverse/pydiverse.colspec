@@ -1,11 +1,11 @@
-# Copyright (c) QuantCo 2024-2024
+# Copyright (c) QuantCo and pydiverse contributors 2024-2025
 # SPDX-License-Identifier: BSD-3-Clause
 
 import pytest
 
-import dataframely as dy
-from dataframely.columns import Column
-from dataframely.testing import ALL_COLUMN_TYPES
+import pydiverse.colspec as cs
+from pydiverse.colspec.columns._base import Column
+from pydiverse.colspec.testing.const import ALL_COLUMN_TYPES
 
 
 @pytest.mark.parametrize("column_type", ALL_COLUMN_TYPES)
@@ -15,15 +15,15 @@ def test_string_representation(column_type: type[Column]):
 
 
 def test_string_representation_enum():
-    column = dy.Enum(["a", "b"])
-    assert str(column) == dy.Enum.__name__.lower()
+    column = cs.Enum(["a", "b"])
+    assert str(column) == cs.Enum.__name__.lower()
 
 
 def test_string_representation_list():
-    column = dy.List(dy.String())
-    assert str(column) == dy.List.__name__.lower()
+    column = cs.List(cs.String())
+    assert str(column) == cs.List.__name__.lower()
 
 
 def test_string_representation_struct():
-    column = dy.Struct({"a": dy.String()})
-    assert str(column) == dy.Struct.__name__.lower()
+    column = cs.Struct({"a": cs.String()})
+    assert str(column) == cs.Struct.__name__.lower()

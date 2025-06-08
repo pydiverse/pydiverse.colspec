@@ -1,18 +1,20 @@
-# Copyright (c) QuantCo 2024-2024
+# Copyright (c) QuantCo and pydiverse contributors 2024-2025
 # SPDX-License-Identifier: BSD-3-Clause
 
-import polars as pl
+import pytest
 
-import dataframely as dy
-
-
-class MySchema(cs.ColSpec):
-    a = dy.Int64()
-    b = dy.String()
+import pydiverse.colspec as cs
+from pydiverse.colspec.optional_dependency import dy, pl
 
 
+class MyColSpec(cs.ColSpec):
+    a = cs.Int64()
+    b = cs.String()
+
+
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_create_empty():
-    df = MySchema.create_empty()
+    df = MyColSpec.create_empty_polars()
     assert df.columns == ["a", "b"]
     assert df.dtypes == [pl.Int64, pl.String]
     assert len(df) == 0

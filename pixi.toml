@@ -16,9 +16,9 @@ pip = "*"
 hatchling = "*"
 
 [dependencies]
-python = ">=3.11"
-pydiverse-common = ">=0.1.0"
-structlog = ">=22.1.0"
+python = ">=3.11.13,<3.14"
+pydiverse-common = ">=0.3.3,<0.4"
+structlog = ">=25.4.0,<26"
 
 [feature.dev.dependencies]
 ruff = ">=0.5.6"
@@ -34,18 +34,23 @@ pytest-xdist = ">=2.5.0"
 polars = ">=0.19, <2"
 
 [feature.sa.dependencies]
-SQLAlchemy = ">=1.4.39, <3"
+duckdb = ">=1.3.0,<2"
+duckdb-engine = ">=0.15.0, <0.16"
+pyodbc = ">=5.2.0,<6"
+sqlalchemy = ">=1.4.39, <3"
 
 [feature.pdt.dependencies]
-pydiverse-transform = ">=0.2.3" #">=0.3.0"
+duckdb = ">=1.3.0,<2"
+duckdb-engine = ">=0.15.0, <0.16"
+pyodbc = ">=5.2.0,<6"
+pydiverse-transform = ">=0.5.0,<0.6"
 
 [feature.dag.dependencies]
 pydiverse-pipedag = ">=0.9.9" #">=0.10.0"
 
 [feature.dy.dependencies]
-# for editable pip install of dataframely (conda-forge still missing)
-maturin = ">=1.8.3,<2"
-rust = ">=1.85.1,<1.86"
+pyarrow = ">=20.0.0,<21"
+dataframely = ">=1.1.0"
 
 [feature.release.dependencies]
 hatch = ">=1.12.0"
@@ -64,6 +69,27 @@ sphinx-copybutton = ">=0.5.2"
 [feature.docs.tasks]
 docs = "cd docs && make html "
 readthedocs = "rm -rf $READTHEDOCS_OUTPUT/html && cp -r docs/build/html $READTHEDOCS_OUTPUT/html"
+
+[feature.lint.dependencies]
+#commitit-internal = "*"
+pre-commit = "*"
+insert-license-header = "*"
+docformatter = "*"
+ruff = ">=0.5.6"
+prettier = "*"
+nbstripout = "*"
+sqlfluff = "*"
+taplo = "*"
+pre-commit-hooks = "*"
+typos = "*"
+conda-deny = "*"
+
+[feature.lint.tasks]
+#commitit-install = "commitit install"
+#commitit = "commitit run --all-files"
+pre-commit-install = "pre-commit install"
+pre-commit-run = "pre-commit run -a"
+conda-deny = "conda-deny check"
 
 [feature.py311.dependencies]
 python = "3.11.*"
@@ -88,6 +114,8 @@ py313dag = ["py313", "dev", "dag"]
 py311dy = ["py311", "dev", "dy"]
 py313dy = ["py313", "dev", "dy"]
 py311all = ["py311", "dev", "pdt", "dag", "dy"]
+py312all = ["py312", "dev", "pdt", "dag", "dy"]
 py313all = ["py313", "dev", "pdt", "dag", "dy"]
 docs = ["docs"]
+lint = { features = ["lint"], no-default-feature = true }
 release = { features = ["release"], no-default-feature = true }

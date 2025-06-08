@@ -1,17 +1,13 @@
-# Copyright (c) QuantCo 2024-2025
+# Copyright (c) QuantCo and pydiverse contributors 2024-2025
 # SPDX-License-Identifier: BSD-3-Clause
 
-from __future__ import annotations
-
 from collections.abc import Callable, Sequence
-from typing import TYPE_CHECKING
 
 import pydiverse.common as pdc
 
+from ..optional_dependency import ColExpr, sa
 from ._base import Column
-
-if TYPE_CHECKING:
-    from pydiverse.colspec.columns import ColExpr
+from .string import String
 
 
 class Enum(Column):
@@ -44,5 +40,26 @@ class Enum(Column):
         )
         self.categories = categories
 
-    def dtype(self) -> pdc.Enum:
-        return pdc.Enum()
+    def dtype(self) -> pdc.Dtype:
+        raise NotImplementedError(
+            "Enum column type is not yet implemented in pydiverse libraries."
+        )
+
+    def sqlalchemy_column(self, name: str, dialect: sa.Dialect) -> sa.Column:
+        """Obtain the SQL column specification of this column definition.
+
+        Args:
+            name: The name of the column.
+            dialect: The SQL dialect for which to generate the column specification.
+
+        Returns:
+            The column as specified in :mod:`sqlalchemy`.
+        """
+        _ = dialect  # may be used in the future
+        str_type = String(
+            nullable=self.nullable,
+            primary_key=self.primary_key,
+            min_length=min(len(cat) for cat in self.categories),
+            max_length=max(len(cat) for cat in self.categories),
+        )
+        return str_type.sqlalchemy_column(name, dialect)

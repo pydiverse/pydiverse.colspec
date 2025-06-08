@@ -1,19 +1,12 @@
-# Copyright (c) QuantCo 2024-2025
+# Copyright (c) QuantCo and pydiverse contributors 2024-2025
 # SPDX-License-Identifier: BSD-3-Clause
 
-from __future__ import annotations
-
 from collections.abc import Callable
-from typing import TYPE_CHECKING
-
-import polars as pl
 
 import pydiverse.common as pdc
 
+from ..optional_dependency import ColExpr, pl
 from ._base import Column
-
-if TYPE_CHECKING:
-    from pydiverse.colspec.columns import ColExpr
 
 
 class Struct(Column):
@@ -48,10 +41,15 @@ class Struct(Column):
         )
         self.inner = inner
 
-    def dtype(self) -> pdc.Struct:
-        return pdc.Struct()
+    def dtype(self) -> pdc.Dtype:
+        raise NotImplementedError(
+            "Struct column type is not yet implemented in pydiverse libraries."
+        )
 
     def validation_rules(self, expr: ColExpr) -> dict[str, ColExpr]:
+        raise NotImplementedError(
+            "Struct column type is not yet implemented in pydiverse libraries."
+        )
         inner_rules = {
             f"inner_{name}_{rule_name}": (
                 pl.when(expr.is_null()).then(pl.lit(True)).otherwise(inner_expr)

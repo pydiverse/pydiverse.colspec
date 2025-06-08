@@ -1,13 +1,13 @@
-# Copyright (c) QuantCo 2024-2024
-# SPDX-License-Identifier: LicenseRef-QuantCo
+# Copyright (c) QuantCo and pydiverse contributors 2025-2025
+# SPDX-License-Identifier: BSD-3-Clause
 
 from collections import defaultdict
 from collections.abc import Callable
 
-from .colspec import pl
-from .columns import ColExpr
+from .optional_dependency import ColExpr, pl
 
-ValidationFunction = Callable[[], ColExpr]
+ValidationFunction = Callable[[], ColExpr] | staticmethod
+ValidationFunctionPolars = Callable[[], pl.Expr] | staticmethod
 
 
 class Rule:
@@ -16,8 +16,17 @@ class Rule:
     def __init__(self, expr: ColExpr):
         self.expr = expr
 
+
+class RulePolars:
+    """Internal class representing validation rules."""
+
+    def __init__(self, expr: pl.Expr):
+        self.expr = expr
+
     @staticmethod
-    def append_rules_polars(lf: pl.LazyFrame, rules: dict[str, "Rule"]) -> pl.LazyFrame:
+    def append_rules_polars(
+        lf: pl.LazyFrame, rules: dict[str, "RulePolars"]
+    ) -> pl.LazyFrame:
         return _with_evaluation_rules(lf, rules)
 
 
@@ -25,6 +34,14 @@ class GroupRule(Rule):
     """Rule that is evaluated on a group of columns."""
 
     def __init__(self, expr: ColExpr, group_columns: list[str]):
+        super().__init__(expr)
+        self.group_columns = group_columns
+
+
+class GroupRulePolars(RulePolars):
+    """Rule that is evaluated on a group of columns."""
+
+    def __init__(self, expr: pl.Expr, group_columns: list[str]):
         super().__init__(expr)
         self.group_columns = group_columns
 
@@ -60,8 +77,10 @@ def rule(*, group_by: list[str] | None = None) -> Callable[[ValidationFunction],
     """
 
     def decorator(validation_fn: ValidationFunction) -> Rule:
+        if isinstance(validation_fn, staticmethod):
+            validation_fn = validation_fn.__wrapped__
         try:
-            import pydiverse.transform
+            import pydiverse.transform  # noqa: F401
         except ImportError:
             # avoid running rule functions if pydiverse.transform is not installed
             return Rule(expr=ColExpr())
@@ -72,12 +91,62 @@ def rule(*, group_by: list[str] | None = None) -> Callable[[ValidationFunction],
     return decorator
 
 
+def rule_polars(
+    *, group_by: list[str] | None = None
+) -> Callable[[ValidationFunctionPolars], RulePolars]:
+    """Mark a function as a rule to evaluate during validation.
+
+    The name of the function will be used as the name of the rule. The function should
+    return an expression providing a boolean value whether a row is valid wrt. the rule.
+    A value of ``true`` indicates validity.
+
+    Rules should be used only in the following two circumstances:
+
+    - Validation requires accessing multiple columns (e.g. if valid values of column A
+      depend on the value in column B).
+    - Validation must be performed on groups of rows (e.g. if a column A must not
+      contain any duplicate values among rows with the same value in column B).
+
+    In all other instances, column-level validation rules should be preferred as it aids
+    readability and improves error messages.
+
+    Args:
+        group_by: An optional list of columns to group by for rules operating on groups
+            of rows. If this list is provided, the returned expression must return a
+            single boolean value, i.e. some kind of aggregation function must be used
+            (e.g. ``sum``, ``any``, ...).
+
+    Note:
+        You'll need to explicitly handle ``null`` values in your columns when defining
+        rules. By default, any rule that evaluates to ``null`` because one of the
+        columns used in the rule is ``null`` is interpreted as ``true``, i.e. the row
+        is assumed to be valid.
+    """
+
+    def decorator(validation_fn: ValidationFunctionPolars) -> RulePolars:
+        if pl.Expr is None:
+            # decorator should also work if polars is not installed
+            if group_by is not None:
+                return GroupRulePolars(expr=None, group_columns=group_by)
+            else:
+                return RulePolars(expr=None)
+        if isinstance(validation_fn, staticmethod):
+            validation_fn = validation_fn.__wrapped__
+        if group_by is not None:
+            return GroupRulePolars(expr=validation_fn(), group_columns=group_by)
+        return RulePolars(expr=validation_fn())
+
+    return decorator
+
+
 # ------------------------------------------------------------------------------------ #
 #                                      EVALUATION                                      #
 # ------------------------------------------------------------------------------------ #
 
 
-def _with_evaluation_rules(lf: pl.LazyFrame, rules: dict[str, Rule]) -> pl.LazyFrame:
+def _with_evaluation_rules(
+    lf: pl.LazyFrame, rules: dict[str, RulePolars]
+) -> pl.LazyFrame:
     """Add evaluations of a set of rules on a data frame.
 
     Args:
@@ -96,10 +165,10 @@ def _with_evaluation_rules(lf: pl.LazyFrame, rules: dict[str, Rule]) -> pl.LazyF
     simple_exprs = {
         name: rule.expr
         for name, rule in rules.items()
-        if not isinstance(rule, GroupRule)
+        if not isinstance(rule, GroupRulePolars)
     }
     group_rules = {
-        name: rule for name, rule in rules.items() if isinstance(rule, GroupRule)
+        name: rule for name, rule in rules.items() if isinstance(rule, GroupRulePolars)
     }
 
     # Before we can select all of the simple expressions, we need to turn the
@@ -113,10 +182,12 @@ def _with_evaluation_rules(lf: pl.LazyFrame, rules: dict[str, Rule]) -> pl.LazyF
     )
 
 
-def _with_group_rules(lf: pl.LazyFrame, rules: dict[str, GroupRule]) -> pl.LazyFrame:
+def _with_group_rules(
+    lf: pl.LazyFrame, rules: dict[str, GroupRulePolars]
+) -> pl.LazyFrame:
     # First, we partition the rules by group columns. This will minimize the number
     # of `group_by` calls and joins to make.
-    grouped_rules: dict[frozenset[str], dict[str, ColExpr]] = defaultdict(dict)
+    grouped_rules: dict[frozenset[str], dict[str, pl.Expr]] = defaultdict(dict)
     for name, rule in rules.items():
         # NOTE: `null` indicates validity, see note above.
         grouped_rules[frozenset(rule.group_columns)][name] = rule.expr.fill_null(True)

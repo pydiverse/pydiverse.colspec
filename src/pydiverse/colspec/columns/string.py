@@ -1,17 +1,12 @@
-# Copyright (c) QuantCo 2023-2025
+# Copyright (c) QuantCo and pydiverse contributors 2023-2025
 # SPDX-License-Identifier: BSD-3-Clause
 
-from __future__ import annotations
-
 from collections.abc import Callable
-from typing import TYPE_CHECKING
 
 import pydiverse.common as pdc
 
+from ..optional_dependency import ColExpr, sa
 from ._base import Column
-
-if TYPE_CHECKING:
-    from pydiverse.colspec.columns import ColExpr
 
 # ------------------------------------------------------------------------------------ #
 
@@ -58,10 +53,38 @@ class String(Column):
 
     def validation_rules(self, expr: ColExpr) -> dict[str, ColExpr]:
         result = super().validation_rules(expr)
+
+        from pydiverse.colspec.optional_dependency import pl
+
+        len_fn = "len_bytes" if isinstance(expr, pl.Expr) else "len"
+
         if self.min_length is not None:
-            result["min_length"] = expr.str.len_bytes() >= self.min_length
+            result["min_length"] = getattr(expr.str, len_fn)() >= self.min_length
         if self.max_length is not None:
-            result["max_length"] = expr.str.len_bytes() <= self.max_length
+            result["max_length"] = getattr(expr.str, len_fn)() <= self.max_length
         if self.regex is not None:
             result["regex"] = expr.str.contains(self.regex)
         return result
+
+    def sqlalchemy_column(self, name: str, dialect: sa.Dialect) -> sa.Column:
+        """Obtain the SQL column specification of this column definition.
+
+        Args:
+            name: The name of the column.
+            dialect: The SQL dialect for which to generate the column specification.
+
+        Returns:
+            The column as specified in :mod:`sqlalchemy`.
+        """
+        _ = dialect  # may be used in the future
+        return sa.Column(
+            name,
+            sa.VARCHAR
+            if self.max_length is None
+            else sa.CHAR(self.min_length)
+            if self.min_length == self.max_length
+            else sa.VARCHAR(self.max_length),
+            nullable=self.nullable,
+            primary_key=self.primary_key,
+            autoincrement=False,
+        )

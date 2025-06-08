@@ -1,22 +1,15 @@
-# Copyright (c) QuantCo 2023-2025
+# Copyright (c) QuantCo and pydiverse contributors 2023-2025
 # SPDX-License-Identifier: BSD-3-Clause
-
-from __future__ import annotations
-
+import sys
 from abc import abstractmethod
 from collections.abc import Callable
-from typing import TYPE_CHECKING
-
-import numpy as np
 
 import pydiverse.common as pdc
 
+from ..optional_dependency import ColExpr
 from ._base import Column
 from ._mixins import OrdinalMixin
 from ._utils import classproperty
-
-if TYPE_CHECKING:
-    from pydiverse.colspec.columns import ColExpr
 
 
 class _BaseFloat(OrdinalMixin[float], Column):
@@ -25,9 +18,9 @@ class _BaseFloat(OrdinalMixin[float], Column):
         *,
         nullable: bool = True,
         primary_key: bool = False,
-        min: float | None = None,
+        min: float | None = None,  # noqa: A002
         min_exclusive: float | None = None,
-        max: float | None = None,
+        max: float | None = None,  # noqa: A002
         max_exclusive: float | None = None,
         check: Callable[[ColExpr], ColExpr] | None = None,
         alias: str | None = None,
@@ -88,11 +81,11 @@ class Float(_BaseFloat):
 
     @classproperty
     def max_value(self) -> float:
-        return float(np.finfo(np.float64).max)
+        return sys.float_info.max
 
     @classproperty
     def min_value(self) -> float:
-        return float(np.finfo(np.float64).min)
+        return -sys.float_info.max
 
 
 class Float32(_BaseFloat):
@@ -103,11 +96,11 @@ class Float32(_BaseFloat):
 
     @classproperty
     def max_value(self) -> float:
-        return float(np.finfo(np.float32).max)
+        return 3.4028234663852886e38  # float(np.finfo(np.float32).max)
 
     @classproperty
     def min_value(self) -> float:
-        return float(np.finfo(np.float32).min)
+        return -3.4028234663852886e38  # float(np.finfo(np.float32).min)
 
 
 class Float64(_BaseFloat):
@@ -118,8 +111,8 @@ class Float64(_BaseFloat):
 
     @classproperty
     def max_value(self) -> float:
-        return float(np.finfo(np.float64).max)
+        return sys.float_info.max
 
     @classproperty
     def min_value(self) -> float:
-        return float(np.finfo(np.float64).min)
+        return -sys.float_info.max

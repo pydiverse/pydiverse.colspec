@@ -1,31 +1,33 @@
-# Copyright (c) QuantCo 2024-2025
+# Copyright (c) QuantCo and pydiverse contributors 2024-2025
 # SPDX-License-Identifier: BSD-3-Clause
 
-import polars as pl
 import pytest
 
-import dataframely as dy
+import pydiverse.colspec as cs
+import pydiverse.colspec.collection
+from pydiverse.colspec.optional_dependency import dy, pl
 
 
-class MySchema(cs.ColSpec):
-    a = dy.Int64()
+class MyColSpec(cs.ColSpec):
+    a = cs.Int64()
 
 
-class SimpleCollection(dy.Collection):
-    first: dy.LazyFrame[MySchema]
-    second: dy.LazyFrame[MySchema] | None
-    third: dy.LazyFrame[MySchema] | None
+class SimpleCollection(pydiverse.colspec.collection.Collection):
+    first: MyColSpec
+    second: MyColSpec | None
+    third: MyColSpec | None
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_concat():
-    col1 = SimpleCollection.cast({"first": pl.LazyFrame({"a": [1, 2, 3]})})
-    col2 = SimpleCollection.cast(
+    col1 = SimpleCollection.cast_polars_data({"first": pl.LazyFrame({"a": [1, 2, 3]})})
+    col2 = SimpleCollection.cast_polars_data(
         {
             "first": pl.LazyFrame({"a": [4, 5, 6]}),
             "second": pl.LazyFrame({"a": [4, 5, 6]}),
         }
     )
-    col3 = SimpleCollection.cast(
+    col3 = SimpleCollection.cast_polars_data(
         {
             "first": pl.LazyFrame({"a": [7, 8, 9]}),
             "second": pl.LazyFrame({"a": [7, 8, 9]}),
@@ -38,6 +40,7 @@ def test_concat():
     assert concat["third"].collect().get_column("a").to_list() == list(range(7, 10))
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_concat_empty():
     with pytest.raises(ValueError):
         dy.concat_collection_members([])

@@ -1,91 +1,97 @@
-# Copyright (c) QuantCo 2024-2025
+# Copyright (c) QuantCo and pydiverse contributors 2024-2025
 # SPDX-License-Identifier: BSD-3-Clause
 
-import polars as pl
 import pytest
 
-import dataframely as dy
-from dataframely.columns._base import Column
-from dataframely.testing import create_schema, validation_mask
+import pydiverse.colspec as cs
+from pydiverse.colspec.optional_dependency import dy, pl, validation_mask
+from pydiverse.colspec.testing import create_colspec
 
 
-@pytest.mark.parametrize("inner", [dy.Int64(), dy.Integer()])
-def test_integer_list(inner: Column):
-    schema = create_schema("test", {"a": dy.List(inner)})
-    assert schema.is_valid(pl.DataFrame({"a": [[1], [2], [3]]}))
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
+@pytest.mark.parametrize("inner", [cs.Int64(), cs.Integer()])
+def test_integer_list(inner: dy.Column):
+    spec = create_colspec("test", {"a": cs.List(inner)})
+    assert spec.is_valid_polars(pl.DataFrame({"a": [[1], [2], [3]]}))
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_invalid_inner_type():
-    schema = create_schema("test", {"a": dy.List(dy.Int64())})
-    assert not schema.is_valid(pl.DataFrame({"a": [["1"], ["2"], ["3"]]}))
+    spec = create_colspec("test", {"a": cs.List(cs.Int64())})
+    assert not spec.is_valid_polars(pl.DataFrame({"a": [["1"], ["2"], ["3"]]}))
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 @pytest.mark.parametrize(
-    ("column", "dtype", "is_valid"),
+    ("column", "dtype", "is_valid_polars"),
     [
         (
-            dy.List(dy.Int64()),
+            cs.List(cs.Int64()),
             pl.List(pl.Int64()),
             True,
         ),
         (
-            dy.List(dy.String()),
+            cs.List(cs.String()),
             pl.List(pl.Int64()),
             False,
         ),
         (
-            dy.List(dy.String()),
-            dy.List(dy.String()),
+            cs.List(cs.String()),
+            cs.List(cs.String()),
             False,
         ),
         (
-            dy.List(dy.String()),
-            dy.String(),
+            cs.List(cs.String()),
+            cs.String(),
             False,
         ),
         (
-            dy.List(dy.String()),
+            cs.List(cs.String()),
             pl.String(),
             False,
         ),
     ],
 )
-def test_validate_dtype(column: Column, dtype: pl.DataType, is_valid: bool):
-    assert column.validate_dtype(dtype) == is_valid
+def test_validate_dtype(column: dy.Column, dtype: pl.DataType, is_valid_polars: bool):
+    assert column.validate_dtype_polars(dtype) == is_valid_polars
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_nested_lists():
-    schema = create_schema("test", {"a": dy.List(dy.List(dy.Int64()))})
-    assert schema.is_valid(pl.DataFrame({"a": [[[1]], [[2]], [[3]]]}))
+    spec = create_colspec("test", {"a": cs.List(cs.List(cs.Int64()))})
+    assert spec.is_valid_polars(pl.DataFrame({"a": [[[1]], [[2]], [[3]]]}))
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_list_with_pk():
-    schema = create_schema(
+    spec = create_colspec(
         "test",
-        {"a": dy.List(dy.String(), primary_key=True)},
+        {"a": cs.List(cs.String(), primary_key=True)},
     )
     df = pl.DataFrame({"a": [["ab"], ["a", "ab"], [None], ["a", "b"], ["a", "b"]]})
-    _, failures = schema.filter(df)
+    _, failures = spec.filter_polars(df)
     assert validation_mask(df, failures).to_list() == [True, True, True, False, False]
     assert failures.counts() == {"primary_key": 2}
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_list_with_rules():
-    schema = create_schema(
-        "test", {"a": dy.List(dy.String(min_length=2, nullable=False))}
+    spec = create_colspec(
+        "test", {"a": cs.List(cs.String(min_length=2, nullable=False))}
     )
     df = pl.DataFrame({"a": [["ab"], ["a"], [None]]})
-    _, failures = schema.filter(df)
+    _, failures = spec.filter_polars(df)
     assert validation_mask(df, failures).to_list() == [True, False, False]
     assert failures.counts() == {"a|inner_nullability": 1, "a|inner_min_length": 1}
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_nested_list_with_rules():
-    schema = create_schema(
-        "test", {"a": dy.List(dy.List(dy.String(min_length=2, nullable=False)))}
+    spec = create_colspec(
+        "test", {"a": cs.List(cs.List(cs.String(min_length=2, nullable=False)))}
     )
     df = pl.DataFrame({"a": [[["ab"]], [["a"]], [[None]]]})
-    _, failures = schema.filter(df)
+    _, failures = spec.filter_polars(df)
     # NOTE: `validation_mask` currently fails for multiply nested lists
     assert failures.invalid().to_dict(as_series=False) == {"a": [[["a"]], [[None]]]}
     assert failures.counts() == {
@@ -94,12 +100,13 @@ def test_nested_list_with_rules():
     }
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_list_length_rules():
-    schema = create_schema(
+    spec = create_colspec(
         "test",
         {
-            "a": dy.List(
-                dy.Integer(nullable=False),
+            "a": cs.List(
+                cs.Integer(nullable=False),
                 min_length=2,
                 max_length=5,
                 nullable=True,
@@ -107,32 +114,35 @@ def test_list_length_rules():
         },
     )
     df = pl.DataFrame({"a": [[31, 12], [-1], [None], None, [1, 2, 3, 4, 23, 1]]})
-    _, failures = schema.filter(df)
+    _, failures = spec.filter_polars(df)
     assert validation_mask(df, failures).to_list() == [True, False, False, True, False]
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_outer_inner_nullability():
-    schema = create_schema(
+    spec = create_colspec(
         "test",
         {
-            "nullable": dy.List(
-                inner=dy.Integer(nullable=False),
+            "nullable": cs.List(
+                inner=cs.Integer(nullable=False),
                 nullable=True,
             )
         },
     )
     df = pl.DataFrame({"nullable": [None, None]})
-    schema.validate_polars(df, cast=True)
+    spec.validate_polars(df, cast=True)
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_inner_primary_key():
-    schema = create_schema("test", {"a": dy.List(dy.Integer(primary_key=True))})
+    spec = create_colspec("test", {"a": cs.List(cs.Integer(primary_key=True))})
     df = pl.DataFrame({"a": [[1, 2, 3], [1, 1, 2], [1, 1], [1, 4]]})
-    _, failure = schema.filter(df)
+    _, failure = spec.filter_polars(df)
     assert failure.counts() == {"a|primary_key": 2}
     assert validation_mask(df, failure).to_list() == [True, False, False, True]
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 @pytest.mark.parametrize(
     ("inner_primary_key", "second_primary_key", "failure_count", "mask"),
     [
@@ -148,15 +158,15 @@ def test_inner_primary_key_struct(
     failure_count: int,
     mask: list[bool],
 ):
-    schema = create_schema(
+    spec = create_colspec(
         "test",
         {
-            "a": dy.List(
-                dy.Struct(
+            "a": cs.List(
+                cs.Struct(
                     {
-                        "pk1": dy.Integer(primary_key=True),
-                        "pk2": dy.Integer(primary_key=second_primary_key),
-                        "other": dy.Integer(),
+                        "pk1": cs.Integer(primary_key=True),
+                        "pk2": cs.Integer(primary_key=second_primary_key),
+                        "other": cs.Integer(),
                     },
                     primary_key=inner_primary_key,
                 )
@@ -176,6 +186,6 @@ def test_inner_primary_key_struct(
             ]
         }
     )
-    _, failure = schema.filter(df)
+    _, failure = spec.filter_polars(df)
     assert failure.counts() == {"a|primary_key": failure_count}
     assert validation_mask(df, failure).to_list() == mask

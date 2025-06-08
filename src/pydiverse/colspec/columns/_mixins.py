@@ -1,18 +1,11 @@
-# Copyright (c) QuantCo 2024-2025
+# Copyright (c) QuantCo and pydiverse contributors 2024-2025
 # SPDX-License-Identifier: BSD-3-Clause
-from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Any, Generic, Protocol, Self, TypeVar
+from typing import Any, Generic, Protocol, Self, TypeVar
 
-from pydiverse.colspec.columns import ColExpr
-
-if TYPE_CHECKING:  # pragma: no cover
-    from ._base import Column
-
-    Base = Column
-else:
-    Base = object
+from ..optional_dependency import ColExpr
+from ._base import Column
 
 # ----------------------------------- ORDINAL MIXIN ---------------------------------- #
 
@@ -25,15 +18,15 @@ class Comparable(Protocol):
 T = TypeVar("T", bound=Comparable)
 
 
-class OrdinalMixin(Generic[T], Base):
+class OrdinalMixin(Generic[T], Column):
     """Mixin to use for ordinal types."""
 
     def __init__(
         self,
         *,
-        min: T | None = None,
+        min: T | None = None,  # noqa: A002
         min_exclusive: T | None = None,
-        max: T | None = None,
+        max: T | None = None,  # noqa: A002
         max_exclusive: T | None = None,
         **kwargs: Any,
     ):
@@ -81,7 +74,7 @@ class OrdinalMixin(Generic[T], Base):
 U = TypeVar("U")
 
 
-class IsInMixin(Generic[U], Base):
+class IsInMixin(Generic[U], Column):
     """Mixin to use for types implementing "is in"."""
 
     def __init__(self, *, is_in: Sequence[U] | None = None, **kwargs: Any):
@@ -91,5 +84,5 @@ class IsInMixin(Generic[U], Base):
     def validation_rules(self, expr: ColExpr) -> dict[str, ColExpr]:
         result = super().validation_rules(expr)
         if self.is_in is not None:
-            result["is_in"] = expr.is_in(self.is_in)
+            result["is_in"] = expr.is_in(*self.is_in)
         return result

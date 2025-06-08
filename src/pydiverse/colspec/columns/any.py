@@ -1,17 +1,12 @@
-# Copyright (c) QuantCo 2024-2025
+# Copyright (c) QuantCo and pydiverse contributors 2024-2025
 # SPDX-License-Identifier: BSD-3-Clause
 
-from __future__ import annotations
-
 from collections.abc import Callable
-from typing import TYPE_CHECKING
 
 import pydiverse.common as pdc
 
+from ..optional_dependency import ColExpr, dy
 from ._base import Column
-
-if TYPE_CHECKING:
-    from pydiverse.colspec.columns import ColExpr
 
 
 class Any(Column):
@@ -34,5 +29,10 @@ class Any(Column):
         """
         super().__init__(nullable=True, primary_key=False, check=check, alias=alias)
 
-    def dtype(self) -> pdc.Any:
-        return pdc.Any()
+    def dtype(self) -> pdc.Dtype:
+        raise NotImplementedError(
+            "The Type Any is intentionally not implemented in pydiverse libraries."
+        )
+
+    def to_dataframely(self):
+        return dy.Any(check=self.check, alias=self.alias)

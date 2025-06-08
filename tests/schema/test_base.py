@@ -1,37 +1,39 @@
-# Copyright (c) QuantCo 2024-2025
+# Copyright (c) QuantCo and pydiverse contributors 2024-2025
 # SPDX-License-Identifier: BSD-3-Clause
 
-
-import polars as pl
 import pytest
 
-import dataframely as dy
-from dataframely._rule import Rule
-from dataframely.exc import ImplementationError
-from dataframely.testing import create_schema
+import pydiverse.colspec as cs
+from pydiverse.colspec import Rule
+from pydiverse.colspec.exc import ImplementationError
+from pydiverse.colspec.optional_dependency import C, pdt
+from pydiverse.colspec.testing.factory import create_colspec
 
 
-class MySchema(cs.ColSpec):
-    a = dy.Integer(primary_key=True)
-    b = dy.String(primary_key=True)
-    c = dy.Float64()
-    d = dy.Any(alias="e")
+class MyColSpec(cs.ColSpec):
+    a = cs.Integer(primary_key=True)
+    b = cs.String(primary_key=True)
+    c = cs.Float64()
+    e = cs.Any()
 
 
 def test_column_names():
-    assert MySchema.column_names() == ["a", "b", "c", "e"]
+    _ = MyColSpec.e
+    with pytest.raises(AttributeError):
+        _ = MyColSpec.d
+    assert MyColSpec.column_names() == ["a", "b", "c", "e"]
 
 
 def test_columns():
-    columns = MySchema.columns()
-    assert isinstance(columns["a"], dy.Integer)
-    assert isinstance(columns["b"], dy.String)
-    assert isinstance(columns["c"], dy.Float64)
-    assert isinstance(columns["e"], dy.Any)
+    columns = MyColSpec.columns()
+    assert isinstance(columns["a"], cs.Integer)
+    assert isinstance(columns["b"], cs.String)
+    assert isinstance(columns["c"], cs.Float64)
+    assert isinstance(columns["e"], cs.Any)
 
 
 def test_nullability():
-    columns = MySchema.columns()
+    columns = MyColSpec.columns()
     assert not columns["a"].nullable
     assert not columns["b"].nullable
     assert columns["c"].nullable
@@ -39,39 +41,18 @@ def test_nullability():
 
 
 def test_primary_keys():
-    assert MySchema.primary_keys() == ["a", "b"]
+    assert MyColSpec.primary_keys() == ["a", "b"]
 
 
+@pytest.mark.skipif(C is None, reason="pydiverse.transform not installed")
 def test_no_rule_named_primary_key():
-    with pytest.raises(ImplementationError):
-        create_schema(
+    tbl = pdt.Table(dict(a=["b", "c"]))
+    with pytest.raises(
+        ImplementationError,
+        match="@cs.rule annotated functions must not be called `_primary_key_`",
+    ):
+        create_colspec(
             "test",
-            {"a": dy.String()},
-            {"primary_key": Rule(pl.col("a").str.len_bytes() > 1)},
-        )
-
-
-def test_col():
-    assert MySchema.a.col.__dict__ == pl.col("a").__dict__
-    assert MySchema.b.col.__dict__ == pl.col("b").__dict__
-    assert MySchema.c.col.__dict__ == pl.col("c").__dict__
-    assert MySchema.d.col.__dict__ == pl.col("e").__dict__
-
-
-def test_col_raise_if_none():
-    class InvalidSchema(cs.ColSpec):
-        a = dy.Integer()
-
-    # Manually override alias to be ``None``.
-    InvalidSchema.a.alias = None
-    with pytest.raises(ValueError):
-        InvalidSchema.a.col
-
-
-def test_col_in_polars_expression():
-    df = (
-        pl.DataFrame({"a": [1, 2], "b": ["a", "b"], "c": [1.0, 2.0], "e": [None, None]})
-        .filter((MySchema.b.col == "a") & (MySchema.a.col > 0))
-        .select(MySchema.a.col)
-    )
-    assert df.row(0) == (1,)
+            {"a": cs.String()},
+            {"_primary_key_": Rule(tbl.a.str.len() > 1)},
+        ).validate(tbl)

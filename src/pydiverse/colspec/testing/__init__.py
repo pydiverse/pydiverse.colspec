@@ -1,5 +1,5 @@
-# Copyright (c) QuantCo 2024-2024
-# SPDX-License-Identifier: LicenseRef-QuantCo
+# Copyright (c) QuantCo and pydiverse contributors 2025-2025
+# SPDX-License-Identifier: BSD-3-Clause
 
 from .const import (
     ALL_COLUMN_TYPES,
@@ -9,7 +9,7 @@ from .const import (
     SUPERTYPE_COLUMN_TYPES,
 )
 from .factory import create_collection, create_collection_raw, create_colspec
-from .rules import evaluate_rules, rules_from_exprs
+from .rules import evaluate_rules_polars, rules_from_exprs_polars
 
 __all__ = [
     "ALL_COLUMN_TYPES",
@@ -20,6 +20,6 @@ __all__ = [
     "create_collection",
     "create_collection_raw",
     "create_colspec",
-    "evaluate_rules",
-    "rules_from_exprs",
+    "evaluate_rules_polars",
+    "rules_from_exprs_polars",
 ]

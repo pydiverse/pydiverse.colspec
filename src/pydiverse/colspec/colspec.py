@@ -1,82 +1,55 @@
-from __future__ import annotations
+# Copyright (c) QuantCo and pydiverse contributors 2025-2025
+# SPDX-License-Identifier: BSD-3-Clause
 
 import inspect
 import types
 import typing
-from dataclasses import dataclass
+from collections.abc import Iterable, Mapping
 from functools import reduce
-from pathlib import Path
-from typing import Any, Self, overload, Mapping, Iterable
+from typing import Any, Literal, Self, overload
 
-import structlog
+from pydiverse.colspec._validation import validate_columns, validate_dtypes
+from pydiverse.colspec.columns._base import Column
 
-from pydiverse.colspec import exc
-from pydiverse.colspec.exc import ValidationError
+from . import GroupRule, GroupRulePolars, Rule, RulePolars, exc
+from .config import Config, alias_subquery
+from .exc import (
+    ImplementationError,
+    RuleValidationError,
+    ValidationError,
+)
+from .failure import FailureInfo
+from .optional_dependency import ColExpr, Generator, dag, dy, pa, pdt, pl, sa
 
-try:
-    import polars as pl
-    from polars.datatypes import DataTypeClass
-    PolarsDataType = pl.DataType | DataTypeClass
-except ImportError:
-    PolarsDataType = None
-    # Create a new module with the given name.
-    pl = types.ModuleType("polars")
-    pl.DataFrame = None
-    pl.LazyFrame = None
-    pl.DataType = None
-    pl.Series = None
-    pl.Expr = None
-
-try:
-    # colspec has optional dependency to dataframely
-    import dataframely as dy
-    from dataframely.random import Generator
-    from dataframely._polars import FrameType
-except ImportError:
-    Generator = None
-    FrameType = None
-    dy = types.ModuleType("dataframely")
-    dy.DataFrame = None
-    dy.LazyFrame = None
-    dy.FailureInfo = None
-
-try:
-    # colspec has optional dependency to pydiverse.transform
-    import pydiverse.transform as pdt
-except ImportError:
-    class Table:
-        pass
-    # Create a new module with the given name.
-    pdt = types.ModuleType("pydiverse.transform")
-    pdt.Table = Table
-
-
-try:
-    # colspec has optional dependency to pydiverse.pipedag
-    import pydiverse.pipedag as dag
-except ImportError:
-    class Table:
-        pass
-    # Create a new module with the given name.
-    dag = types.ModuleType("pydiverse.pipedag")
-    dag.Table = Table
+_ORIGINAL_NULL_SUFFIX = "__orig_null__"
 
 
 def convert_to_dy_col_spec(base_class):
     from pydiverse.colspec import Column
+
     if base_class == ColSpec:
         # stop base class iteration
         return {}
     elif inspect.isclass(base_class) and issubclass(base_class, ColSpec):
-        dy_cols = {
-            k: convert_to_dy(v)
-            for k, v in base_class.__dict__.items()
-            if isinstance(v, Column)
-        } | {
-            k: convert_to_dy(v())
-            for k, v in base_class.__dict__.items()
-            if inspect.isclass(v) and issubclass(v, Column)
-        }
+        dy_cols = (
+            {
+                k: convert_to_dy(v)
+                for k, v in base_class.__dict__.items()
+                if isinstance(v, Column)
+            }
+            | {
+                k: convert_to_dy(v())
+                for k, v in base_class.__dict__.items()
+                if inspect.isclass(v) and issubclass(v, Column)
+            }
+            | {
+                k: dy._rule.GroupRule(v.expr, v.group_columns)
+                if isinstance(v, GroupRulePolars)
+                else dy._rule.Rule(v.expr)
+                for k, v in base_class.__dict__.items()
+                if isinstance(v, RulePolars)
+            }
+        )
         for base in base_class.__bases__:
             dy_cols.update(convert_to_dy_col_spec(base))
         return dy_cols
@@ -101,18 +74,9 @@ def convert_to_dy_anno_dict(annotations: dict[str, typing.Any]):
 
 def convert_to_dy(value):
     from pydiverse.colspec import Column
+
     if isinstance(value, Column) and hasattr(dy, value.__class__.__name__):
-        DyColClass = getattr(dy, value.__class__.__name__)
-        param_keys = set(inspect.signature(DyColClass.__init__).parameters.keys())
-        fields = value.__dict__.copy()
-        if "inner" in fields:
-            if isinstance(value.inner, dict):
-                # this case handles struct definitions
-                fields["inner"] = {k: convert_to_dy(v) for k,v in value.inner.items()}
-            else:
-                # this case handles lists with inner types
-                fields["inner"] = convert_to_dy(value.inner)
-        return DyColClass(**{k:v for k,v in fields.items() if k in param_keys})
+        return value.to_dataframely()
     else:
         return value
 
@@ -124,15 +88,79 @@ class ColSpecMeta(type):
         return super().__new__(cls, clsname, bases, attribs)
 
 
-class ColSpec(object, pdt.Table, dag.Table, pl.LazyFrame, pl.DataFrame, metaclass=ColSpecMeta):
+class ColSpecBase:
+    #  this is just the same as object but ruff does not kill it
+    pass
+
+
+class ColSpec(
+    ColSpecBase,
+    FailureInfo,
+    pdt.Table,
+    dag.Table,
+    pl.LazyFrame,
+    pl.DataFrame,
+    metaclass=ColSpecMeta,
+):
     """Base class for all column specifications.
 
     The base classes here are just for code completion support when working with
     Collection objects that store actual data or table references. They are removed
     at runtime by a metaclass.
     """
+
     def __init__(self):
         pass
+
+    @classmethod
+    def get_subquery_name(cls, tbl: pdt.Table, rule_name: str) -> str:
+        """Get the name of the subquery for a given rule.
+
+        Args:
+            tbl: The table to which the rule applies.
+            rule_name: The name of the rule.
+
+        Returns:
+            The name of the subquery.
+        """
+        if tbl._ast.name is not None and tbl._ast.name != "<unnamed>":
+            return f"{tbl._ast.name}_{rule_name}"
+        else:
+            return rule_name
+
+    @classmethod
+    def fail_dy_columns_in_colspec(cls):
+        if dy.Column is not None:
+            if any(
+                [
+                    isinstance(getattr(cls, c), dy.Column | dy._rule.Rule)
+                    for c in dir(cls)
+                ]
+            ):
+                if any([isinstance(getattr(cls, c), dy.Column) for c in dir(cls)]):
+                    raise ImplementationError(
+                        "Dataframely Columns won't work in ColSpec classes. Most likely"
+                        " you find the same column classes in pydiverse.colspec. With "
+                        "import pydiverse.colspec as cs, `dy.Integer` becomes "
+                        "`cs.Integer` for example."
+                    )
+                else:
+                    raise ImplementationError(
+                        "Dataframely Rules won't work in ColSpec classes. You can use "
+                        "`@cs.rule` decorator instead of `@dy.rule` decorator in case "
+                        "you import pydiverse.colspec as cs."
+                    )
+        if any(
+            [
+                isinstance(getattr(cls, c), staticmethod)
+                and isinstance(getattr(cls, c).__wrapped__, Rule | RulePolars)
+                for c in dir(cls)
+            ]
+        ):
+            # TODO: better message showing member which causes error
+            raise ImplementationError(
+                "The @staticmethod decorator needs to be after @cs.rule decorator."
+            )
 
     @classmethod
     def primary_keys(cls) -> list[str]:
@@ -142,6 +170,8 @@ class ColSpec(object, pdt.Table, dag.Table, pl.LazyFrame, pl.DataFrame, metaclas
             list[str]: Names of columns that are primary keys
         """
         from pydiverse.colspec import Column
+
+        cls.fail_dy_columns_in_colspec()
         result = [
             member
             for member in dir(cls)
@@ -151,20 +181,88 @@ class ColSpec(object, pdt.Table, dag.Table, pl.LazyFrame, pl.DataFrame, metaclas
         return result
 
     @classmethod
-    def column_names(cls):
-        from pydiverse.colspec import Column
+    def column_names(cls) -> list[str]:
+        cls.fail_dy_columns_in_colspec()
         result = [
-            member for member in dir(cls) if isinstance(getattr(cls, member), Column)
+            getattr(cls, member).alias or member
+            for member in dir(cls)
+            if isinstance(getattr(cls, member), Column)
         ]
         return result
 
     @classmethod
+    def columns(cls) -> dict[str, Column]:
+        cls.fail_dy_columns_in_colspec()
+        return {
+            col.alias or name: col
+            for name, col in cls.__dict__.items()
+            if isinstance(col, Column)
+        }
+
+    @classmethod
+    def alias_map(cls) -> dict[str, str]:
+        return {
+            col.alias or name: name
+            for name, col in cls.__dict__.items()
+            if isinstance(col, Column)
+        }
+
+    @classmethod
+    def validate(cls, tbl: pdt.Table, cast: bool = False) -> pdt.Table:
+        valid_rows, failure = cls.filter(tbl, cast=cast)
+        if len(failure) > 0:
+            raise RuleValidationError(failure.counts())
+        return valid_rows
+
+    @classmethod
     def validate_polars(
-        cls, data: pl.DataFrame | pl.LazyFrame, cast: bool = True
+        cls, data: pl.DataFrame | pl.LazyFrame, cast: bool = False
     ) -> pl.DataFrame | pl.LazyFrame:
+        import dataframely.exc as dy_exc
+
         dy_schema_cols = convert_to_dy_col_spec(cls)
-        dy_schema = type[dy.Schema](cls.__name__, (dy.Schema,), dy_schema_cols.copy())
-        return dy_schema.validate(data, cast=cast)
+        try:
+            dy_schema = type[dy.Schema](
+                cls.__name__, (dy.Schema,), dy_schema_cols.copy()
+            )
+            return dy_schema.validate(data, cast=cast)
+        except (dy_exc.ValidationError, dy_exc.ImplementationError) as e:
+            err_type = getattr(exc, e.__class__.__name__)
+            f = err_type.__new__(err_type)
+            for c in dir(e):
+                if not c.startswith("_"):
+                    setattr(f, c, getattr(e, c))
+            # f.__dict__.update(e.__dict__)
+            raise f from e
+
+    @classmethod
+    def is_valid(cls, tbl: pdt.Table, *, cast: bool = False) -> bool:
+        """Utility method to check whether :meth:`validate` raises an exception.
+
+        Args:
+            tbl: The table to check for validity.
+            cast: Whether columns with a wrong data type in the input data frame are
+                cast to the schema's defined data type before running validation. If set
+                to ``False``, a wrong data type will result in a return value of
+                ``False``.
+
+        Returns:
+            Whether the provided dataframe can be validated with this schema.
+        """
+        try:
+            from polars.exceptions import (
+                InvalidOperationError as PlInvalidOperationError,
+            )
+        except ImportError:
+            PlInvalidOperationError = None
+
+        try:
+            cls.validate(tbl, cast=cast)
+            return True
+        except (ValidationError, PlInvalidOperationError):
+            return False
+        except Exception as e:  # pragma: no cover
+            raise e
 
     @classmethod
     def is_valid_polars(
@@ -174,8 +272,6 @@ class ColSpec(object, pdt.Table, dag.Table, pl.LazyFrame, pl.DataFrame, metaclas
 
         Args:
             df: The data frame to check for validity.
-            allow_extra_columns: Whether to allow the data frame to contain columns
-                that are not defined in the schema.
             cast: Whether columns with a wrong data type in the input data frame are
                 cast to the schema's defined data type before running validation. If set
                 to ``False``, a wrong data type will result in a return value of
@@ -185,6 +281,7 @@ class ColSpec(object, pdt.Table, dag.Table, pl.LazyFrame, pl.DataFrame, metaclas
             Whether the provided dataframe can be validated with this schema.
         """
         import polars.exceptions as plexc
+
         try:
             cls.validate_polars(df, cast=cast)
             return True
@@ -202,14 +299,208 @@ class ColSpec(object, pdt.Table, dag.Table, pl.LazyFrame, pl.DataFrame, metaclas
         overrides: Mapping[str, Iterable[Any]] | None = None,
     ) -> pl.DataFrame | pl.LazyFrame:
         dy_schema_cols = convert_to_dy_col_spec(cls)
-        dy_schema = type[dy.Schema](cls.__name__, (dy.Schema,), dy_schema_cols.copy())
-        return dy_schema.sample(num_rows, generator, overrides=overrides)
+        dy_schema: type[dy.Schema] = type[dy.Schema](
+            cls.__name__, (dy.Schema,), dy_schema_cols.copy()
+        )
+        return dy_schema.sample(num_rows, generator=generator, overrides=overrides)
 
     @classmethod
     def create_empty_polars(cls) -> dy.DataFrame[Self]:
         dy_schema_cols = convert_to_dy_col_spec(cls)
         dy_schema = type[dy.Schema](cls.__name__, (dy.Schema,), dy_schema_cols.copy())
         return dy_schema.create_empty()
+
+    # ------------------------------------ CASTING ----------------------------------- #
+
+    @overload
+    @classmethod
+    def cast_polars(
+        cls, df: pl.DataFrame
+    ) -> dy.DataFrame[Self]: ...  # pragma: no cover
+
+    @overload
+    @classmethod
+    def cast_polars(
+        cls, df: pl.LazyFrame
+    ) -> dy.LazyFrame[Self]: ...  # pragma: no cover
+
+    @classmethod
+    def cast_polars(
+        cls, df: pl.DataFrame | pl.LazyFrame
+    ) -> dy.DataFrame[Self] | dy.LazyFrame[Self]:
+        dy_schema_cols = convert_to_dy_col_spec(cls)
+        dy_schema = type[dy.Schema](cls.__name__, (dy.Schema,), dy_schema_cols.copy())
+        return dy_schema.cast(df)
+
+    @classmethod
+    def polars_schema(cls) -> pl.Schema:
+        return pl.Schema(
+            {
+                name: getattr(cls, name).dtype().to_polars()
+                for name in dir(cls)
+                if isinstance(getattr(cls, name), Column)
+            }
+        )
+
+    # ----------------------------------- FILTERING ---------------------------------- #
+
+    @classmethod
+    def filter(
+        cls,
+        tbl: pdt.Table,
+        *,
+        cast: bool = False,
+        cfg: Config = Config.default,
+    ) -> tuple[Self, FailureInfo]:
+        """Filter the table by the rules of this column specification.
+
+        This method can be thought of as a "soft alternative" to :meth:`validate`.
+        While :meth:`validate` raises an exception when a row does not adhere to the
+        rules defined in the schema, this method simply filters out these rows and
+        succeeds.
+
+        Args:
+            tbl: The data frame to filter for valid rows. The data frame is collected
+                within this method, regardless of whether a :class:`~polars.DataFrame`
+                or :class:`~polars.LazyFrame` is passed.
+            cast: Whether columns with a wrong data type in the input data frame are
+                cast to the schema's defined data type if possible. Rows for which the
+                cast fails for any column are filtered out.
+
+        Returns:
+            A tuple of the validated rows in the input data frame (potentially
+            empty) and a simple dataclass carrying information about the rows of the
+            data frame which could not be validated successfully.
+
+        Raises:
+            ValidationError: If the columns of the input data frame are invalid. This
+                happens only if the data frame misses a column defined in the schema or
+                a column has an invalid dtype while ``cast`` is set to ``False``.
+
+        Note:
+            This method preserves the ordering of the input data frame.
+        """
+
+        src_tbl = tbl
+
+        tbl = cls._validate_columns(tbl, casting=("lenient" if cast else "none"))
+        rules, group_rules = cls._validation_rules(tbl)
+
+        if cast:
+            dtype_rules = {
+                f"{col}|dtype": (
+                    tbl[col].is_null() == tbl[f"{col}{_ORIGINAL_NULL_SUFFIX}"]
+                )
+                for col in cls.column_names()
+            }
+            rules.update(dtype_rules)
+
+        if "_primary_key_" in rules or "_primary_key_" in group_rules:
+            raise ImplementationError(
+                "@cs.rule annotated functions must not be called `_primary_key_`"
+            )
+        if len(cls.primary_keys()) > 0:
+            group_rules["_primary_key_"] = GroupRule(
+                pdt.count() == 1, group_columns=cls.primary_keys()
+            )
+
+        for name, group_rule in group_rules.items():
+            subquery = (
+                tbl
+                >> pdt.group_by(*group_rule.group_columns)
+                >> pdt.summarize(expr=group_rule.expr)
+                >> alias_subquery(cfg, cls.get_subquery_name(tbl, name))
+            )
+            tbl >>= pdt.left_join(
+                subquery,
+                on=pdt.all(
+                    *[tbl[col] == subquery[col] for col in group_rule.group_columns]
+                ),
+            ) >> pdt.select(*tbl)
+            rules[name] = subquery.expr
+
+        combined = pdt.all(True, *rules.values())
+
+        if cast:
+            # Rules other than the "dtype rule" might not be reliable if type casting
+            # failed, i.e. if the "dtype rule" evaluated to `False`. For this reason,
+            # we set all other rule evaluations to `null` in the case of dtype casting
+            # failure.
+            # TODO: actually we should only do this for expressions containing a column
+            # that failed the cast.
+            all_dtype_casts_valid = pdt.all(
+                True,
+                *(
+                    tbl[col].is_null() == tbl[f"{col}{_ORIGINAL_NULL_SUFFIX}"]
+                    for col in cls.column_names()
+                ),
+            )
+
+            # remove original null information again
+            tbl >>= pdt.drop(
+                *(tbl[f"{col}{_ORIGINAL_NULL_SUFFIX}"] for col in cls.column_names())
+            )
+
+            rules.update(
+                {
+                    name: pdt.when(all_dtype_casts_valid)
+                    .then(expr)
+                    .otherwise(pdt.lit(None, dtype=pdt.Bool))
+                    for name, expr in rules.items()
+                    if not name.endswith("|dtype")
+                }
+            )
+
+        ok_rows = tbl >> pdt.filter(combined)
+        invalid_rows = tbl >> pdt.filter(~combined) >> pdt.mutate(**rules)
+
+        if len(cls.primary_keys()) > 0:
+            ok_rows = ok_rows
+            invalid_rows = invalid_rows
+
+        return ok_rows, FailureInfo(
+            tbl=src_tbl,
+            invalid_rows=invalid_rows,
+            rule_columns=rules,
+            cfg=cfg,
+        )
+
+    @classmethod
+    def _validate_columns(
+        cls, tbl: pdt.Table, *, casting: Literal["none", "lenient", "strict"]
+    ):
+        cls.fail_dy_columns_in_colspec()
+
+        tbl = validate_columns(tbl, expected=cls.column_names())
+
+        if casting == "lenient":
+            tbl >>= pdt.mutate(
+                **{f"{col.name}{_ORIGINAL_NULL_SUFFIX}": col.is_null() for col in tbl}
+            )
+
+        return validate_dtypes(tbl, expected=cls.columns(), casting=casting)
+
+    @classmethod
+    def _validation_rules(
+        cls, tbl: pdt.Table
+    ) -> tuple[dict[str, ColExpr], dict[str, GroupRule]]:
+        cls.fail_dy_columns_in_colspec()
+        alias_map = cls.alias_map()
+        return {
+            f"{col}|{rule_name}": rule.fill_null(True)
+            for col in cls.column_names()
+            for rule_name, rule in getattr(cls, alias_map[col])
+            .validation_rules(tbl[col])
+            .items()
+        } | {
+            rule: getattr(cls, rule).expr
+            for rule in dir(cls)
+            if isinstance(getattr(cls, rule), Rule)
+        }, {
+            rule: getattr(cls, rule)
+            for rule in dir(cls)
+            if isinstance(getattr(cls, rule), GroupRule)
+        }
 
     @classmethod
     def filter_polars(
@@ -243,398 +534,42 @@ class ColSpec(object, pdt.Table, dag.Table, pl.LazyFrame, pl.DataFrame, metaclas
         Note:
             This method preserves the ordering of the input data frame.
         """
-        dy_schema_cols = convert_to_dy_col_spec(cls)
-        dy_schema = type[dy.Schema](cls.__name__, (dy.Schema,), dy_schema_cols.copy())
-        return dy_schema.filter(df, cast=cast)
-
-    # ------------------------------------ CASTING ----------------------------------- #
-
-    @overload
-    @classmethod
-    def cast_polars(cls, df: pl.DataFrame) -> dy.DataFrame[Self]: ...  # pragma: no cover
-
-    @overload
-    @classmethod
-    def cast_polars(cls, df: pl.LazyFrame) -> dy.LazyFrame[Self]: ...  # pragma: no cover
-
-    @classmethod
-    def cast_polars(
-        cls, df: pl.DataFrame | pl.LazyFrame
-    ) -> dy.DataFrame[Self] | dy.LazyFrame[Self]:
-        dy_schema_cols = convert_to_dy_col_spec(cls)
-        dy_schema = type[dy.Schema](cls.__name__, (dy.Schema,), dy_schema_cols.copy())
-        return dy_schema.cast(df)
-
-
-def convert_collection_to_dy(collection: Collection | type[Collection]) -> type[dy.Collection]:
-    cls = collection.__class__ if isinstance(collection, Collection) else collection
-    DynCollection = type[dy.Collection](
-        cls.__name__,
-        (dy.Collection,),
-        {"__annotations__": convert_to_dy_anno_dict(cls.__annotations__)},
-    )  # type:type[dy.Collection]
-    return DynCollection
-
-
-@dataclass
-class MemberInfo:
-    """Information about a member of a collection."""
-
-    #: The schema of the member.
-    col_spec: type[ColSpec]
-    #: Whether the member is optional.
-    is_optional: bool
-
-    @staticmethod
-    def is_member(anno: type):
-        if isinstance(anno, types.UnionType):
-            union_types = typing.get_args(anno)
-            return 1 <= len(union_types) <= 2 and sum(1 if (inspect.isclass(t) and issubclass(t, ColSpec)) else 0 for t in union_types) == 1 and all(t == type(None) for t in union_types if not (inspect.isclass(t) and issubclass(t, ColSpec)))
-        return inspect.isclass(anno) and issubclass(anno, ColSpec)
-
-    @staticmethod
-    def new(anno: type):
-        if isinstance(anno, types.UnionType):
-            union_types = typing.get_args(anno)
-            col_spec = [t for t in union_types if inspect.isclass(t) and issubclass(t, ColSpec)][0]
-            is_optional = any(t == type(None) for t in union_types)
-        else:
-            col_spec = anno
-            is_optional = False
-        return MemberInfo(col_spec, is_optional)
-
-    @staticmethod
-    def common_primary_keys(col_specs: Iterable[type[ColSpec]]) -> set[str]:
-        return set.intersection(*[set(col_spec.primary_keys()) for col_spec in col_specs])
-
-
-class Collection:
-    """Base class for all collections of tables with a predefined column specification.
-
-    A collection is comprised of a set of *members* which are collectively "consistent",
-    meaning they the collection ensures that invariants are held up *across* members.
-    This is different to :mod:`dataframely` schemas which only ensure invariants
-    *within* individual members.
-
-    In order to properly ensure that invariants hold up across members, members must
-    have a "common primary key", i.e. there must be an overlap of at least one primary
-    key column across all members. Consequently, a collection is typically used to
-    represent "semantic objects" which cannot be represented in a single table due
-    to 1-N relationships that are managed in separate tables.
-
-    A collection must only have type annotations for :class:`~pydiverse.colspec.ColSpec`s
-    with known column specification:
-
-    .. code:: python
-        class MyFirstColSpec:
-            a: Integer
-
-        class MyCollection(cs.Collection):
-            first_member: MyFirstColSpec
-            second_member: MySecondColSpec
-
-    Besides, it may define *filters* (c.f. :meth:`~dataframely.filter`) and arbitrary
-    methods.
-
-    A colspec.Collection can also be instantiated and filled with
-    pydiverse transform Table, pipedag Table objects, or pipedag task outputs which
-    reference a table. This yields quite intutive syntax:
-
-    .. code:: python
-
-        c = MyCollection.build()
-        c.first_member = pipdag_task1()
-        c.second_member = pipdag_task2()
-        pipdag_task3(c)
-
-    Attention:
-        Do NOT use this class in combination with ``from __future__ import annotations``
-        as it requires the proper schema definitions to ensure that the collection is
-        implemented correctly.
-    """
-
-    def validate_polars(self, *, cast: bool = False, fault_tolerant: bool = False):
-        self.finalize()
-        return self.validate_polars_data(self.__dict__, cast=cast, fault_tolerant=fault_tolerant)
-
-    @classmethod
-    def validate_polars_data(cls, data: Mapping[str, FrameType], *, cast: bool = False, fault_tolerant: bool = False) -> Self:
-        """Validate that a set of data frames satisfy the collection's invariants.
-
-        Args:
-            data: The members of the collection which ought to be validated. The
-                dictionary must contain exactly one entry per member with the name of
-                the member as key.
-            cast: Whether columns with a wrong data type in the member data frame are
-                cast to their schemas' defined data types if possible.
-
-        Raises:
-            ValueError: If an insufficient set of input data frames is provided, i.e. if
-                any required member of this collection is missing in the input.
-            ValidationError: If any of the input data frames does not satisfy its schema
-                definition or the filters on this collection result in the removal of at
-                least one row across any of the input data frames.
-
-        Returns:
-            An instance of the collection. All members of the collection are guaranteed
-            to be valid with respect to their respective schemas and the filters on this
-            collection did not remove rows from any member.
-        """
         import dataframely.exc as dy_exc
-        import polars.exceptions as plexc
-        DynCollection = convert_collection_to_dy(cls)
-        logger_name = __name__ + "." + cls.__name__ + ".validate_polars"
-        try:
-            return DynCollection.validate(data, cast=True)
-        except dy_exc.ImplementationError as e:
-            logger = structlog.getLogger(logger_name)
-            logger.exception("Dataframely raised column specification implementation error")
-            if not fault_tolerant:
-                raise exc.ImplementationError(e.message)
-        except plexc.InvalidOperationError as e:
-            logger = structlog.getLogger(logger_name)
-            logger.exception("Dataframely validation failed within polars expression")
-            if not fault_tolerant:
-                raise ValidationError(e.message)
-        except dy_exc.ValidationError as e:
-            logger = structlog.getLogger(logger_name)
-            logger.exception("Dataframely validation failed")
-            if not fault_tolerant:
-                # Try to replicate exact error class. However, the constructor
-                # does not always store the arguments to it directly.
-                exc_class = getattr(exc, e.__class__.__name__)
-                if hasattr(e, "errors"):
-                    raise exc_class(e.errors)
-                elif hasattr(e, "schema_errors") and hasattr(e, "column_errors"):
-                    new_e = exc_class({})
-                    new_e.schema_errors = e.schema_errors
-                    new_e.column_errors = e.column_errors
-                    raise new_e
-                else:
-                    raise ValidationError(e.message)
-        return cls._init_polars_data(data)  # ignore validation if fault_tolerant
 
-    def is_valid_polars(self, *, cast: bool = False, fault_tolerant: bool = False):
-        self.finalize()
-        return self.is_valid_polars_data(self.__dict__, cast=cast, fault_tolerant=fault_tolerant)
+        dy_schema_cols = convert_to_dy_col_spec(cls)
+        dy_schema = type[dy.Schema](cls.__name__, (dy.Schema,), dy_schema_cols.copy())
+
+        try:
+            return dy_schema.filter(df, cast=cast)
+        except (dy_exc.ValidationError, dy_exc.ImplementationError) as e:
+            err_type = getattr(exc, e.__class__.__name__)
+            f = err_type.__new__(err_type)
+            f.__dict__.update(e.__dict__)
+            raise f from e
 
     @classmethod
-    def is_valid_polars_data(cls, data: Mapping[str, FrameType], *, cast: bool = False, fault_tolerant: bool = False) -> bool:
-        """Utility method to check whether :meth:`validate` raises an exception.
+    def sql_schema(cls, dialect: sa.Dialect) -> list[sa.Column]:
+        """Obtain the SQL schema for a particular dialect for this schema.
 
         Args:
-            data: The members of the collection which ought to be validated. The
-                dictionary must contain exactly one entry per member with the name of
-                the member as key. The existence of all keys is checked via the
-                :mod:`dataframely` mypy plugin.
-            cast: Whether columns with a wrong data type in the member data frame are
-                cast to their schemas' defined data types if possible.
+            dialect: The dialect for which to obtain the SQL schema. Note that column
+                datatypes may differ across dialects.
 
         Returns:
-            Whether the provided members satisfy the invariants of the collection.
-
-        Raises:
-            ValueError: If an insufficient set of input data frames is provided, i.e. if
-                any required member of this collection is missing in the input.
+            A list of :mod:`sqlalchemy` columns that can be used to create a table
+            with the schema as defined by this class.
         """
-        try:
-            cls.validate_polars_data(data, cast=cast, fault_tolerant=fault_tolerant)
-            return True
-        except ValidationError:
-            return False
-
-    def filter_polars(
-        self, *, cast: bool = False
-    ) -> tuple[Self, dict[str, dy.FailureInfo]]:
-        self.finalize()
-        return self.filter_polars_data(self.__dict__, cast=cast)
-
+        return [
+            col.sqlalchemy_column(name, dialect) for name, col in cls.columns().items()
+        ]
 
     @classmethod
-    def filter_polars_data(
-        cls, data: Mapping[str, FrameType], *, cast: bool = False
-    ) -> tuple[Self, dict[str, dy.FailureInfo]]:
-        DynCollection = convert_collection_to_dy(cls)
-        return DynCollection.filter(data, cast=cast)
-
-
-    def cast_polars(self) -> Self:
-        self.finalize()
-        return self.cast_polars_data(self.__dict__)
-
-
-    @classmethod
-    def cast_polars_data(cls, data: Mapping[str, FrameType]) -> Self:
-        DynCollection = convert_collection_to_dy(cls)
-        return DynCollection.cast(data)
-
-    # -------------------------------- Member inquiries --------------------------- #
-
-    @classmethod
-    def members(cls) -> dict[str, MemberInfo]:
-        """Information about the members of the collection."""
-        return {k:MemberInfo.new(v) for k,v in cls.__annotations__.items() if MemberInfo.is_member(v)}
-
-    @classmethod
-    def member_col_specs(cls) -> dict[str, type[ColSpec]]:
-        """The column specifications of all members of the collection."""
-        return {k:MemberInfo.new(v).col_spec for k,v in cls.__annotations__.items() if MemberInfo.is_member(v)}
-
-    @classmethod
-    def required_members(cls) -> set[str]:
-        """The names of all required members of the collection."""
-        return {k for k,v in cls.__annotations__.items() if MemberInfo.is_member(v) and not MemberInfo.new(v).is_optional}
-
-    @classmethod
-    def optional_members(cls) -> set[str]:
-        """The names of all optional members of the collection."""
-        return {k for k,v in cls.__annotations__.items() if MemberInfo.is_member(v) and MemberInfo.new(v).is_optional}
-
-    @classmethod
-    def common_primary_keys(cls) -> list[str]:
-        """The primary keys which are shared by all members of the collection."""
-        return sorted(MemberInfo.common_primary_keys(cls.member_col_specs().values()))
-
-    def to_dict(self) -> dict[str, ColSpec]:
-        """Return a dictionary representation of this collection."""
-        return {
-            member: getattr(self, member)
-            for member in self.member_col_specs()
-            if getattr(self, member) is not None
-        }
-
-    # ------------------------------------ CASTING ----------------------------------- #
-
-    @classmethod
-    def cast_polars_data(cls, data: Mapping[str, FrameType]) -> Self:
-        """Initialize a collection by casting all members to correct column spec.
-
-        This method calls :meth:`~ColSpec.cast` on every member, thus, removing
-        superfluous columns and casting to the correct dtypes for all input data frames.
-
-        You should typically use :meth:`validate` or :meth:`filter` to obtain instances
-        of the collection as this method does not guarantee that the returned collection
-        upholds any invariants. Nonetheless, it may be useful to use in instances where
-        it is known that the provided data adheres to the collection's invariants.
-
-        Args:
-            data: The data for all members. The dictionary must contain exactly one
-                entry per member with the name of the member as key.
+    def pyarrow_schema(cls) -> pa.Schema:
+        """Obtain the pyarrow schema for this schema.
 
         Returns:
-            The initialized collection.
-
-        Raises:
-            ValueError: If an insufficient set of input data frames is provided, i.e. if
-                any required member of this collection is missing in the input.
-
-        Attention:
-            For lazy frames, casting is not performed eagerly. This prevents collecting
-            the lazy frames' schemas but also means that a call to :meth:`collect`
-            further down the line might fail because of the cast and/or missing columns.
+            A :mod:`pyarrow` schema that mirrors the schema defined by this class.
         """
-        import polars.exceptions as plexc
-        cls._validate_polars_input_keys(data)
-        result: dict[str, FrameType] = {}
-        for member_name, member in cls.members().items():
-            if member.is_optional and member_name not in data:
-                continue
-            try:
-                result[member_name] = member.col_spec.cast_polars(data[member_name])
-            except plexc.PolarsError as e:
-                raise ValidationError(str(e)) from e
-        return cls._init_polars_data(result)
-
-    # ---------------------------------- COLLECTION ---------------------------------- #
-
-    def collect_all_polars(self) -> Self:
-        """Collect all members of the collection.
-
-        This method collects all members in parallel for maximum efficiency. It is
-        particularly useful when :meth:`filter` is called with lazy frame inputs.
-
-        Returns:
-            The same collection with all members collected once.
-
-        Note:
-            As all collection members are required to be lazy frames, the returned
-            collection's members are still "lazy". However, they are "shallow-lazy",
-            meaning they are obtained by calling ``.collect().lazy()``.
-        """
-        import polars.exceptions as plexc
-        try:
-            dfs = pl.collect_all([lf for lf in self.to_dict().values()])
-        except plexc.PolarsError as e:
-            raise ValidationError(str(e)) from e
-        return self._init_polars_data(
-            {key: dfs[i].lazy() for i, key in enumerate(self.to_dict().keys())}
+        return pa.schema(
+            [col.pyarrow_field(name) for name, col in cls.columns().items()]
         )
-
-    # -------------------------- Polars/Parquet PERSISTENCE ----------------------- #
-
-    def write_parquet(self, directory: Path):
-        self.finalize()
-        DynCollection = convert_collection_to_dy(self.__class__)
-        coll = DynCollection._init({k:v for k,v in self.__dict__.items() if v is not None})
-        coll.write_parquet(directory)
-
-    @classmethod
-    def read_parquet(cls, directory: Path) -> Self:
-        DynCollection = convert_collection_to_dy(cls)
-        return DynCollection.read_parquet(directory)
-
-    @classmethod
-    def scan_parquet(cls, directory: Path) -> Self:
-        DynCollection = convert_collection_to_dy(cls)
-        return DynCollection.scan_parquet(directory)
-
-    # ---------------------------------- BUILDING --------------------------------- #
-
-    @classmethod
-    def build(cls):
-        return cls(**{member: None for member in cls.__annotations__.keys()})
-
-    def finalize(self):
-        # finalize builder stage and ensure that all dataclass members have been set
-        errors = {
-            member: getattr(self, member)
-            for member, anno in self.__annotations__.items()
-            if not isinstance(None, anno) and getattr(self, member) is None
-        }
-        assert len(errors) == 0, (
-            f"Dataclass building was not finalized before usage. "
-            f"Please make sure to assign the following members "
-            f"on '{self}': {','.join(errors)}"
-        )
-
-    # ----------------------------------- UTILITIES ---------------------------------- #
-
-    @classmethod
-    def _init_polars_data(cls, data: Mapping[str, FrameType]) -> Self:
-        out = cls()
-        for member_name, member in cls.members().items():
-            if member.is_optional and member_name not in data:
-                setattr(out, member_name, None)
-            else:
-                setattr(out, member_name, data[member_name].lazy())
-        return out
-
-    @classmethod
-    def _validate_polars_input_keys(cls, data: Mapping[str, FrameType]):
-        actual = set(data)
-
-        missing = cls.required_members() - actual
-        if len(missing) > 0:
-            raise ValueError(
-                f"Input misses {len(missing)} required members: {', '.join(missing)}."
-            )
-
-        superfluous = actual - set(cls.members())
-        if len(superfluous) > 0:
-            logger = structlog.getLogger(
-                __name__ + "." + cls.__name__ + ".cast"
-            )
-            logger.warning(
-                f"Input provides {len(superfluous)} superfluous members that are "
-                f"ignored: {', '.join(superfluous)}."
-            )

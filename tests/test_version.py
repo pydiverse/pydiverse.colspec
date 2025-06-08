@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 
-def test_import():
+def test_version():
     import pydiverse.colspec as cs
 
-    _ = cs
+    print(f"cs.__version__ = \n{cs.__version__}\n")

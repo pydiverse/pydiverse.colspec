@@ -1,20 +1,15 @@
-# Copyright (c) QuantCo 2023-2025
+# Copyright (c) QuantCo and pydiverse contributors 2023-2025
 # SPDX-License-Identifier: BSD-3-Clause
-
-from __future__ import annotations
 
 from abc import abstractmethod
 from collections.abc import Callable, Sequence
-from typing import TYPE_CHECKING
 
 import pydiverse.common as pdc
 
+from ..optional_dependency import ColExpr
 from ._base import Column
 from ._mixins import IsInMixin, OrdinalMixin
 from ._utils import classproperty
-
-if TYPE_CHECKING:
-    from pydiverse.colspec.columns import ColExpr
 
 
 class _BaseInteger(IsInMixin[int], OrdinalMixin[int], Column):
@@ -23,9 +18,9 @@ class _BaseInteger(IsInMixin[int], OrdinalMixin[int], Column):
         *,
         nullable: bool = True,
         primary_key: bool = False,
-        min: int | None = None,
+        min: int | None = None,  # noqa: A002
         min_exclusive: int | None = None,
-        max: int | None = None,
+        max: int | None = None,  # noqa: A002
         max_exclusive: int | None = None,
         is_in: Sequence[int] | None = None,
         check: Callable[[ColExpr], ColExpr] | None = None,
@@ -178,8 +173,8 @@ class Int64(_BaseInteger):
 class UInt8(_BaseInteger):
     """A column of uint8 values."""
 
-    def dtype(self) -> pdc.Uint8:
-        return pdc.Uint8()
+    def dtype(self) -> pdc.UInt8:
+        return pdc.UInt8()
 
     @classproperty
     def num_bytes(self) -> int:
@@ -193,8 +188,8 @@ class UInt8(_BaseInteger):
 class UInt16(_BaseInteger):
     """A column of uint16 values."""
 
-    def dtype(self) -> pdc.Uint16:
-        return pdc.Uint16()
+    def dtype(self) -> pdc.UInt16:
+        return pdc.UInt16()
 
     @classproperty
     def num_bytes(self) -> int:
@@ -208,8 +203,8 @@ class UInt16(_BaseInteger):
 class UInt32(_BaseInteger):
     """A column of uint32 values."""
 
-    def dtype(self) -> pdc.Uint32:
-        return pdc.Uint32()
+    def dtype(self) -> pdc.UInt32:
+        return pdc.UInt32()
 
     @classproperty
     def num_bytes(self) -> int:
@@ -223,8 +218,8 @@ class UInt32(_BaseInteger):
 class UInt64(_BaseInteger):
     """A column of uint64 values."""
 
-    def dtype(self) -> pdc.Uint64:
-        return pdc.Uint64()
+    def dtype(self) -> pdc.UInt64:
+        return pdc.UInt64()
 
     @classproperty
     def num_bytes(self) -> int:
