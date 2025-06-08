@@ -112,6 +112,7 @@ py313dag = ["py313", "dev", "dag"]
 py311dy = ["py311", "dev", "dy"]
 py313dy = ["py313", "dev", "dy"]
 py311all = ["py311", "dev", "pdt", "dag", "dy"]
+py312all = ["py312", "dev", "pdt", "dag", "dy"]
 py313all = ["py313", "dev", "pdt", "dag", "dy"]
 docs = ["docs"]
 lint = { features = ["lint"], no-default-feature = true }
