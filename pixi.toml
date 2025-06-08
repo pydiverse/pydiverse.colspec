@@ -49,6 +49,7 @@ pydiverse-transform = ">=0.5.0,<0.6"
 pydiverse-pipedag = ">=0.9.9" #">=0.10.0"
 
 [feature.dy.dependencies]
+pyarrow = ">=20.0.0,<21"
 dataframely = ">=1.1.0"
 
 [feature.release.dependencies]
