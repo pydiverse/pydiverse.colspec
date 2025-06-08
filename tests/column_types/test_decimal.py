@@ -10,6 +10,7 @@ import pydiverse.colspec as cs
 from pydiverse.colspec.optional_dependency import (
     FLOAT_DTYPES,
     INTEGER_DTYPES,
+    C,
     DataTypeClass,
     pdt,
     pl,
@@ -55,6 +56,7 @@ def test_invalid_args(kwargs: dict[str, Any]):
         cs.Decimal(**kwargs)
 
 
+@pytest.mark.skipif(C is None, reason="pydiverse.transform not installed")
 @pytest.mark.parametrize(
     "dtype", [pl.Decimal, pl.Decimal(12), pl.Decimal(None, 8), pl.Decimal(6, 2)]
 )
@@ -64,6 +66,7 @@ def test_any_decimal_dtype_passes(dtype: DataTypeClass):
     assert DecimalColSpec.is_valid(tbl)
 
 
+@pytest.mark.skipif(C is None, reason="pydiverse.transform not installed")
 @pytest.mark.parametrize(
     "dtype", [pl.Boolean, pl.String] + list(INTEGER_DTYPES) + list(FLOAT_DTYPES)
 )
@@ -76,6 +79,7 @@ def test_non_decimal_dtype_fails(dtype: DataTypeClass):
     assert not DecimalColSpec.is_valid(tbl)
 
 
+@pytest.mark.skipif(C is None, reason="pydiverse.transform not installed")
 @pytest.mark.parametrize(
     ("inclusive", "valid"),
     [
@@ -91,6 +95,7 @@ def test_validate_min(inclusive: bool, valid: dict[str, list[bool]]):
     assert actual == valid
 
 
+@pytest.mark.skipif(C is None, reason="pydiverse.transform not installed")
 @pytest.mark.parametrize(
     ("inclusive", "valid"),
     [
@@ -106,6 +111,7 @@ def test_validate_max(inclusive: bool, valid: dict[str, list[bool]]):
     assert actual == valid
 
 
+@pytest.mark.skipif(C is None, reason="pydiverse.transform not installed")
 @pytest.mark.parametrize(
     ("min_inclusive", "max_inclusive", "valid"),
     [

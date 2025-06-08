@@ -1,7 +1,6 @@
 # Copyright (c) QuantCo and pydiverse contributors 2025-2025
 # SPDX-License-Identifier: BSD-3-Clause
-
-from dataframely.columns._utils import first_non_null
+from pydiverse.colspec.columns._utils import first_non_null
 
 
 def test_first_non_null_basic():

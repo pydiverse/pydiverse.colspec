@@ -4,13 +4,18 @@
 import random
 
 import pytest
-from dataframely.testing import validation_mask
-from polars.datatypes import DataTypeClass
 
 import pydiverse.colspec as cs
 from pydiverse.colspec.exc import DtypeValidationError, ValidationError
-from pydiverse.colspec.optional_dependency import assert_frame_equal, pdt, pl
-from pydiverse.transform import summarize
+from pydiverse.colspec.optional_dependency import (
+    C,
+    DataTypeClass,
+    assert_frame_equal,
+    dy,
+    pdt,
+    pl,
+    validation_mask,
+)
 
 
 class MyColSpec(cs.ColSpec):
@@ -18,6 +23,8 @@ class MyColSpec(cs.ColSpec):
     b = cs.String(max_length=3)
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
+@pytest.mark.skipif(C is None, reason="pydiverse.transform not installed")
 @pytest.mark.parametrize(
     ("schema", "expected_columns"),
     [
@@ -49,6 +56,8 @@ def test_filter_extra_columns(
         raise AssertionError() from e
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
+@pytest.mark.skipif(C is None, reason="pydiverse.transform not installed")
 @pytest.mark.parametrize(
     ("schema", "cast", "success"),
     [
@@ -81,6 +90,8 @@ def fix(counts: dict[str, int]) -> dict[str, int]:
     return {k: v for k, v in sorted(ret.items(), key=lambda item: item[0])}
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
+@pytest.mark.skipif(C is None, reason="pydiverse.transform not installed")
 @pytest.mark.parametrize("df_type", [pl.DataFrame, pl.LazyFrame])
 @pytest.mark.parametrize(
     ("data_a", "data_b", "failure_mask", "counts", "cooccurrence_counts"),
@@ -134,6 +145,8 @@ def test_filter_failure(
     # assert failures.cooccurrence_counts() == cooccurrence_counts
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
+@pytest.mark.skipif(C is None, reason="pydiverse.transform not installed")
 @pytest.mark.parametrize("df_type", [pl.DataFrame, pl.LazyFrame])
 def test_filter_no_rules(df_type: type[pl.DataFrame] | type[pl.LazyFrame]):
     class TestColSpec(cs.ColSpec):
@@ -155,6 +168,8 @@ def test_filter_no_rules(df_type: type[pl.DataFrame] | type[pl.LazyFrame]):
     # assert failures.cooccurrence_counts() == {}
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
+@pytest.mark.skipif(C is None, reason="pydiverse.transform not installed")
 @pytest.mark.parametrize("df_type", [pl.DataFrame, pl.LazyFrame])
 def test_filter_with_rule_all_valid(df_type: type[pl.DataFrame] | type[pl.LazyFrame]):
     class TestColSpec(cs.ColSpec):
@@ -176,6 +191,8 @@ def test_filter_with_rule_all_valid(df_type: type[pl.DataFrame] | type[pl.LazyFr
     # assert failures.cooccurrence_counts() == {}
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
+@pytest.mark.skipif(C is None, reason="pydiverse.transform not installed")
 @pytest.mark.parametrize("df_type", [pl.DataFrame, pl.LazyFrame])
 def test_filter_cast(df_type: type[pl.DataFrame] | type[pl.LazyFrame]):
     data = {
@@ -207,7 +224,9 @@ def test_filter_cast(df_type: type[pl.DataFrame] | type[pl.LazyFrame]):
     assert isinstance(df_valid, pdt.Table)
     assert [c.name for c in df_valid] == MyColSpec.column_names()
     assert (
-        failures.invalid_rows >> summarize(x=pdt.count()) >> pdt.export(pdt.Scalar())
+        failures.invalid_rows
+        >> pdt.summarize(x=pdt.count())
+        >> pdt.export(pdt.Scalar())
         == 5
     )
     assert failures.counts() == {
@@ -222,6 +241,8 @@ def test_filter_cast(df_type: type[pl.DataFrame] | type[pl.LazyFrame]):
     # }
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
+@pytest.mark.skipif(C is None, reason="pydiverse.transform not installed")
 def test_filter_nondeterministic_lazyframe():
     n = 10_000
     lf = pl.LazyFrame(
@@ -238,8 +259,8 @@ def test_filter_nondeterministic_lazyframe():
     assert (
         filtered
         >> pdt.group_by(filtered.b)
-        >> summarize()
-        >> summarize(x=pdt.count())
+        >> pdt.summarize()
+        >> pdt.summarize(x=pdt.count())
         >> pdt.export(pdt.Scalar)
         == 1
     )

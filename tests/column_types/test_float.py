@@ -47,12 +47,12 @@ def test_args_consistency_min_max(
 @pytest.mark.parametrize(
     ("column_type", "kwargs"),
     [
-        (dy.Float, dict(min=float("-inf"))),
-        (dy.Float, dict(max=float("inf"))),
-        (dy.Float32, dict(min=-sys.float_info.max)),
-        (dy.Float32, dict(max=sys.float_info.max)),
-        (dy.Float64, dict(min=float("-inf"))),
-        (dy.Float64, dict(max=float("inf"))),
+        (cs.Float, dict(min=float("-inf"))),
+        (cs.Float, dict(max=float("inf"))),
+        (cs.Float32, dict(min=-sys.float_info.max)),
+        (cs.Float32, dict(max=sys.float_info.max)),
+        (cs.Float64, dict(min=float("-inf"))),
+        (cs.Float64, dict(max=float("inf"))),
     ],
 )
 def test_invalid_args(column_type: type[_BaseFloat], kwargs: dict[str, Any]):
@@ -60,14 +60,14 @@ def test_invalid_args(column_type: type[_BaseFloat], kwargs: dict[str, Any]):
         column_type(**kwargs)
 
 
-@pytest.mark.skipif(pl.Expr is None, reason="polars is required for this test")
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 @pytest.mark.parametrize("dtype", FLOAT_DTYPES)
 def test_any_integer_dtype_passes(dtype: DataTypeClass):
     df = pl.DataFrame(schema={"a": dtype})
     assert FloatColSpec.is_valid_polars(df)
 
 
-@pytest.mark.skipif(pl.Expr is None, reason="polars is required for this test")
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 @pytest.mark.parametrize("dtype", [pl.Boolean, pl.String] + list(INTEGER_DTYPES))
 def test_non_integer_dtype_fails(dtype: DataTypeClass):
     df = pl.DataFrame(schema={"a": dtype})
@@ -167,9 +167,7 @@ def test_validate_range(
     assert actual == valid
 
 
-@pytest.mark.skipif(
-    dy.DataFrame is None, reason="dataframely is required for this test"
-)
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_sample_unchecked_min_0():
     column = dy.Float(min=0, max=10)
     actual = column._sample_unchecked(dy.random.Generator(), n=10000)

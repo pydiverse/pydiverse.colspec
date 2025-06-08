@@ -3,11 +3,10 @@
 
 from typing import Any
 
-import polars.exceptions as plexc
 import pytest
 
 import pydiverse.colspec as cs
-from pydiverse.colspec.optional_dependency import pl
+from pydiverse.colspec.optional_dependency import dy, pl, plexc
 
 
 class MyColSpec(cs.ColSpec):
@@ -15,6 +14,7 @@ class MyColSpec(cs.ColSpec):
     b = cs.String()
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 @pytest.mark.parametrize("df_type", [pl.DataFrame, pl.LazyFrame])
 @pytest.mark.parametrize(
     "data",
@@ -32,12 +32,14 @@ def test_cast_valid(
     assert out.lazy().collect_schema() == MyColSpec.polars_schema()
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_cast_invalid_schema_eager():
     df = pl.DataFrame({"a": [1]})
     with pytest.raises(plexc.ColumnNotFoundError):
         MyColSpec.cast_polars(df)
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_cast_invalid_schema_lazy():
     lf = pl.LazyFrame({"a": [1]})
     lf = MyColSpec.cast_polars(lf)

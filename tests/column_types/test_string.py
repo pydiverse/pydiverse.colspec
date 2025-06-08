@@ -1,11 +1,14 @@
 # Copyright (c) QuantCo and pydiverse contributors 2023-2025
 # SPDX-License-Identifier: BSD-3-Clause
 
+import pytest
+
 import pydiverse.colspec as cs
-from pydiverse.colspec.optional_dependency import assert_frame_equal, pl
+from pydiverse.colspec.optional_dependency import assert_frame_equal, dy, pl
 from pydiverse.colspec.testing import evaluate_rules_polars, rules_from_exprs_polars
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_validate_min_length():
     column = cs.String(min_length=2)
     lf = pl.LazyFrame({"a": ["foo", "x"]})
@@ -16,6 +19,7 @@ def test_validate_min_length():
     assert_frame_equal(actual, expected)
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_validate_max_length():
     column = cs.String(max_length=2)
     lf = pl.LazyFrame({"a": ["foo", "x"]})
@@ -26,6 +30,7 @@ def test_validate_max_length():
     assert_frame_equal(actual, expected)
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_validate_regex():
     column = cs.String(regex="[0-9][a-z]$")
     lf = pl.LazyFrame({"a": ["33x", "3x", "44"]})
@@ -36,6 +41,7 @@ def test_validate_regex():
     assert_frame_equal(actual, expected)
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_validate_all_rules():
     column = cs.String(nullable=False, min_length=2, max_length=4)
     lf = pl.LazyFrame({"a": ["foo", "x", "foobar", None]})

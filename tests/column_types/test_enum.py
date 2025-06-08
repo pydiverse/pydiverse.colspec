@@ -6,10 +6,11 @@ from typing import Any
 import pytest
 
 import pydiverse.colspec as cs
-from pydiverse.colspec.optional_dependency import pl
+from pydiverse.colspec.optional_dependency import dy, pl
 from pydiverse.colspec.testing.factory import create_colspec
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 @pytest.mark.parametrize(
     ("dy_enum", "pl_dtype", "valid"),
     [
@@ -32,6 +33,7 @@ def test_valid(
     assert schema.is_valid_polars(df) == valid
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 @pytest.mark.parametrize("enum", [cs.Enum(["x", "y"]), cs.Enum(["y", "x"])])
 @pytest.mark.parametrize("df_type", [pl.DataFrame, pl.LazyFrame])
 @pytest.mark.parametrize(

@@ -1,10 +1,13 @@
 # Copyright (c) QuantCo and pydiverse contributors 2024-2025
 # SPDX-License-Identifier: BSD-3-Clause
+import pytest
+
 from pydiverse.colspec import GroupRulePolars, RulePolars
-from pydiverse.colspec.optional_dependency import assert_frame_equal, pl
+from pydiverse.colspec.optional_dependency import assert_frame_equal, dy, pl
 from pydiverse.colspec.testing import evaluate_rules_polars
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_single_column_single_rule():
     lf = pl.LazyFrame({"a": [1, 2]})
     rules = {
@@ -16,6 +19,7 @@ def test_single_column_single_rule():
     assert_frame_equal(actual, expected)
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_single_column_multi_rule():
     lf = pl.LazyFrame({"a": [1, 2, 3]})
     rules = {
@@ -30,6 +34,7 @@ def test_single_column_multi_rule():
     assert_frame_equal(actual, expected)
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_multi_column_multi_rule():
     lf = pl.LazyFrame({"a": [1, 2, 3], "b": [4, 5, 6]})
     rules = {
@@ -49,6 +54,7 @@ def test_multi_column_multi_rule():
     assert_frame_equal(actual, expected)
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_cross_column_rule():
     lf = pl.LazyFrame({"a": [1, 1, 2, 2], "b": [1, 1, 1, 2]})
     rules = {"primary_key": RulePolars(~pl.struct("a", "b").is_duplicated())}
@@ -58,6 +64,7 @@ def test_cross_column_rule():
     assert_frame_equal(actual, expected)
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_group_rule():
     lf = pl.LazyFrame({"a": [1, 1, 2, 2, 3], "b": [1, 1, 1, 2, 1]})
     rules: dict[str, RulePolars] = {
@@ -69,6 +76,7 @@ def test_group_rule():
     assert_frame_equal(actual, expected)
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_simple_rule_and_group_rule():
     lf = pl.LazyFrame({"a": [1, 1, 2, 2, 3], "b": [1, 1, 1, 2, 1]})
     rules: dict[str, RulePolars] = {
@@ -86,6 +94,7 @@ def test_simple_rule_and_group_rule():
     assert_frame_equal(actual, expected, check_column_order=False)
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_multiple_group_rules():
     lf = pl.LazyFrame({"a": [1, 1, 2, 2, 3], "b": [1, 1, 1, 2, 1]})
     rules: dict[str, RulePolars] = {

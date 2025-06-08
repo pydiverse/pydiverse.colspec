@@ -10,7 +10,7 @@ import pytest
 import pydiverse.colspec as cs
 import pydiverse.colspec.collection
 from pydiverse.colspec.exc import MemberValidationError
-from pydiverse.colspec.optional_dependency import ColExpr, pdt
+from pydiverse.colspec.optional_dependency import C, ColExpr, pdt
 from pydiverse.colspec.pdt_util import num_rows
 from pydiverse.colspec.testing.assert_equal import assert_table_equal
 
@@ -100,6 +100,7 @@ def data_with_filter_with_rule_violation() -> SimpleCollection:
 # -------------------------------------- FILTER -------------------------------------- #
 
 
+@pytest.mark.skipif(C is None, reason="pydiverse.transform not installed")
 def test_filter_without_filter_without_rule_violation(
     data_without_filter_without_rule_violation: SimpleCollection,
 ):
@@ -112,6 +113,7 @@ def test_filter_without_filter_without_rule_violation(
     assert len(failure.second) == 0
 
 
+@pytest.mark.skipif(C is None, reason="pydiverse.transform not installed")
 def test_filter_without_filter_with_rule_violation(
     data_without_filter_with_rule_violation: SimpleCollection,
 ):
@@ -124,6 +126,7 @@ def test_filter_without_filter_with_rule_violation(
     assert failure.second.counts() == {"b|min": 1}
 
 
+@pytest.mark.skipif(C is None, reason="pydiverse.transform not installed")
 def test_filter_with_filter_without_rule_violation(
     data_with_filter_without_rule_violation: SimpleCollection,
 ):
@@ -143,6 +146,7 @@ def test_filter_with_filter_without_rule_violation(
     }
 
 
+@pytest.mark.skipif(C is None, reason="pydiverse.transform not installed")
 def test_filter_with_filter_with_rule_violation(
     data_with_filter_with_rule_violation: SimpleCollection,
 ):
@@ -159,6 +163,7 @@ def test_filter_with_filter_with_rule_violation(
 # -------------------------------- VALIDATE WITH DATA -------------------------------- #
 
 
+@pytest.mark.skipif(C is None, reason="pydiverse.transform not installed")
 def test_validate_without_filter_without_rule_violation(
     data_without_filter_without_rule_violation: SimpleCollection,
 ):
@@ -170,6 +175,7 @@ def test_validate_without_filter_without_rule_violation(
     assert_table_equal(out.second, data_without_filter_without_rule_violation.second)
 
 
+@pytest.mark.skipif(C is None, reason="pydiverse.transform not installed")
 def test_validate_without_filter_with_rule_violation(
     data_without_filter_with_rule_violation: SimpleCollection,
 ):
@@ -187,6 +193,7 @@ def test_validate_without_filter_with_rule_violation(
     exc.match(r"'min' failed for 1 rows")
 
 
+@pytest.mark.skipif(C is None, reason="pydiverse.transform not installed")
 def test_validate_with_filter_without_rule_violation(
     data_with_filter_without_rule_violation: SimpleCollection,
 ):
@@ -206,6 +213,7 @@ def test_validate_with_filter_without_rule_violation(
     exc.match(r"'equal_primary_keys' failed validation for 2 rows")
 
 
+@pytest.mark.skipif(C is None, reason="pydiverse.transform not installed")
 def test_validate_with_filter_with_rule_violation(
     data_with_filter_with_rule_violation: SimpleCollection,
 ):

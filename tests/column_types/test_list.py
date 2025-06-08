@@ -8,17 +8,20 @@ from pydiverse.colspec.optional_dependency import dy, pl, validation_mask
 from pydiverse.colspec.testing import create_colspec
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 @pytest.mark.parametrize("inner", [cs.Int64(), cs.Integer()])
 def test_integer_list(inner: dy.Column):
     spec = create_colspec("test", {"a": cs.List(inner)})
     assert spec.is_valid_polars(pl.DataFrame({"a": [[1], [2], [3]]}))
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_invalid_inner_type():
     spec = create_colspec("test", {"a": cs.List(cs.Int64())})
     assert not spec.is_valid_polars(pl.DataFrame({"a": [["1"], ["2"], ["3"]]}))
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 @pytest.mark.parametrize(
     ("column", "dtype", "is_valid_polars"),
     [
@@ -53,11 +56,13 @@ def test_validate_dtype(column: dy.Column, dtype: pl.DataType, is_valid_polars: 
     assert column.validate_dtype_polars(dtype) == is_valid_polars
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_nested_lists():
     spec = create_colspec("test", {"a": cs.List(cs.List(cs.Int64()))})
     assert spec.is_valid_polars(pl.DataFrame({"a": [[[1]], [[2]], [[3]]]}))
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_list_with_pk():
     spec = create_colspec(
         "test",
@@ -69,6 +74,7 @@ def test_list_with_pk():
     assert failures.counts() == {"primary_key": 2}
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_list_with_rules():
     spec = create_colspec(
         "test", {"a": cs.List(cs.String(min_length=2, nullable=False))}
@@ -79,6 +85,7 @@ def test_list_with_rules():
     assert failures.counts() == {"a|inner_nullability": 1, "a|inner_min_length": 1}
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_nested_list_with_rules():
     spec = create_colspec(
         "test", {"a": cs.List(cs.List(cs.String(min_length=2, nullable=False)))}
@@ -93,6 +100,7 @@ def test_nested_list_with_rules():
     }
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_list_length_rules():
     spec = create_colspec(
         "test",
@@ -110,6 +118,7 @@ def test_list_length_rules():
     assert validation_mask(df, failures).to_list() == [True, False, False, True, False]
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_outer_inner_nullability():
     spec = create_colspec(
         "test",
@@ -124,6 +133,7 @@ def test_outer_inner_nullability():
     spec.validate_polars(df, cast=True)
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_inner_primary_key():
     spec = create_colspec("test", {"a": cs.List(cs.Integer(primary_key=True))})
     df = pl.DataFrame({"a": [[1, 2, 3], [1, 1, 2], [1, 1], [1, 4]]})
@@ -132,6 +142,7 @@ def test_inner_primary_key():
     assert validation_mask(df, failure).to_list() == [True, False, False, True]
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 @pytest.mark.parametrize(
     ("inner_primary_key", "second_primary_key", "failure_count", "mask"),
     [

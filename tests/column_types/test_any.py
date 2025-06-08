@@ -6,13 +6,15 @@ from typing import Any
 import pytest
 
 import pydiverse.colspec as cs
-from pydiverse.colspec.optional_dependency import pdt, pl
+from pydiverse.colspec.optional_dependency import C, dy, pdt, pl
 
 
 class AnyColSpec(cs.ColSpec):
     a = cs.Any()
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
+@pytest.mark.skipif(C is None, reason="pydiverse.transform not installed")
 @pytest.mark.parametrize(
     "data",
     [{"a": [None]}, {"a": [True, None]}, {"a": ["foo"]}, {"a": [3.5]}],

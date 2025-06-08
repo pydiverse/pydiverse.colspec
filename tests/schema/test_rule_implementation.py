@@ -6,10 +6,11 @@ import pytest
 import pydiverse.colspec as cs
 from pydiverse.colspec._rule import GroupRulePolars, RulePolars
 from pydiverse.colspec.exc import ImplementationError, RuleImplementationError
-from pydiverse.colspec.optional_dependency import pl
+from pydiverse.colspec.optional_dependency import dy, pl
 from pydiverse.colspec.testing.factory import create_colspec
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_group_rule_group_by_error():
     with pytest.raises(
         ImplementationError,
@@ -29,6 +30,7 @@ def test_group_rule_group_by_error():
         ).validate_polars(None)
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_rule_implementation_error():
     with pytest.raises(
         RuleImplementationError, match=r"rule 'integer_rule'.*returns dtype 'Int64'"
@@ -40,6 +42,7 @@ def test_rule_implementation_error():
         ).validate_polars(None)
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_group_rule_implementation_error():
     with pytest.raises(
         RuleImplementationError,
@@ -57,6 +60,7 @@ def test_group_rule_implementation_error():
         ).validate_polars(None)
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_rule_column_overlap_error():
     with pytest.raises(
         ImplementationError,

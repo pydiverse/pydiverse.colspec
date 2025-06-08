@@ -1,12 +1,11 @@
 # Copyright (c) QuantCo and pydiverse contributors 2024-2025
 # SPDX-License-Identifier: BSD-3-Clause
 
-import dataframely as dy
 import pytest
 
 import pydiverse.colspec as cs
 import pydiverse.colspec.collection
-from pydiverse.colspec.optional_dependency import pl
+from pydiverse.colspec.optional_dependency import dy, pl
 
 
 class MyColSpec(cs.ColSpec):
@@ -19,6 +18,7 @@ class SimpleCollection(pydiverse.colspec.collection.Collection):
     third: MyColSpec | None
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_concat():
     col1 = SimpleCollection.cast_polars_data({"first": pl.LazyFrame({"a": [1, 2, 3]})})
     col2 = SimpleCollection.cast_polars_data(
@@ -40,6 +40,7 @@ def test_concat():
     assert concat["third"].collect().get_column("a").to_list() == list(range(7, 10))
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_concat_empty():
     with pytest.raises(ValueError):
         dy.concat_collection_members([])

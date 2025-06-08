@@ -5,9 +5,10 @@ import pytest
 
 from pydiverse.colspec._validation import validate_columns
 from pydiverse.colspec.exc import ValidationError
-from pydiverse.colspec.optional_dependency import pdt, pl
+from pydiverse.colspec.optional_dependency import C, pdt, pl
 
 
+@pytest.mark.skipif(C is None, reason="pydiverse.transform not installed")
 def test_success():
     df = pl.DataFrame(schema={k: pl.Int64() for k in ["a", "b"]})
     tbl = pdt.Table(df)
@@ -22,6 +23,7 @@ def test_success():
         (["c"], ["a", "b"], r"2 columns are missing: a, b;"),
     ],
 )
+@pytest.mark.skipif(C is None, reason="pydiverse.transform not installed")
 def test_failure(actual: list[str], expected: list[str], error: str):
     df = pl.DataFrame(schema={k: pl.Int64() for k in actual})
     tbl = pdt.Table(df)

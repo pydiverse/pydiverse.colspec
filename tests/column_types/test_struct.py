@@ -5,10 +5,11 @@ import pytest
 
 import pydiverse.colspec as cs
 from pydiverse.colspec.columns._base import Column
-from pydiverse.colspec.optional_dependency import pl
+from pydiverse.colspec.optional_dependency import dy, pl
 from pydiverse.colspec.testing.factory import create_colspec
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_simple_struct():
     schema = create_colspec(
         "test", {"s": cs.Struct({"a": cs.Integer(), "b": cs.String()})}
@@ -18,6 +19,7 @@ def test_simple_struct():
     )
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 @pytest.mark.parametrize(
     ("column", "dtype", "is_valid"),
     [
@@ -77,11 +79,13 @@ def test_validate_dtype(column: Column, dtype: pl.DataType, is_valid: bool):
     assert column.validate_dtype_polars(dtype) == is_valid
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_invalid_inner_type():
     schema = create_colspec("test", {"a": cs.Struct({"a": cs.Int64()})})
     assert not schema.is_valid_polars(pl.DataFrame({"a": [{"a": "1"}, {"a": "2"}]}))
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_nested_structs():
     schema = create_colspec(
         "test",
@@ -99,6 +103,7 @@ def test_nested_structs():
     )
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_struct_with_pk():
     schema = create_colspec(
         "test",
@@ -114,6 +119,7 @@ def test_struct_with_pk():
     assert failures.counts() == {"primary_key": 2}
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_struct_with_rules():
     schema = create_colspec(
         "test", {"s": cs.Struct({"a": cs.String(min_length=2, nullable=False)})}
@@ -126,6 +132,7 @@ def test_struct_with_rules():
     assert failures.counts() == {"s|inner_a_nullability": 1, "s|inner_a_min_length": 1}
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_nested_struct_with_rules():
     schema = create_colspec(
         "test",
@@ -148,6 +155,7 @@ def test_nested_struct_with_rules():
     }
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_outer_inner_nullability():
     schema = create_colspec(
         "test",

@@ -124,6 +124,12 @@ def rule_polars(
     """
 
     def decorator(validation_fn: ValidationFunctionPolars) -> RulePolars:
+        if pl.Expr is None:
+            # decorator should also work if polars is not installed
+            if group_by is not None:
+                return GroupRulePolars(expr=None, group_columns=group_by)
+            else:
+                return RulePolars(expr=None)
         if isinstance(validation_fn, staticmethod):
             validation_fn = validation_fn.__wrapped__
         if group_by is not None:

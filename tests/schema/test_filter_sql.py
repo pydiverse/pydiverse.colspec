@@ -5,27 +5,24 @@ import random
 
 import pytest
 import sqlalchemy as sqa
-from polars.datatypes import DataTypeClass
 
 import pydiverse.colspec as cs
 from pydiverse.colspec.exc import DtypeValidationError, ValidationError
-from pydiverse.colspec.optional_dependency import assert_frame_equal, pdt, pl
-from pydiverse.colspec.testing.assert_equal import assert_table_equal
-from pydiverse.transform.common import (
-    Polars,
-    SqlAlchemy,
-    alias,
-    export,
-    group_by,
-    summarize,
+from pydiverse.colspec.optional_dependency import (
+    C,
+    DataTypeClass,
+    assert_frame_equal,
+    pdt,
+    pl,
 )
+from pydiverse.colspec.testing.assert_equal import assert_table_equal
 
 engine = sqa.create_engine("duckdb:///:memory:")
 
 
 def sql_table(df: pl.DataFrame, *, name: str) -> pdt.Table:
     df.write_database(name, engine, if_table_exists="replace")
-    return pdt.Table(name, SqlAlchemy(engine))
+    return pdt.Table(name, pdt.SqlAlchemy(engine))
 
 
 class MyColSpec(cs.ColSpec):
@@ -41,13 +38,14 @@ class MyColSpec(cs.ColSpec):
         ({"a": pl.Int64, "b": pl.String, "c": pl.String}, ["a", "b"]),
     ],
 )
+@pytest.mark.skipif(C is None, reason="pydiverse.transform not installed")
 def test_filter_extra_columns(
     schema: dict[str, DataTypeClass], expected_columns: list[str] | None
 ):
     tbl = sql_table(pl.DataFrame(schema=schema), name="tbl")
     try:
         filtered, _ = MyColSpec.filter(tbl)
-        filtered >>= export(Polars)
+        filtered >>= pdt.export(pdt.Polars)
         assert expected_columns is not None
         assert set(filtered.columns) == set(expected_columns)
     except ValidationError:
@@ -61,6 +59,7 @@ def test_filter_extra_columns(
         ({"a": pl.String, "b": pl.String}, True, True),
     ],
 )
+@pytest.mark.skipif(C is None, reason="pydiverse.transform not installed")
 def test_filter_dtypes(schema: dict[str, DataTypeClass], cast: bool, success: bool):
     tbl = sql_table(pl.DataFrame(schema=schema), name="tbl")
     try:
@@ -93,6 +92,7 @@ def test_filter_dtypes(schema: dict[str, DataTypeClass], cast: bool, success: bo
         ),
     ],
 )
+@pytest.mark.skipif(C is None, reason="pydiverse.transform not installed")
 def test_filter_failure(
     data_a: list[int],
     data_b: list[str | None],
@@ -104,14 +104,15 @@ def test_filter_failure(
     tbl_valid, failures = MyColSpec.filter(tbl)
     assert isinstance(tbl_valid, pdt.Table)
     assert_frame_equal(
-        (tbl >> export(Polars)).filter(pl.Series(failure_mask)),
-        tbl_valid >> export(Polars),
+        (tbl >> pdt.export(pdt.Polars)).filter(pl.Series(failure_mask)),
+        tbl_valid >> pdt.export(pdt.Polars),
         check_row_order=False,
     )
     assert len(failures) == (len(failure_mask) - sum(failure_mask))
     assert failures.counts() == counts
 
 
+@pytest.mark.skipif(C is None, reason="pydiverse.transform not installed")
 def test_filter_no_rules():
     class TestColSpec(cs.ColSpec):
         a = cs.Int64(nullable=True)
@@ -124,6 +125,7 @@ def test_filter_no_rules():
     assert failures.counts() == {}
 
 
+@pytest.mark.skipif(C is None, reason="pydiverse.transform not installed")
 def test_filter_with_rule_all_valid():
     class TestColSpec(cs.ColSpec):
         a = cs.String(min_length=3)
@@ -136,6 +138,7 @@ def test_filter_with_rule_all_valid():
     assert failures.counts() == {}
 
 
+@pytest.mark.skipif(C is None, reason="pydiverse.transform not installed")
 def test_filter_cast():
     data = {
         # validation: [true, true, false, false, false, false]
@@ -160,6 +163,7 @@ def test_filter_cast():
     # }
 
 
+@pytest.mark.skipif(C is None, reason="pydiverse.transform not installed")
 def test_filter_nondeterministic_tbl():
     n = 10_000
     tbl = sql_table(
@@ -175,9 +179,9 @@ def test_filter_nondeterministic_tbl():
     filtered, _ = MyColSpec.filter(tbl)
     assert (
         filtered
-        >> group_by(filtered.b)
-        >> summarize()
-        >> alias()
-        >> summarize(n_unique=pdt.count())
-        >> export(pdt.Scalar)
+        >> pdt.group_by(filtered.b)
+        >> pdt.summarize()
+        >> pdt.alias()
+        >> pdt.summarize(n_unique=pdt.count())
+        >> pdt.export(pdt.Scalar)
     ) == 1

@@ -5,9 +5,10 @@ import datetime as dt
 from abc import ABC, ABCMeta, abstractmethod
 from collections.abc import Callable
 
+from pydiverse.colspec.optional_dependency import dy
 from pydiverse.common import Dtype
 
-from ..optional_dependency import ColExpr, Generator, PolarsDataType, pl
+from ..optional_dependency import ColExpr, Generator, PolarsDataType, pa, pl, sa
 
 EPOCH_DATETIME = dt.datetime(1970, 1, 1)
 SECONDS_PER_DAY = 86400
@@ -102,7 +103,6 @@ class Column(ABC, ColExpr, metaclass=ColumnMeta):
         Returns:
             A dataframely.Column instance with the same properties as this column.
         """
-        import dataframely as dy
 
         def convert(value):
             if isinstance(value, Column):
@@ -155,6 +155,45 @@ class Column(ABC, ColExpr, metaclass=ColumnMeta):
                 providing any guarantees on the computational complexity.
         """
         return self.to_dataframely().sample(generator, n)
+
+    # -------------------------------------- SQL ------------------------------------- #
+
+    def sqlalchemy_column(self, name: str, dialect: sa.Dialect) -> sa.Column:
+        """Obtain the SQL column specification of this column definition.
+
+        Args:
+            name: The name of the column.
+            dialect: The SQL dialect for which to generate the column specification.
+
+        Returns:
+            The column as specified in :mod:`sqlalchemy`.
+        """
+        _ = dialect  # may be used in the future by pydiverse.common
+        return sa.Column(
+            name,
+            self.dtype().to_sql(),
+            nullable=self.nullable,
+            primary_key=self.primary_key,
+            autoincrement=False,
+        )
+
+    # ------------------------------------ PYARROW ----------------------------------- #
+
+    def pyarrow_field(self, name: str) -> pa.Field:
+        """Obtain the pyarrow field of this column definition.
+
+        Args:
+            name: The name of the column.
+
+        Returns:
+            The :mod:`pyarrow` field definition.
+        """
+        try:
+            return pa.field(name, self.dtype().to_arrow(), nullable=self.nullable)
+        except NotImplementedError:
+            return pa.field(
+                name, self.to_dataframely().pyarrow_dtype, nullable=self.nullable
+            )
 
     # -------------------------------- DUNDER METHODS -------------------------------- #
 

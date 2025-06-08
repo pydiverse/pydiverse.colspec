@@ -5,11 +5,7 @@ import pytest
 
 import pydiverse.colspec as cs
 from pydiverse.colspec import ColSpec
-
-try:
-    import dataframely as dy
-except ImportError:
-    dy = None
+from pydiverse.colspec.optional_dependency import dy
 
 
 def perform_dataframely_operation():

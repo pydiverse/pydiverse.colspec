@@ -5,10 +5,11 @@ import pytest
 
 import pydiverse.colspec as cs
 from pydiverse.colspec.columns._base import Column
-from pydiverse.colspec.optional_dependency import pl
+from pydiverse.colspec.optional_dependency import dy, pl
 from pydiverse.colspec.testing.factory import create_colspec
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 @pytest.mark.parametrize(
     ("column", "dtype"),
     [

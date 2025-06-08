@@ -9,7 +9,7 @@ import pytest
 import pydiverse.colspec as cs
 from pydiverse.colspec import Column
 from pydiverse.colspec.exc import DtypeValidationError
-from pydiverse.colspec.optional_dependency import Generator, pdt, pl
+from pydiverse.colspec.optional_dependency import C, Generator, dy, pdt, pl
 from pydiverse.colspec.testing.factory import create_colspec
 from pydiverse.colspec.testing.rules import evaluate_rules
 
@@ -138,6 +138,7 @@ def test_args_consistency_min_max(column_type: type[Column], kwargs: dict[str, A
         column_type(**kwargs)
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 @pytest.mark.parametrize(
     ("column_type", "kwargs"),
     [
@@ -183,6 +184,7 @@ def test_args_resolution_invalid(column_type: type[Column], kwargs: dict[str, An
         TestColSpec.validate_polars(pl.DataFrame(dict(a=[])))
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 @pytest.mark.parametrize(
     ("column_type", "kwargs"),
     [
@@ -218,7 +220,7 @@ def test_args_resolution_valid(column_type: type[Column], kwargs: dict[str, Any]
         TestColSpec.validate_polars(pl.DataFrame(dict(a=[])))
 
 
-@pytest.mark.skipif(pdt is None, reason="pydiverse.transform not installed")
+@pytest.mark.skipif(C is None, reason="pydiverse.transform not installed")
 @pytest.mark.parametrize(
     ("column", "values", "valid"),
     [
@@ -352,6 +354,7 @@ def test_validate_min_max(
     assert actual == valid
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 @pytest.mark.parametrize(
     ("column", "values", "valid"),
     [
@@ -414,6 +417,7 @@ def test_validate_resolution(
         )
     ],
 )
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_sample_resolution(column: cs.Column):
     generator = Generator(seed=42)
     samples = column.sample_polars(generator, n=10_000)

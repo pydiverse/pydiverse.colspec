@@ -27,11 +27,13 @@ class EmployeeColSpec(cs.ColSpec):
 # ------------------------------------- FIXTURES ------------------------------------- #
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 @pytest.fixture()
 def departments() -> dy.LazyFrame[DepartmentColSpec]:
     return DepartmentColSpec.cast_polars(pl.LazyFrame({"department_id": [1, 2]}))
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 @pytest.fixture()
 def managers() -> dy.LazyFrame[ManagerColSpec]:
     return ManagerColSpec.cast_polars(
@@ -39,6 +41,7 @@ def managers() -> dy.LazyFrame[ManagerColSpec]:
     )
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 @pytest.fixture()
 def employees() -> dy.LazyFrame[EmployeeColSpec]:
     return EmployeeColSpec.cast_polars(
@@ -57,6 +60,7 @@ def employees() -> dy.LazyFrame[EmployeeColSpec]:
 # ------------------------------------------------------------------------------------ #
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_one_to_one(
     departments: dy.LazyFrame[DepartmentColSpec],
     managers: dy.LazyFrame[ManagerColSpec],
@@ -67,6 +71,7 @@ def test_one_to_one(
     assert actual.select("department_id").collect().to_series().to_list() == [1]
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_one_to_at_least_one(
     departments: dy.LazyFrame[DepartmentColSpec],
     employees: dy.LazyFrame[EmployeeColSpec],

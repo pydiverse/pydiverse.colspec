@@ -13,6 +13,7 @@ from pydiverse.colspec.optional_dependency import (
     C,
     ColExpr,
     assert_frame_equal,
+    dy,
     pdt,
     pl,
 )
@@ -52,6 +53,7 @@ class MyComplexColSpec(cs.ColSpec):
 # -------------------------------------- COLUMNS ------------------------------------- #
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 @pytest.mark.parametrize("df_type", [pl.DataFrame, pl.LazyFrame])
 def test_missing_columns(df_type: type[pl.DataFrame] | type[pl.LazyFrame]):
     df = df_type({"a": [1], "b": [""]})
@@ -63,6 +65,7 @@ def test_missing_columns(df_type: type[pl.DataFrame] | type[pl.LazyFrame]):
 # -------------------------------------- DTYPES -------------------------------------- #
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 @pytest.mark.parametrize("df_type", [pl.DataFrame, pl.LazyFrame])
 def test_invalid_dtype(df_type: type[pl.DataFrame] | type[pl.LazyFrame]):
     df = df_type({"a": [1], "b": [1], "c": [1]})
@@ -74,6 +77,7 @@ def test_invalid_dtype(df_type: type[pl.DataFrame] | type[pl.LazyFrame]):
     assert not MyColSpec.is_valid_polars(df)
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 @pytest.mark.parametrize("df_type", [pl.DataFrame, pl.LazyFrame])
 def test_invalid_dtype_cast(df_type: type[pl.DataFrame] | type[pl.LazyFrame]):
     df = df_type({"a": [1], "b": [1], "c": [1]})
@@ -86,6 +90,7 @@ def test_invalid_dtype_cast(df_type: type[pl.DataFrame] | type[pl.LazyFrame]):
 # --------------------------------------- RULES -------------------------------------- #
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 @pytest.mark.parametrize("df_type", [pl.DataFrame, pl.LazyFrame])
 def test_invalid_column_contents(df_type: type[pl.DataFrame] | type[pl.LazyFrame]):
     df = df_type({"a": [1, 2, 3], "b": ["x", "longtext", None], "c": ["1", None, "3"]})
@@ -98,6 +103,7 @@ def test_invalid_column_contents(df_type: type[pl.DataFrame] | type[pl.LazyFrame
     assert not MyColSpec.is_valid_polars(df)
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 @pytest.mark.parametrize("df_type", [pl.DataFrame, pl.LazyFrame])
 def test_invalid_primary_key(df_type: type[pl.DataFrame] | type[pl.LazyFrame]):
     df = df_type({"a": [1, 1], "b": ["x", "y"], "c": ["1", "2"]})
@@ -110,6 +116,7 @@ def test_invalid_primary_key(df_type: type[pl.DataFrame] | type[pl.LazyFrame]):
     assert not MyColSpec.is_valid_polars(df)
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 @pytest.mark.parametrize("df_type", [pl.DataFrame, pl.LazyFrame])
 def test_violated_custom_rule_polars(df_type: type[pl.DataFrame] | type[pl.LazyFrame]):
     df = df_type({"a": [1, 1, 2, 3, 3], "b": [2, 2, 2, 4, 5]})
@@ -122,6 +129,8 @@ def test_violated_custom_rule_polars(df_type: type[pl.DataFrame] | type[pl.LazyF
     assert not MyComplexColSpec.is_valid_polars(df)
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
+@pytest.mark.skipif(C is None, reason="pydiverse.transform not installed")
 def test_violated_custom_rule():
     tbl = pdt.Table({"a": [1, 1, 2, 3, 3], "b": [2, 2, 2, 4, 5]})
     try:
@@ -133,6 +142,7 @@ def test_violated_custom_rule():
     assert not MyComplexColSpec.is_valid(tbl)
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 @pytest.mark.parametrize("df_type", [pl.DataFrame, pl.LazyFrame])
 def test_success_multi_row_strip_cast(
     df_type: type[pl.DataFrame] | type[pl.LazyFrame],

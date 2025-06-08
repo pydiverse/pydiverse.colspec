@@ -15,6 +15,7 @@ try:
     from polars.datatypes import DataTypeClass
 
     PolarsDataType = pl.DataType | DataTypeClass
+    import polars.exceptions as plexc
     from polars.datatypes.group import FLOAT_DTYPES, INTEGER_DTYPES
     from polars.testing import assert_frame_equal
 except ImportError:
@@ -27,6 +28,7 @@ except ImportError:
     PolarsDataType = None
     FLOAT_DTYPES, INTEGER_DTYPES = [], []
     assert_frame_equal = None
+    plexc = None
     # Create a new module with the given name.
     pl = types.ModuleType("polars")
     pl.DataFrame = DummyClass
@@ -57,6 +59,7 @@ except ImportError:
         "Time",
         "Duration",
         "String",
+        "Null",
     ]:
         setattr(pl, _type, DummyClass)
 
@@ -149,3 +152,25 @@ except ImportError:
     # Create a new module with the given name.
     dag = types.ModuleType("pydiverse.pipedag")
     dag.Table = Table
+
+
+try:
+    # colspec has optional dependency to pyarrow
+    import pyarrow as pa
+except ImportError:
+    pa = types.ModuleType("pyarrow")
+    pa.Schema = None
+    pa.Field = None
+
+
+try:
+    # colspec has optional dependency to sqlalchemy
+    import pyodbc
+    import sqlalchemy as sa
+except ImportError:
+    sa = types.ModuleType("sqlalchemy")
+    sa.Dialect = None
+    sa.Column = None
+    sa.Table = None
+    sa.Alias = None
+    pyodbc = None

@@ -10,6 +10,7 @@ from pydiverse.colspec.columns.integer import _BaseInteger
 from pydiverse.colspec.optional_dependency import (
     FLOAT_DTYPES,
     INTEGER_DTYPES,
+    C,
     DataTypeClass,
     dy,
     pdt,
@@ -71,7 +72,7 @@ def test_any_integer_dtype_passes_polars(dtype: DataTypeClass):
     assert IntegerColSpec.is_valid_polars(df)
 
 
-@pytest.mark.skipif(pdt is None, reason="pydiverse.transform not installed")
+@pytest.mark.skipif(C is None, reason="pydiverse.transform not installed")
 @pytest.mark.parametrize("dtype", INTEGER_DTYPES)
 def test_any_integer_dtype_passes(dtype: DataTypeClass):
     if dtype == pl.Int128:
@@ -82,12 +83,14 @@ def test_any_integer_dtype_passes(dtype: DataTypeClass):
     assert IntegerColSpec.is_valid(tbl)
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 @pytest.mark.parametrize("dtype", [pl.Boolean, pl.String] + list(FLOAT_DTYPES))
 def test_non_integer_dtype_fails_polars(dtype: DataTypeClass):
     df = pl.DataFrame(schema={"a": dtype})
     assert not IntegerColSpec.is_valid_polars(df)
 
 
+@pytest.mark.skipif(C is None, reason="pydiverse.transform not installed")
 @pytest.mark.parametrize("dtype", [pl.Boolean, pl.String] + list(FLOAT_DTYPES))
 def test_non_integer_dtype_fails(dtype: DataTypeClass):
     df = pl.DataFrame(schema={"a": dtype})
@@ -95,6 +98,7 @@ def test_non_integer_dtype_fails(dtype: DataTypeClass):
     assert not IntegerColSpec.is_valid(tbl)
 
 
+@pytest.mark.skipif(C is None, reason="pydiverse.transform not installed")
 @pytest.mark.parametrize("column_type", INTEGER_COLUMN_TYPES)
 @pytest.mark.parametrize("inclusive", [True, False])
 def test_validate_min(column_type: type[_BaseInteger], inclusive: bool):
@@ -107,6 +111,7 @@ def test_validate_min(column_type: type[_BaseInteger], inclusive: bool):
     assert actual == expected
 
 
+@pytest.mark.skipif(C is None, reason="pydiverse.transform not installed")
 @pytest.mark.parametrize("column_type", INTEGER_COLUMN_TYPES)
 @pytest.mark.parametrize("inclusive", [True, False])
 def test_validate_max(column_type: type[_BaseInteger], inclusive: bool):
@@ -119,6 +124,7 @@ def test_validate_max(column_type: type[_BaseInteger], inclusive: bool):
     assert actual == expected
 
 
+@pytest.mark.skipif(C is None, reason="pydiverse.transform not installed")
 @pytest.mark.parametrize("column_type", INTEGER_COLUMN_TYPES)
 @pytest.mark.parametrize("min_inclusive", [True, False])
 @pytest.mark.parametrize("max_inclusive", [True, False])
@@ -141,6 +147,7 @@ def test_validate_range(
     assert actual == expected
 
 
+@pytest.mark.skipif(C is None, reason="pydiverse.transform not installed")
 @pytest.mark.parametrize("column_type", INTEGER_COLUMN_TYPES)
 def test_validate_is_in(column_type: type[_BaseInteger]):
     column = column_type(is_in=[3, 5])
@@ -153,15 +160,15 @@ def test_validate_is_in(column_type: type[_BaseInteger]):
 @pytest.mark.parametrize(
     ("column_type", "num_bytes"),
     [
-        (dy.Integer, 8),
-        (dy.Int8, 1),
-        (dy.Int16, 2),
-        (dy.Int32, 4),
-        (dy.Int64, 8),
-        (dy.UInt8, 1),
-        (dy.UInt16, 2),
-        (dy.UInt32, 4),
-        (dy.UInt64, 8),
+        (cs.Integer, 8),
+        (cs.Int8, 1),
+        (cs.Int16, 2),
+        (cs.Int32, 4),
+        (cs.Int64, 8),
+        (cs.UInt8, 1),
+        (cs.UInt16, 2),
+        (cs.UInt32, 4),
+        (cs.UInt64, 8),
     ],
 )
 def test_num_bytes(column_type: type[_BaseInteger], num_bytes: int):
@@ -171,15 +178,15 @@ def test_num_bytes(column_type: type[_BaseInteger], num_bytes: int):
 @pytest.mark.parametrize(
     ("column_type", "is_unsigned"),
     [
-        (dy.Integer, False),
-        (dy.Int8, False),
-        (dy.Int16, False),
-        (dy.Int32, False),
-        (dy.Int64, False),
-        (dy.UInt8, True),
-        (dy.UInt16, True),
-        (dy.UInt32, True),
-        (dy.UInt64, True),
+        (cs.Integer, False),
+        (cs.Int8, False),
+        (cs.Int16, False),
+        (cs.Int32, False),
+        (cs.Int64, False),
+        (cs.UInt8, True),
+        (cs.UInt16, True),
+        (cs.UInt32, True),
+        (cs.UInt64, True),
     ],
 )
 def test_is_unsigned(column_type: type[_BaseInteger], is_unsigned: bool):
@@ -189,15 +196,15 @@ def test_is_unsigned(column_type: type[_BaseInteger], is_unsigned: bool):
 @pytest.mark.parametrize(
     ("column_type", "min_value", "max_value"),
     [
-        (dy.Integer, -9223372036854775808, 9223372036854775807),
-        (dy.Int8, -128, 127),
-        (dy.Int16, -32768, 32767),
-        (dy.Int32, -2147483648, 2147483647),
-        (dy.Int64, -9223372036854775808, 9223372036854775807),
-        (dy.UInt8, 0, 255),
-        (dy.UInt16, 0, 65535),
-        (dy.UInt32, 0, 4294967295),
-        (dy.UInt64, 0, 18446744073709551615),
+        (cs.Integer, -9223372036854775808, 9223372036854775807),
+        (cs.Int8, -128, 127),
+        (cs.Int16, -32768, 32767),
+        (cs.Int32, -2147483648, 2147483647),
+        (cs.Int64, -9223372036854775808, 9223372036854775807),
+        (cs.UInt8, 0, 255),
+        (cs.UInt16, 0, 65535),
+        (cs.UInt32, 0, 4294967295),
+        (cs.UInt64, 0, 18446744073709551615),
     ],
 )
 def test_type_min_max_values(

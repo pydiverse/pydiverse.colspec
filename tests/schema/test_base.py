@@ -6,7 +6,7 @@ import pytest
 import pydiverse.colspec as cs
 from pydiverse.colspec import Rule
 from pydiverse.colspec.exc import ImplementationError
-from pydiverse.colspec.optional_dependency import pdt
+from pydiverse.colspec.optional_dependency import C, pdt
 from pydiverse.colspec.testing.factory import create_colspec
 
 
@@ -44,6 +44,7 @@ def test_primary_keys():
     assert MyColSpec.primary_keys() == ["a", "b"]
 
 
+@pytest.mark.skipif(C is None, reason="pydiverse.transform not installed")
 def test_no_rule_named_primary_key():
     tbl = pdt.Table(dict(a=["b", "c"]))
     with pytest.raises(

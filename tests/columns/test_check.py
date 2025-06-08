@@ -1,10 +1,9 @@
 # Copyright (c) QuantCo and pydiverse contributors 2024-2025
 # SPDX-License-Identifier: BSD-3-Clause
-
-from dataframely.testing import validation_mask
+import pytest
 
 import pydiverse.colspec as cs
-from pydiverse.colspec.optional_dependency import pdt, pl
+from pydiverse.colspec.optional_dependency import C, dy, pdt, pl, validation_mask
 
 
 class CheckColSpec(cs.ColSpec):
@@ -12,6 +11,8 @@ class CheckColSpec(cs.ColSpec):
     b = cs.String(min_length=3, check=lambda col: col.str.contains("x"))
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
+@pytest.mark.skipif(C is None, reason="pydiverse.transform not installed")
 def test_check():
     df = pl.DataFrame({"a": [7, 3, 15], "b": ["abc", "xyz", "x"]})
     _, failures = CheckColSpec.filter_polars(df)

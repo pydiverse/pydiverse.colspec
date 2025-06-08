@@ -35,18 +35,21 @@ class ColumnSpecification(ColSpec):
     a = cs.Int64()
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_data_frame_lazy():
     df = ColumnSpecification.create_empty_polars()
     df2 = df.lazy()
     ColumnSpecification.validate_polars(df2)
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_lazy_frame_lazy():
     df = ColumnSpecification.create_empty_polars().lazy()
     df2 = df.lazy()
     ColumnSpecification.validate_polars(df2)
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_lazy_frame_collect():
     df = ColumnSpecification.create_empty_polars().lazy()
     df2 = df.collect()
@@ -73,6 +76,7 @@ class MyCollection(pydiverse.colspec.collection.Collection):
     second: MySecondColSpec
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_collection_filter_return_value():
     _, failure = MyCollection.filter_polars_data(
         {
@@ -83,6 +87,7 @@ def test_collection_filter_return_value():
     assert len(failure["first"]) == 0  # type: ignore[misc]
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_collection_filter_return_value2():
     c = MyCollection(
         first=MyFirstColSpec.sample_polars(3), second=MySecondColSpec.sample_polars(2)
@@ -141,6 +146,7 @@ def my_colspec_df() -> MyColSpec:
     )
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_iter_rows_assignment_correct_type(my_colspec_df: pl.DataFrame):
     entry = next(my_colspec_df.iter_rows(named=True))
 
@@ -149,6 +155,7 @@ def test_iter_rows_assignment_correct_type(my_colspec_df: pl.DataFrame):
     c: list[Any] = entry["custom_col_list"]  # noqa: F841
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_iter_rows_colspec_subtypes(my_colspec_df: pl.DataFrame):
     class MySubColSpec(MyColSpec):
         i = cs.Int64()
@@ -174,24 +181,28 @@ def test_iter_rows_colspec_subtypes(my_colspec_df: pl.DataFrame):
     j2: int = entry2["j"]  # noqa: F841
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_iter_rows_assignment_wrong_type(my_colspec_df: dy.DataFrame[MyColSpec]):
     entry = next(my_colspec_df.iter_rows(named=True))
 
     a: int = entry["b"]  # type: ignore[assignment] # noqa: F841
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_iter_rows_read_only(my_colspec_df: dy.DataFrame[MyColSpec]):
     entry = next(my_colspec_df.iter_rows(named=True))
 
     entry["a"] = 1  # type: ignore[typeddict-readonly-mutated]
 
 
+# @pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 # def test_iter_rows_missing_key(my_colspec_df: dy.DataFrame[MyColSpec]):
 #     entry = next(my_colspec_df.iter_rows(named=True))
 #
 #     _ = entry["i"]  # type: ignore[misc]
 
 
+# @pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 # def test_iter_rows_without_named(my_colspec_df: dy.DataFrame[MyColSpec]):
 #     # Make sure we don't accidentally override the return type of `iter_rows` with
 #     # `named=False`.
@@ -200,6 +211,7 @@ def test_iter_rows_read_only(my_colspec_df: dy.DataFrame[MyColSpec]):
 #     _ = entry["g"]  # type: ignore[call-overload]
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_iter_rows_imported_colspec():
     my_imported_colspec_df = MyImportedColSpec.validate_polars(
         pl.DataFrame(
@@ -225,6 +237,7 @@ def test_iter_rows_imported_colspec():
     # _ = entry["i"]  # type: ignore[misc]
 
 
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_iter_rows_imported_subcolspec():
     class MySubFromImportedColSpec(MyImportedColSpec):
         i = cs.Int64()

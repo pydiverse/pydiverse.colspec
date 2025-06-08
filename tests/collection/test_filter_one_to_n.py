@@ -9,7 +9,7 @@ import pytest
 import pydiverse.colspec as cs
 import pydiverse.colspec.collection
 from pydiverse.colspec.columns import ColExpr
-from pydiverse.colspec.optional_dependency import dy, pdt, pl
+from pydiverse.colspec.optional_dependency import C, dy, pdt, pl
 from pydiverse.colspec.pdt_util import num_rows
 
 
@@ -70,7 +70,7 @@ class CarFleet(pydiverse.colspec.collection.Collection):
         return self.cars.vin != "123"
 
 
-@pytest.mark.skipif(pdt is None, reason="pydiverse.transform not installed")
+@pytest.mark.skipif(C is None, reason="pydiverse.transform not installed")
 def test_valid_failure_infos():
     cars = {"vin": ["123", "456"], "manufacturer": ["BMW", "Mercedes"]}
     car_parts: dict[str, list[Any]] = {

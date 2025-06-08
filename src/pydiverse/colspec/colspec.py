@@ -6,7 +6,7 @@ import types
 import typing
 from collections.abc import Iterable, Mapping
 from functools import reduce
-from typing import TYPE_CHECKING, Any, Literal, Self, overload
+from typing import Any, Literal, Self, overload
 
 from pydiverse.colspec._validation import validate_columns, validate_dtypes
 from pydiverse.colspec.columns._base import Column
@@ -19,10 +19,7 @@ from .exc import (
     ValidationError,
 )
 from .failure import FailureInfo
-from .optional_dependency import ColExpr, Generator, dag, dy, pdt, pl
-
-if TYPE_CHECKING:
-    pass
+from .optional_dependency import ColExpr, Generator, dag, dy, pa, pdt, pl, sa
 
 _ORIGINAL_NULL_SUFFIX = "__orig_null__"
 
@@ -549,3 +546,30 @@ class ColSpec(
             f = err_type.__new__(err_type)
             f.__dict__.update(e.__dict__)
             raise f from e
+
+    @classmethod
+    def sql_schema(cls, dialect: sa.Dialect) -> list[sa.Column]:
+        """Obtain the SQL schema for a particular dialect for this schema.
+
+        Args:
+            dialect: The dialect for which to obtain the SQL schema. Note that column
+                datatypes may differ across dialects.
+
+        Returns:
+            A list of :mod:`sqlalchemy` columns that can be used to create a table
+            with the schema as defined by this class.
+        """
+        return [
+            col.sqlalchemy_column(name, dialect) for name, col in cls.columns().items()
+        ]
+
+    @classmethod
+    def pyarrow_schema(cls) -> pa.Schema:
+        """Obtain the pyarrow schema for this schema.
+
+        Returns:
+            A :mod:`pyarrow` schema that mirrors the schema defined by this class.
+        """
+        return pa.schema(
+            [col.pyarrow_field(name) for name, col in cls.columns().items()]
+        )
