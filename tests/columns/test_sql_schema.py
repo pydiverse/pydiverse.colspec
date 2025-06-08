@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import pytest
-from sqlalchemy.dialects.mssql.base import MS_2017_VERSION
 
 import pydiverse.colspec as cs
 from pydiverse.colspec.optional_dependency import pyodbc, sa
@@ -58,6 +57,7 @@ except ImportError:
     ],
 )
 def test_mssql_datatype(column: cs.Column, datatype: str):
+    from sqlalchemy.dialects.mssql.base import MS_2017_VERSION
     from sqlalchemy.dialects.mssql.pyodbc import MSDialect_pyodbc
 
     dialect = MSDialect_pyodbc()
