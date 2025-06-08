@@ -4,7 +4,6 @@
 import random
 
 import pytest
-import sqlalchemy as sqa
 
 import pydiverse.colspec as cs
 from pydiverse.colspec.exc import DtypeValidationError, ValidationError
@@ -14,15 +13,21 @@ from pydiverse.colspec.optional_dependency import (
     assert_frame_equal,
     pdt,
     pl,
+    sa,
 )
 from pydiverse.colspec.testing.assert_equal import assert_table_equal
 
-engine = sqa.create_engine("duckdb:///:memory:")
+if sa.Column is not None:
+    engine = sa.create_engine("duckdb:///:memory:")
+else:
+    engine = None
 
 
+@pytest.fixture(scope="module")
 def sql_table(df: pl.DataFrame, *, name: str) -> pdt.Table:
     df.write_database(name, engine, if_table_exists="replace")
-    return pdt.Table(name, pdt.SqlAlchemy(engine))
+    yield pdt.Table(name, pdt.SqlAlchemy(engine))
+    engine.dispose()
 
 
 class MyColSpec(cs.ColSpec):

@@ -2,12 +2,17 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import pytest
-from sqlalchemy.dialects.mssql.pyodbc import MSDialect_pyodbc
-from sqlalchemy.dialects.postgresql.psycopg2 import PGDialect_psycopg2
 
 import pydiverse.colspec as cs
 from pydiverse.colspec.optional_dependency import pyodbc, sa
 from pydiverse.colspec.testing import COLUMN_TYPES, create_colspec
+
+try:
+    from sqlalchemy.dialects.mssql.pyodbc import MSDialect_pyodbc
+    from sqlalchemy.dialects.postgresql.psycopg2 import PGDialect_psycopg2
+except ImportError:
+    MSDialect_pyodbc = lambda: None  # noqa: E731
+    PGDialect_psycopg2 = lambda: None  # noqa: E731
 
 
 @pytest.mark.skipif(
@@ -52,6 +57,8 @@ from pydiverse.colspec.testing import COLUMN_TYPES, create_colspec
     ],
 )
 def test_mssql_datatype(column: cs.Column, datatype: str):
+    from sqlalchemy.dialects.mssql.pyodbc import MSDialect_pyodbc
+
     dialect = MSDialect_pyodbc()
     schema = create_colspec("test", {"a": column})
     columns = schema.sql_schema(dialect)
@@ -100,6 +107,8 @@ def test_mssql_datatype(column: cs.Column, datatype: str):
     ],
 )
 def test_postgres_datatype(column: cs.Column, datatype: str):
+    from sqlalchemy.dialects.postgresql.psycopg2 import PGDialect_psycopg2
+
     dialect = PGDialect_psycopg2()
     schema = create_colspec("test", {"a": column})
     columns = schema.sql_schema(dialect)
