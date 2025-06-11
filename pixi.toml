@@ -17,7 +17,7 @@ hatchling = "*"
 
 [dependencies]
 python = ">=3.11.13,<3.14"
-pydiverse-common = ">=0.3.3,<0.4"
+pydiverse-common = ">=0.3.4,<0.4"
 structlog = ">=25.4.0,<26"
 
 [feature.dev.dependencies]
@@ -83,6 +83,7 @@ taplo = "*"
 pre-commit-hooks = "*"
 typos = "*"
 conda-deny = "*"
+go-yq = "*"
 
 [feature.lint.tasks]
 #commitit-install = "commitit install"
@@ -90,6 +91,7 @@ conda-deny = "*"
 pre-commit-install = "pre-commit install"
 pre-commit-run = "pre-commit run -a"
 conda-deny = "conda-deny check"
+check-deps = "sh -c .github/scripts/check_deps.sh"
 
 [feature.py311.dependencies]
 python = "3.11.*"

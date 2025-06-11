@@ -1,6 +1,6 @@
 [project]
 name = "pydiverse-colspec"
-version = "0.1.0"
+version = "0.1.1"
 description = "Validate column specifications and constraints for SQL tables and polars data frames."
 authors = [
   { name = "QuantCo, Inc." },
@@ -23,6 +23,9 @@ classifiers = [
   "Topic :: Scientific/Engineering",
   "Topic :: Software Development",
 ]
+
+requires-python = ">=3.11,<3.14"
+dependencies = ["pydiverse-common >=0.3.4,<0.4", "structlog >=25.4.0,<26"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/pydiverse"]
