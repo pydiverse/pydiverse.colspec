@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.0 (2025-06-25)
+- fixed multi-inheritance column specifications
+- improved dataframely/colspec messup error messages
+
 ## 0.1.1 (2025-06-11)
 - fixed pypi package dependencies
 

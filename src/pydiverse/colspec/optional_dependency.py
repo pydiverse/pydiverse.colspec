@@ -67,6 +67,7 @@ except ImportError:
 try:
     # colspec has optional dependency to dataframely
     import dataframely as dy
+    from dataframely._base_schema import SchemaMeta
     from dataframely._polars import FrameType
     from dataframely.random import Generator
     from dataframely.testing import validation_mask
@@ -81,16 +82,21 @@ except ImportError:
         pass
 
     class DyDummyClass:
-        pass
+        def __init__(self, *args, **kwargs):
+            pass
 
     FrameType = None
+    SchemaMeta = None
     validation_mask = None
     dy = types.ModuleType("dataframely")
     dy.DataFrame = DyDataFrame
     dy.LazyFrame = DyDataFrame
     dy.FailureInfo = None
     dy.Column = None
-    dy.Collection = None
+    dy.Collection = object
+    dy.Schema = object
+    dy.filter = lambda: lambda fn: fn  # noqa
+    dy.rule = lambda: lambda fn: fn  # noqa
     for _type in [
         "Int8",
         "Int16",

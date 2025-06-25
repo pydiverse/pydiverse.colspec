@@ -11,12 +11,14 @@ from typing import Any, Literal, Self, overload
 from pydiverse.colspec._validation import validate_columns, validate_dtypes
 from pydiverse.colspec.columns._base import Column
 
-from . import GroupRule, GroupRulePolars, Rule, RulePolars, exc
+from . import GroupRule, GroupRulePolars, Rule, RulePolars
 from .config import Config, alias_subquery
 from .exc import (
+    ColumnValidationError,
     ImplementationError,
     RuleValidationError,
     ValidationError,
+    colspec_exception,
 )
 from .failure import FailureInfo
 from .optional_dependency import ColExpr, Generator, dag, dy, pa, pdt, pl, sa
@@ -24,67 +26,17 @@ from .optional_dependency import ColExpr, Generator, dag, dy, pa, pdt, pl, sa
 _ORIGINAL_NULL_SUFFIX = "__orig_null__"
 
 
-def convert_to_dy_col_spec(base_class):
-    from pydiverse.colspec import Column
-
-    if base_class == ColSpec:
-        # stop base class iteration
-        return {}
-    elif inspect.isclass(base_class) and issubclass(base_class, ColSpec):
-        dy_cols = (
-            {
-                k: convert_to_dy(v)
-                for k, v in base_class.__dict__.items()
-                if isinstance(v, Column)
-            }
-            | {
-                k: convert_to_dy(v())
-                for k, v in base_class.__dict__.items()
-                if inspect.isclass(v) and issubclass(v, Column)
-            }
-            | {
-                k: dy._rule.GroupRule(v.expr, v.group_columns)
-                if isinstance(v, GroupRulePolars)
-                else dy._rule.Rule(v.expr)
-                for k, v in base_class.__dict__.items()
-                if isinstance(v, RulePolars)
-            }
-        )
-        for base in base_class.__bases__:
-            dy_cols.update(convert_to_dy_col_spec(base))
-        return dy_cols
-    else:
-        return {}
-
-
-def convert_to_dy_anno(annotation):
-    if isinstance(annotation, types.UnionType):
-        anno_types = [convert_to_dy_anno(t) for t in typing.get_args(annotation)]
-        return reduce(lambda x, y: x | y, anno_types)
-    if inspect.isclass(annotation) and issubclass(annotation, ColSpec):
-        col_spec = convert_to_dy_col_spec(annotation)
-        return dy.LazyFrame[type(annotation.__name__, (dy.Schema,), col_spec.copy())]
-    else:
-        return annotation
-
-
-def convert_to_dy_anno_dict(annotations: dict[str, typing.Any]):
-    return {k: convert_to_dy_anno(v) for k, v in annotations.items()}
-
-
-def convert_to_dy(value):
-    from pydiverse.colspec import Column
-
-    if isinstance(value, Column) and hasattr(dy, value.__class__.__name__):
-        return value.to_dataframely()
-    else:
-        return value
-
-
 class ColSpecMeta(type):
     def __new__(cls, clsname, bases, attribs):
-        # change bases (only ABC is a real base)
-        bases = bases[0:1]
+        # change bases to remove those which were just added for code completion reasons
+        bases = tuple(
+            [
+                base
+                for base in bases
+                if base
+                not in (FailureInfo, pdt.Table, dag.Table, pl.LazyFrame, pl.DataFrame)
+            ]
+        )
         return super().__new__(cls, clsname, bases, attribs)
 
 
@@ -134,10 +86,23 @@ class ColSpec(
             if any(
                 [
                     isinstance(getattr(cls, c), dy.Column | dy._rule.Rule)
+                    or (
+                        inspect.isclass(getattr(cls, c))
+                        and issubclass(getattr(cls, c), dy.Column)
+                    )
                     for c in dir(cls)
                 ]
             ):
-                if any([isinstance(getattr(cls, c), dy.Column) for c in dir(cls)]):
+                if any(
+                    [
+                        isinstance(getattr(cls, c), dy.Column)
+                        or (
+                            inspect.isclass(getattr(cls, c))
+                            and issubclass(getattr(cls, c), dy.Column)
+                        )
+                        for c in dir(cls)
+                    ]
+                ):
                     raise ImplementationError(
                         "Dataframely Columns won't work in ColSpec classes. Most likely"
                         " you find the same column classes in pydiverse.colspec. With "
@@ -169,42 +134,45 @@ class ColSpec(
         Returns:
             list[str]: Names of columns that are primary keys
         """
-        from pydiverse.colspec import Column
 
         cls.fail_dy_columns_in_colspec()
         result = [
-            member
-            for member in dir(cls)
-            if isinstance(getattr(cls, member), Column)
-            and getattr(cls, member).primary_key
+            col.alias or name for name, col in cls.columns().items() if col.primary_key
         ]
         return result
 
     @classmethod
     def column_names(cls) -> list[str]:
         cls.fail_dy_columns_in_colspec()
-        result = [
-            getattr(cls, member).alias or member
-            for member in dir(cls)
-            if isinstance(getattr(cls, member), Column)
-        ]
+        result = [col.alias or name for name, col in cls.columns().items()]
+
         return result
 
     @classmethod
     def columns(cls) -> dict[str, Column]:
         cls.fail_dy_columns_in_colspec()
         return {
-            col.alias or name: col
-            for name, col in cls.__dict__.items()
-            if isinstance(col, Column)
+            getattr(cls, name).alias or name: getattr(cls, name)
+            for name in dir(cls)
+            if isinstance(getattr(cls, name), Column)
+        } | {
+            name: getattr(cls, name)()
+            for name in dir(cls)
+            if inspect.isclass(getattr(cls, name))
+            and issubclass(getattr(cls, name), Column)
         }
 
     @classmethod
     def alias_map(cls) -> dict[str, str]:
         return {
-            col.alias or name: name
-            for name, col in cls.__dict__.items()
-            if isinstance(col, Column)
+            getattr(cls, name).alias or name: name
+            for name in dir(cls)
+            if isinstance(getattr(cls, name), Column)
+        } | {
+            name: name
+            for name in dir(cls)
+            if inspect.isclass(getattr(cls, name))
+            and issubclass(getattr(cls, name), Column)
         }
 
     @classmethod
@@ -220,20 +188,11 @@ class ColSpec(
     ) -> pl.DataFrame | pl.LazyFrame:
         import dataframely.exc as dy_exc
 
-        dy_schema_cols = convert_to_dy_col_spec(cls)
+        dy_schema = convert_to_dy_col_spec(cls)
         try:
-            dy_schema = type[dy.Schema](
-                cls.__name__, (dy.Schema,), dy_schema_cols.copy()
-            )
             return dy_schema.validate(data, cast=cast)
         except (dy_exc.ValidationError, dy_exc.ImplementationError) as e:
-            err_type = getattr(exc, e.__class__.__name__)
-            f = err_type.__new__(err_type)
-            for c in dir(e):
-                if not c.startswith("_"):
-                    setattr(f, c, getattr(e, c))
-            # f.__dict__.update(e.__dict__)
-            raise f from e
+            raise colspec_exception(e) from e
 
     @classmethod
     def is_valid(cls, tbl: pdt.Table, *, cast: bool = False) -> bool:
@@ -298,16 +257,12 @@ class ColSpec(
         *,
         overrides: Mapping[str, Iterable[Any]] | None = None,
     ) -> pl.DataFrame | pl.LazyFrame:
-        dy_schema_cols = convert_to_dy_col_spec(cls)
-        dy_schema: type[dy.Schema] = type[dy.Schema](
-            cls.__name__, (dy.Schema,), dy_schema_cols.copy()
-        )
+        dy_schema = convert_to_dy_col_spec(cls)
         return dy_schema.sample(num_rows, generator=generator, overrides=overrides)
 
     @classmethod
     def create_empty_polars(cls) -> dy.DataFrame[Self]:
-        dy_schema_cols = convert_to_dy_col_spec(cls)
-        dy_schema = type[dy.Schema](cls.__name__, (dy.Schema,), dy_schema_cols.copy())
+        dy_schema = convert_to_dy_col_spec(cls)
         return dy_schema.create_empty()
 
     # ------------------------------------ CASTING ----------------------------------- #
@@ -328,18 +283,13 @@ class ColSpec(
     def cast_polars(
         cls, df: pl.DataFrame | pl.LazyFrame
     ) -> dy.DataFrame[Self] | dy.LazyFrame[Self]:
-        dy_schema_cols = convert_to_dy_col_spec(cls)
-        dy_schema = type[dy.Schema](cls.__name__, (dy.Schema,), dy_schema_cols.copy())
+        dy_schema = convert_to_dy_col_spec(cls)
         return dy_schema.cast(df)
 
     @classmethod
     def polars_schema(cls) -> pl.Schema:
         return pl.Schema(
-            {
-                name: getattr(cls, name).dtype().to_polars()
-                for name in dir(cls)
-                if isinstance(getattr(cls, name), Column)
-            }
+            {name: col.dtype().to_polars() for name, col in cls.columns().items()}
         )
 
     # ----------------------------------- FILTERING ---------------------------------- #
@@ -536,16 +486,12 @@ class ColSpec(
         """
         import dataframely.exc as dy_exc
 
-        dy_schema_cols = convert_to_dy_col_spec(cls)
-        dy_schema = type[dy.Schema](cls.__name__, (dy.Schema,), dy_schema_cols.copy())
+        dy_schema = convert_to_dy_col_spec(cls)
 
         try:
             return dy_schema.filter(df, cast=cast)
         except (dy_exc.ValidationError, dy_exc.ImplementationError) as e:
-            err_type = getattr(exc, e.__class__.__name__)
-            f = err_type.__new__(err_type)
-            f.__dict__.update(e.__dict__)
-            raise f from e
+            raise colspec_exception(e) from e
 
     @classmethod
     def sql_schema(cls, dialect: sa.Dialect) -> list[sa.Column]:
@@ -573,3 +519,77 @@ class ColSpec(
         return pa.schema(
             [col.pyarrow_field(name) for name, col in cls.columns().items()]
         )
+
+
+def convert_to_dy_col_spec(col_spec: type[ColSpec]) -> type[dy.Schema]:
+    assert inspect.isclass(col_spec)
+    if issubclass(col_spec, dy.Schema):
+        raise ImplementationError(
+            "Don't mix Dataframely Schema with ColSpec classes in "
+            f"inheritance: {col_spec}"
+        )
+    if not issubclass(col_spec, ColSpec):
+        raise ImplementationError(
+            f"Expected a ColSpec class, got {col_spec.__name__} which is not "
+            "a subclass of ColSpec."
+        )
+    col_spec.fail_dy_columns_in_colspec()
+    dy_cols = {name: convert_to_dy(col) for name, col in col_spec.columns().items()}
+    dy_rule_cols = {
+        k: dy._rule.GroupRule(v.expr, v.group_columns)
+        if isinstance(v, GroupRulePolars)
+        else dy._rule.Rule(v.expr)
+        for k, v in col_spec.__dict__.items()
+        if isinstance(v, RulePolars)
+    }
+    failures = set(dy_cols.keys()).intersection(dy_rule_cols.keys())
+    if failures:
+        raise ImplementationError(
+            "Rules and columns must not be named equally but found "
+            f"{len(failures)} overlaps: {', '.join(failures)}"
+        )
+    dy_cols.update(dy_rule_cols)
+    import dataframely.exc as dy_exc
+
+    try:
+        dy_schema = type[dy.Schema](col_spec.__name__, (dy.Schema,), dy_cols)
+    except (dy_exc.ValidationError, dy_exc.ImplementationError) as e:
+        raise colspec_exception(e) from e
+    except pl.exceptions.ColumnNotFoundError as e:
+        # this typically happens with rules that are eagerly evaluated by
+        # dataframely
+        # TODO: improve error message by checking missing and extra columns for
+        #  all member tables
+        raise ColumnValidationError() from e
+
+    return dy_schema
+
+
+def convert_to_dy_anno(annotation):
+    if isinstance(annotation, types.UnionType):
+        anno_types = [convert_to_dy_anno(t) for t in typing.get_args(annotation)]
+        return reduce(lambda x, y: x | y, anno_types)
+    elif inspect.isclass(annotation) and issubclass(annotation, dy.Schema):
+        raise ImplementationError(
+            f"Don't use Dataframely Schema in ColSpec Collection: {annotation}"
+        )
+    elif inspect.isclass(annotation) and issubclass(annotation, ColSpec):
+        col_spec = convert_to_dy_col_spec(annotation)
+        return dy.LazyFrame[col_spec]
+    else:
+        return annotation
+
+
+def convert_to_dy_anno_dict(annotations: dict[str, typing.Any]):
+    return {k: convert_to_dy_anno(v) for k, v in annotations.items()}
+
+
+def convert_to_dy(value):
+    from pydiverse.colspec import Column
+
+    if isinstance(value, Column) and hasattr(dy, value.__class__.__name__):
+        return value.to_dataframely()
+    elif inspect.isclass(value) and issubclass(value, Column):
+        return value().to_dataframely()
+    else:
+        return value

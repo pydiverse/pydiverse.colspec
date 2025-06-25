@@ -8,8 +8,9 @@ import pytest
 
 import pydiverse.colspec as cs
 import pydiverse.colspec.collection
-from pydiverse.colspec.colspec import dy
-from pydiverse.colspec.optional_dependency import assert_frame_equal, pl
+from pydiverse.colspec.colspec import ColSpecMeta, convert_to_dy_col_spec, dy
+from pydiverse.colspec.exc import ImplementationError
+from pydiverse.colspec.optional_dependency import SchemaMeta, assert_frame_equal, pl
 
 
 class MyFirstColSpec(cs.ColSpec):
@@ -18,7 +19,7 @@ class MyFirstColSpec(cs.ColSpec):
 
 class MySecondColSpec(cs.ColSpec):
     a = cs.UInt16(primary_key=True)
-    b = cs.Integer()
+    b = cs.Integer
 
 
 class MyCollection(pydiverse.colspec.collection.Collection):
@@ -184,3 +185,82 @@ def test_read_write_parquet_optional(
     assert_frame_equal(collection.first, read.first)
     assert collection.second is None
     assert read.second is None
+
+
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
+def test_dataframely_columns_fail():
+    class FailColSpec(cs.ColSpec):
+        a = cs.Float64()
+        b = dy.String()
+
+    class FailColSpec2(cs.ColSpec):
+        a = cs.Float64()
+        b = dy.String
+
+    with pytest.raises(
+        ImplementationError, match="Dataframely Columns won't work in ColSpec classes."
+    ):
+        FailColSpec.column_names()
+
+    with pytest.raises(
+        ImplementationError, match="Dataframely Columns won't work in ColSpec classes."
+    ):
+        FailColSpec2.column_names()
+
+    class FailCollection(cs.Collection):
+        first: FailColSpec
+
+    class FailCollection2(cs.Collection):
+        first: FailColSpec2
+
+    with pytest.raises(
+        ImplementationError, match="Dataframely Columns won't work in ColSpec classes."
+    ):
+        cs.collection.convert_collection_to_dy(FailCollection)
+    with pytest.raises(
+        ImplementationError, match="Dataframely Columns won't work in ColSpec classes."
+    ):
+        cs.collection.convert_collection_to_dy(FailCollection2)
+
+
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
+def test_dataframely_columns_fail_inheritance():
+    class GoodColSpec(cs.ColSpec):
+        a = cs.Float64()
+
+    class SpecialMeta(ColSpecMeta, SchemaMeta):
+        pass
+
+    class GoodSchema(dy.Schema, metaclass=SpecialMeta):
+        b = dy.Float64()
+
+    assert GoodColSpec.column_names() == ["a"]
+    assert GoodSchema.column_names() == ["b"]
+
+    class FailColSpec(GoodColSpec, GoodSchema):
+        pass
+
+    with pytest.raises(
+        ImplementationError,
+        match="Don't mix Dataframely Schema with ColSpec classes in inheritance",
+    ):
+        convert_to_dy_col_spec(FailColSpec)
+
+    with pytest.raises(
+        ImplementationError, match="Dataframely Columns won't work in ColSpec classes."
+    ):
+        FailColSpec.column_names()
+
+
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
+def test_dataframely_conversion_success():
+    class GoodColSpec(cs.ColSpec):
+        a = cs.Float64()
+
+    assert GoodColSpec.column_names() == ["a"]
+
+    class GoodCollection(cs.Collection):
+        first: GoodColSpec
+
+    coll = cs.collection.convert_collection_to_dy(GoodCollection)
+    assert coll.members()["first"].schema.column_names() == ["a"]
