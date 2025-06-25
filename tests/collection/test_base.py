@@ -5,13 +5,12 @@ from collections.abc import Callable
 from pathlib import Path
 
 import pytest
-from dataframely._base_schema import SchemaMeta
 
 import pydiverse.colspec as cs
 import pydiverse.colspec.collection
 from pydiverse.colspec.colspec import ColSpecMeta, convert_to_dy_col_spec, dy
 from pydiverse.colspec.exc import ImplementationError
-from pydiverse.colspec.optional_dependency import assert_frame_equal, pl
+from pydiverse.colspec.optional_dependency import SchemaMeta, assert_frame_equal, pl
 
 
 class MyFirstColSpec(cs.ColSpec):
