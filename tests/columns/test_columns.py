@@ -31,6 +31,10 @@ def test_columns():
     assert sorted(MySecondColSpec.column_names()) == ["a", "b"]
     assert sorted(MyThirdColSpec.column_names()) == ["a", "b"]
     assert sorted(MyFourthColSpec.column_names()) == ["a", "b", "c"]
+
+
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
+def test_columns_dataframely():
     first = convert_to_dy_col_spec(MyFirstColSpec)
     second = convert_to_dy_col_spec(MySecondColSpec)
     third = convert_to_dy_col_spec(MyThirdColSpec)

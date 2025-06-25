@@ -164,7 +164,16 @@ class ColSpec(
 
     @classmethod
     def alias_map(cls) -> dict[str, str]:
-        return {col.alias or name: name for name, col in cls.columns().items()}
+        return {
+            getattr(cls, name).alias or name: name
+            for name in dir(cls)
+            if isinstance(getattr(cls, name), Column)
+        } | {
+            name: name
+            for name in dir(cls)
+            if inspect.isclass(getattr(cls, name))
+            and issubclass(getattr(cls, name), Column)
+        }
 
     @classmethod
     def validate(cls, tbl: pdt.Table, cast: bool = False) -> pdt.Table:
