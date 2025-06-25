@@ -1,6 +1,6 @@
 # Copyright (c) QuantCo and pydiverse contributors 2023-2025
 # SPDX-License-Identifier: BSD-3-Clause
-
+import sys
 from collections import defaultdict
 from collections.abc import Iterable
 
@@ -163,3 +163,14 @@ class RuleImplementationError(ImplementationError):
             + details
         )
         super().__init__(message)
+
+
+def colspec_exception(e: Exception) -> Exception:
+    exc = sys.modules[__name__]
+    err_type = getattr(exc, e.__class__.__name__)
+    f = err_type.__new__(err_type)
+    for c in dir(e):
+        if not c.startswith("_"):
+            setattr(f, c, getattr(e, c))
+    # f.__dict__.update(e.__dict__)
+    return f
