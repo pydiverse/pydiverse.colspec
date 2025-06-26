@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.2.2 (2025-06-26)
+- fixed column order for mixed class and object columns in ColSpec
+
 ## 0.2.1 (2025-06-26)
 - fixed filter implementation for classes as ColSpec columns
 
