@@ -152,14 +152,17 @@ class ColSpec(
     def columns(cls) -> dict[str, Column]:
         cls.fail_dy_columns_in_colspec()
         return {
-            getattr(cls, name).alias or name: getattr(cls, name)
+            name
+            if inspect.isclass(getattr(cls, name))
+            else getattr(cls, name).alias or name: getattr(cls, name)()
+            if inspect.isclass(getattr(cls, name))
+            else getattr(cls, name)
             for name in dir(cls)
             if isinstance(getattr(cls, name), Column)
-        } | {
-            name: getattr(cls, name)()
-            for name in dir(cls)
-            if inspect.isclass(getattr(cls, name))
-            and issubclass(getattr(cls, name), Column)
+            or (
+                inspect.isclass(getattr(cls, name))
+                and issubclass(getattr(cls, name), Column)
+            )
         }
 
     @classmethod

@@ -27,10 +27,10 @@ class MyFourthColSpec(MyFirstColSpec, MySecondColSpec):
 
 
 def test_columns():
-    assert sorted(MyFirstColSpec.column_names()) == ["a"]
-    assert sorted(MySecondColSpec.column_names()) == ["a", "b"]
-    assert sorted(MyThirdColSpec.column_names()) == ["a", "b"]
-    assert sorted(MyFourthColSpec.column_names()) == ["a", "b", "c"]
+    assert MyFirstColSpec.column_names() == ["a"]
+    assert MySecondColSpec.column_names() == ["a", "b"]
+    assert MyThirdColSpec.column_names() == ["a", "b"]
+    assert MyFourthColSpec.column_names() == ["a", "b", "c"]
 
 
 @pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
@@ -39,10 +39,10 @@ def test_columns_dataframely():
     second = convert_to_dy_col_spec(MySecondColSpec)
     third = convert_to_dy_col_spec(MyThirdColSpec)
     fourth = convert_to_dy_col_spec(MyFourthColSpec)
-    assert sorted(first.column_names()) == ["a"]
-    assert sorted(second.column_names()) == ["a", "b"]
-    assert sorted(third.column_names()) == ["a", "b"]
-    assert sorted(fourth.column_names()) == ["a", "b", "c"]
+    assert first.column_names() == ["a"]
+    assert second.column_names() == ["a", "b"]
+    assert third.column_names() == ["a", "b"]
+    assert fourth.column_names() == ["a", "b", "c"]
 
 
 @pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
@@ -55,3 +55,26 @@ def test_dataframely_columns_fail():
         ImplementationError, match="Dataframely Columns won't work in ColSpec classes."
     ):
         FailColSpec.column_names()
+
+
+def test_column_order():
+    class ColSpec1(cs.ColSpec):
+        a = cs.UInt16(primary_key=True)
+        b = cs.Integer
+        c = cs.Float64()
+
+    class ColSpec2(cs.ColSpec):
+        d = cs.String
+        e = cs.Bool()
+
+    class ColSpec3(ColSpec1, ColSpec2):
+        pass
+
+    class ColSpec4(ColSpec1, ColSpec2):
+        f = cs.List(cs.Integer)
+        g = cs.Date
+
+    assert ColSpec1.column_names() == ["a", "b", "c"]
+    assert ColSpec2.column_names() == ["d", "e"]
+    assert ColSpec3.column_names() == ["a", "b", "c", "d", "e"]
+    assert ColSpec4.column_names() == ["a", "b", "c", "d", "e", "f", "g"]
