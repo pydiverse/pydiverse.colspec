@@ -94,7 +94,7 @@ except ImportError:
     dy.FailureInfo = None
     dy.Column = None
     dy.Collection = object
-    dy.Schema = object
+    dy.Schema = DyDummyClass
     dy.filter = lambda: lambda fn: fn  # noqa
     dy.rule = lambda: lambda fn: fn  # noqa
     for _type in [
