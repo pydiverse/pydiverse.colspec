@@ -435,13 +435,10 @@ class ColSpec(
         cls, tbl: pdt.Table
     ) -> tuple[dict[str, ColExpr], dict[str, GroupRule]]:
         cls.fail_dy_columns_in_colspec()
-        alias_map = cls.alias_map()
         return {
-            f"{col}|{rule_name}": rule.fill_null(True)
-            for col in cls.column_names()
-            for rule_name, rule in getattr(cls, alias_map[col])
-            .validation_rules(tbl[col])
-            .items()
+            f"{name}|{rule_name}": rule.fill_null(True)
+            for name, col in cls.columns().items()
+            for rule_name, rule in col.validation_rules(tbl[name]).items()
         } | {
             rule: getattr(cls, rule).expr
             for rule in dir(cls)

@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.2.1 (2025-06-26)
+- fixed filter implementation for classes as ColSpec columns
+
 ## 0.2.0 (2025-06-25)
 - fixed multi-inheritance column specifications
 - improved dataframely/colspec messup error messages
