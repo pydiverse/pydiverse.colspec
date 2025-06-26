@@ -21,6 +21,7 @@ from pydiverse.colspec.optional_dependency import (
 class MyColSpec(cs.ColSpec):
     a = cs.Int64(primary_key=True)
     b = cs.String(max_length=3)
+    u = cs.UInt8
 
 
 @pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
@@ -30,7 +31,10 @@ class MyColSpec(cs.ColSpec):
     [
         ({"a": pl.Int64, "c": pl.String}, None),
         ({"a": pl.Int64, "c": pl.String}, None),
-        ({"a": pl.Int64, "b": pl.String, "c": pl.String}, ["a", "b"]),
+        (
+            {"a": pl.Int64, "b": pl.String, "c": pl.String, "u": pl.UInt8},
+            ["a", "b", "u"],
+        ),
     ],
 )
 def test_filter_extra_columns(
@@ -61,8 +65,8 @@ def test_filter_extra_columns(
 @pytest.mark.parametrize(
     ("schema", "cast", "success"),
     [
-        ({"a": pl.Int64, "b": pl.Int64}, False, False),
-        ({"a": pl.String, "b": pl.String}, True, True),
+        ({"a": pl.Int64, "b": pl.Int64, "u": pl.UInt8}, False, False),
+        ({"a": pl.String, "b": pl.String, "u": pl.UInt8}, True, True),
     ],
 )
 def test_filter_dtypes(schema: dict[str, DataTypeClass], cast: bool, success: bool):
@@ -124,7 +128,7 @@ def test_filter_failure(
     counts: dict[str, int],
     cooccurrence_counts: dict[frozenset[str], int],
 ):
-    df = df_type({"a": data_a, "b": data_b})
+    df = df_type({"a": data_a, "b": data_b, "u": 0}).cast(dict(u=pl.UInt8))
     df_valid, failures = MyColSpec.filter_polars(df)
     assert isinstance(df_valid, pl.DataFrame)
     assert_frame_equal(df.filter(pl.Series(failure_mask)).lazy().collect(), df_valid)
@@ -200,8 +204,9 @@ def test_filter_cast(df_type: type[pl.DataFrame] | type[pl.LazyFrame]):
         "a": ["1", "2", "foo", None, "123x", "9223372036854775808"],
         # validation: [true, false, true, true, false, true]
         "b": [20, 2000, None, 30, 3000, 50],
+        "u": 0,
     }
-    df = df_type(data)
+    df = df_type(data).cast(dict(u=pl.UInt8))
     df_valid, failures = MyColSpec.filter_polars(df, cast=True)
     assert isinstance(df_valid, pl.DataFrame)
     assert df_valid.collect_schema().names() == MyColSpec.column_names()
@@ -245,12 +250,17 @@ def test_filter_cast(df_type: type[pl.DataFrame] | type[pl.LazyFrame]):
 @pytest.mark.skipif(C is None, reason="pydiverse.transform not installed")
 def test_filter_nondeterministic_lazyframe():
     n = 10_000
-    lf = pl.LazyFrame(
-        {
-            "a": range(n),
-            "b": [random.choice(["foo", "foobar"]) for _ in range(n)],
-        }
-    ).select(pl.all().shuffle())
+    lf = (
+        pl.LazyFrame(
+            {
+                "a": range(n),
+                "b": [random.choice(["foo", "foobar"]) for _ in range(n)],
+                "u": 0,
+            }
+        )
+        .cast(dict(u=pl.UInt8))
+        .select(pl.all().shuffle())
+    )
 
     filtered, _ = MyColSpec.filter_polars(lf)
     assert filtered.select(pl.col("b").n_unique()).item() == 1
