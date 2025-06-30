@@ -461,6 +461,25 @@ class Collection:
                 getattr(table_level_fail, name).rule_columns | extra_rules[name]
             )
 
+            if cfg.dialect_name == "mssql":
+                fill_true = 1
+
+                def cast_bool(col):
+                    # materialization to collection_level_invalid_rows
+                    # converted some boolean columns to int
+                    return (
+                        (col != 0)
+                        if col.name
+                        # ruff thinks this is a loop/comprehension
+                        in collection_level_invalid_rows  # noqa: B023
+                        else col
+                    )
+            else:
+                fill_true = True
+
+                def cast_bool(col):
+                    return col
+
             failure = (
                 table_level_invalid_rows
                 >> full_join(
@@ -487,7 +506,10 @@ class Collection:
                     }
                 )
                 >> mutate(
-                    **{rule: C[rule].fill_null(True) for rule in rule_columns.keys()}
+                    **{
+                        rule: cast_bool(C[rule]).fill_null(fill_true)
+                        for rule in rule_columns.keys()
+                    }
                 )
             )
 
