@@ -29,6 +29,8 @@ class Config:
     #: A function to materialize a pdt.Table expression returning reference to result.
     # It can also be given a second argument with a table name prefix.
     materialize_hook: Callable[[pdt.Table, str | None], pdt.Table] | None = None
+    #: SQL dialect
+    dialect_name: str = "default"
 
     @classproperty
     def default(cls) -> "Config":

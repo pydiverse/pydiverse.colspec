@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.2.3 (2025-06-30)
+- dialect specific workaround for mssql
+
 ## 0.2.2 (2025-06-26)
 - fixed column order for mixed class and object columns in ColSpec
 

@@ -54,11 +54,25 @@ class FailureInfo:
         from pydiverse.transform.extended import C, export, summarize
 
         # There can be nulls, which should not be counted.
-        cnts: dict[str, int] = (
-            self._invalid_rows
-            >> summarize(**{k: (~C[k]).sum() for k in self.rule_columns.keys()})
-            >> export(pdt.Dict())
-        )
+        if self.cfg.dialect_name == "mssql":
+            # MSSQL has no boolean columns. So the failure indicator columns
+            # have been converted to integers.
+            cnts: dict[str, int] = (
+                self._invalid_rows
+                >> summarize(
+                    **{
+                        k: (C[k] == 0).sum().fill_null(0)
+                        for k in self.rule_columns.keys()
+                    }
+                )
+                >> export(pdt.Dict())
+            )
+        else:
+            cnts: dict[str, int] = (
+                self._invalid_rows
+                >> summarize(**{k: (~C[k]).sum() for k in self.rule_columns.keys()})
+                >> export(pdt.Dict())
+            )
 
         return {k: v for k, v in cnts.items() if v is not None and v > 0}
 
