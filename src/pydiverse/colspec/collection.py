@@ -462,7 +462,6 @@ class Collection:
             )
 
             if cfg.dialect_name == "mssql":
-                fill_true = 1
 
                 def cast_bool(col):
                     # materialization to collection_level_invalid_rows
@@ -475,7 +474,6 @@ class Collection:
                         else col
                     )
             else:
-                fill_true = True
 
                 def cast_bool(col):
                     return col
@@ -507,7 +505,7 @@ class Collection:
                 )
                 >> mutate(
                     **{
-                        rule: cast_bool(C[rule]).fill_null(fill_true)
+                        rule: cast_bool(C[rule]).fill_null(True)
                         for rule in rule_columns.keys()
                     }
                 )
