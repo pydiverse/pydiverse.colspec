@@ -370,7 +370,10 @@ class ColSpec(
                     *[tbl[col] == subquery[col] for col in group_rule.group_columns]
                 ),
             ) >> pdt.select(*tbl)
-            rules[name] = subquery.expr
+            if cfg.dialect_name == "mssql":
+                rules[name] = subquery.expr != 0
+            else:
+                rules[name] = subquery.expr
 
         combined = pdt.all(True, *rules.values())
 
