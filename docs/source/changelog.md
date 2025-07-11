@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.2.5 (2025-07-11)
+- fix incompatibility with newer polars versions (e.g. 1.31.0)
+
 ## 0.2.4 (2025-07-03)
 - dialect specific workaround for mssql
 
