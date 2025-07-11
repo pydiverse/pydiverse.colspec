@@ -31,7 +31,7 @@ def evaluate_rules_polars(
         The same return value as :meth:`with_evaluation_rules` only that the columns
         of the input data frame are dropped.
     """
-    return RulePolars.append_rules_polars(lf, rules).drop(lf.collect_schema())
+    return RulePolars.append_rules_polars(lf, rules).drop(list(lf.collect_schema()))
 
 
 def evaluate_rules(tbl: pdt.Table, rules: dict[str, ColExpr]):
