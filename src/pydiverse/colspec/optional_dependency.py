@@ -172,7 +172,6 @@ except ImportError:
 
 try:
     # colspec has optional dependency to sqlalchemy
-    import pyodbc
     import sqlalchemy as sa
 except ImportError:
     sa = types.ModuleType("sqlalchemy")
@@ -180,4 +179,3 @@ except ImportError:
     sa.Column = None
     sa.Table = None
     sa.Alias = None
-    pyodbc = None
