@@ -4,13 +4,15 @@
 import pytest
 
 import pydiverse.colspec as cs
-from pydiverse.colspec.optional_dependency import pyodbc, sa
+from pydiverse.colspec.optional_dependency import sa
 from pydiverse.colspec.testing import COLUMN_TYPES, create_colspec
 
 try:
+    import pyodbc
     from sqlalchemy.dialects.mssql.pyodbc import MSDialect_pyodbc
     from sqlalchemy.dialects.postgresql.psycopg2 import PGDialect_psycopg2
 except ImportError:
+    pyodbc = None
     MSDialect_pyodbc = lambda: None  # noqa: E731
     PGDialect_psycopg2 = lambda: None  # noqa: E731
 

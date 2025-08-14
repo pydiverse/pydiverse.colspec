@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.2.6 (2025-08-14)
+- fix optional dependency with pyodbc
+
 ## 0.2.5 (2025-07-11)
 - fix incompatibility with newer polars versions (e.g. 1.31.0)
 
