@@ -18,6 +18,7 @@ from pydiverse.colspec.optional_dependency import (
 class MySimpleColSpec(cs.ColSpec):
     a = cs.Int64()
     b = cs.String()
+    c = cs.Enum(["a", "b", "c"])
 
 
 class PrimaryKeyColSpec(cs.ColSpec):
