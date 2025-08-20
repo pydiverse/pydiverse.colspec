@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.2.7 (2025-08-20)
+## 0.2.7 (2025-08-21)
 - support pdc.Enum dtype in cs.Enum
 
 ## 0.2.6 (2025-08-14)
