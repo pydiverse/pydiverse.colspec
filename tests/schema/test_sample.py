@@ -81,6 +81,24 @@ def test_sample_deterministic(n: int):
         MySimpleColSpec.validate(tbl)
 
 
+@pytest.mark.skip(
+    "wait for PR https://github.com/pydiverse/pydiverse.transform/pull/76"
+)
+@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
+@pytest.mark.skipif(C is None, reason="pydiverse.transform not installed")
+def test_enum_validate(n: int = 1):
+    with dy.Config(max_sampling_iterations=1):
+        df = MySimpleColSpec.sample_polars(n)
+        MySimpleColSpec.validate_polars(df)
+        tbl = pdt.Table(df)
+        MySimpleColSpec.validate(tbl)
+        MySimpleColSpec.validate(tbl, cast=True)
+        tbl = tbl >> pdt.mutate(c="c")
+        MySimpleColSpec.validate(tbl, cast=True)
+        tbl = tbl >> pdt.mutate(c="d")
+        MySimpleColSpec.validate(tbl, cast=True)
+
+
 @pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 @pytest.mark.skipif(C is None, reason="pydiverse.transform not installed")
 @pytest.mark.parametrize("col_spec", [PrimaryKeyColSpec, CheckColSpec, ComplexColSpec])

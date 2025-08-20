@@ -61,3 +61,8 @@ class Enum(Column):
             max_length=max(len(cat) for cat in self.categories),
         )
         return str_type.sqlalchemy_column(name, dialect)
+
+    def validation_rules(self, expr: ColExpr) -> dict[str, ColExpr]:
+        result = super().validation_rules(expr)
+        result["categories"] = expr.is_in(*self.categories)
+        return result
