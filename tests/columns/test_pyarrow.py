@@ -19,7 +19,8 @@ from pydiverse.colspec.testing import (
 def test_equal_to_polars_schema(column_type: type[cs.Column]):
     schema = create_colspec("test", {"a": column_type()})
     actual = schema.pyarrow_schema()
-    expected = schema.create_empty_polars().to_arrow().schema
+    df = schema.create_empty_polars()
+    expected = df.to_arrow().schema
 
     actual_dict = {f.name: f.type for f in actual}
 
@@ -27,11 +28,31 @@ def test_equal_to_polars_schema(column_type: type[cs.Column]):
     assert actual_dict == expected_dict
 
 
+def fix_field_index_type(field):
+    if pa.types.is_dictionary(field.type):
+        # somehow the index type can jump around in polars and fixing it to uint32
+        # seems reasonable
+        return (
+            pa.field(
+                field.name,
+                pa.dictionary(pa.uint32(), field.type.value_type, field.type.ordered),
+            )
+            .with_nullable(field.nullable)
+            .with_metadata(field.metadata)
+        )
+    else:
+        return field
+
+
+def fix_index_type(schema):
+    return pa.schema([fix_field_index_type(field) for field in schema])
+
+
 @pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_equal_polars_schema_enum():
     schema = create_colspec("test", {"a": cs.Enum(["a", "b"])})
     actual = schema.pyarrow_schema()
-    expected = schema.create_empty_polars().to_arrow().schema
+    expected = fix_index_type(schema.create_empty_polars().to_arrow().schema)
     assert actual == expected
 
 

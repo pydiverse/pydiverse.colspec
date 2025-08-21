@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.2.8 (2025-08-21)
+- update dependency to pydiverse.common 0.3.12
+
 ## 0.2.7 (2025-08-21)
 - support pdc.Enum dtype in cs.Enum
 

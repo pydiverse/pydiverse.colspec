@@ -27,10 +27,10 @@ def test_collection_missing_required_member():
 
 
 def test_collection_superfluous_member():
-    with pytest.warns(Warning):
-        MyCollection.validate_polars_data(
-            {
-                "first": pl.LazyFrame({"a": [1, 2, 3]}),
-                "third": pl.LazyFrame({"a": [1, 2, 3]}),
-            },
-        )
+    # newer versions of dataframely allow superfluous members
+    MyCollection.validate_polars_data(
+        {
+            "first": pl.LazyFrame({"a": [1, 2, 3]}),
+            "third": pl.LazyFrame({"a": [1, 2, 3]}),
+        },
+    )

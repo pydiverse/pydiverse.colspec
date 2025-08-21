@@ -68,7 +68,7 @@ def pydiverse_type_opinions(_type: pa.DataType):
         if _type == pa.large_string()
         else pa.time64("us")
         if _type == pa.time64("ns")
-        else pa.decimal128(35, 10)
+        else pa.decimal128(31, 11)
         if pa.types.is_decimal(_type)
         else pa.list_(pydiverse_type_opinions(_type.value_type))
         if pa.types.is_large_list(_type)
