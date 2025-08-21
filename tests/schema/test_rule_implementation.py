@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import pytest
-from polars.polars import SchemaError
 
 import pydiverse.colspec as cs
 from pydiverse.colspec._rule import GroupRulePolars, RulePolars
@@ -43,6 +42,8 @@ def test_rule_implementation_error():
 
 @pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_group_rule_implementation_error():
+    from polars.polars import SchemaError
+
     with pytest.raises(
         SchemaError,
         match=(r"failed to determine supertype of list\[bool\] and bool"),
