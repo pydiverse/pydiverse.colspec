@@ -141,6 +141,7 @@ def test_filter_with_rule_all_valid():
     assert failures.counts() == {}
 
 
+@pytest.mark.skip("pydiverse.transform 0.5.5 has a bug with TypeError")
 @pytest.mark.skipif(C is None, reason="pydiverse.transform not installed")
 def test_filter_cast():
     data = {
