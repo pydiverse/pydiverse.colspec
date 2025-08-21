@@ -2,10 +2,11 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import pytest
+from polars.polars import SchemaError
 
 import pydiverse.colspec as cs
 from pydiverse.colspec._rule import GroupRulePolars, RulePolars
-from pydiverse.colspec.exc import ImplementationError, RuleImplementationError
+from pydiverse.colspec.exc import ImplementationError
 from pydiverse.colspec.optional_dependency import dy, pl
 from pydiverse.colspec.testing.factory import create_colspec
 
@@ -32,24 +33,19 @@ def test_group_rule_group_by_error():
 
 @pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_rule_implementation_error():
-    with pytest.raises(
-        RuleImplementationError, match=r"rule 'integer_rule'.*returns dtype 'Int64'"
-    ):
-        create_colspec(
-            "test",
-            columns={"a": cs.Integer()},
-            rules={"integer_rule": RulePolars(pl.col("a") + 1)},
-        ).validate_polars(None)
+    # dataframely does not throw in this case any more
+    create_colspec(
+        "test",
+        columns={"a": cs.Integer()},
+        rules={"integer_rule": RulePolars(pl.col("a") + 1)},
+    ).validate_polars(pl.DataFrame(dict(a=[1])))
 
 
 @pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_group_rule_implementation_error():
     with pytest.raises(
-        RuleImplementationError,
-        match=(
-            r"rule 'b_greater_zero'.*returns dtype 'List\(Boolean\)'.*"
-            r"make sure to use an aggregation function"
-        ),
+        SchemaError,
+        match=(r"failed to determine supertype of list\[bool\] and bool"),
     ):
         create_colspec(
             "test",
@@ -57,7 +53,7 @@ def test_group_rule_implementation_error():
             rules={
                 "b_greater_zero": GroupRulePolars(pl.col("b") > 0, group_columns=["a"])
             },
-        ).validate_polars(None)
+        ).validate_polars(pl.DataFrame(dict(a=[1], b=[2])))
 
 
 @pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")

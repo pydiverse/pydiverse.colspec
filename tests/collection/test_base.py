@@ -242,7 +242,7 @@ def test_dataframely_columns_fail_inheritance():
 
     with pytest.raises(
         ImplementationError,
-        match="Don't mix Dataframely Schema with ColSpec classes in inheritance",
+        match="Dataframely Columns won't work in ColSpec classes",
     ):
         convert_to_dy_col_spec(FailColSpec)
 

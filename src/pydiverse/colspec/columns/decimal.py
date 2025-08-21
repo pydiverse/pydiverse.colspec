@@ -103,7 +103,10 @@ class Decimal(OrdinalMixin[decimal.Decimal], Column):
                 else None
             )
             # polars cannot deal with scale=None as opposed to SQL
-            ret.scale = ret.scale or 0
+            if ret.precision:
+                ret.scale = ret.scale or (ret.precision // 3 + 1)
+            else:
+                ret.scale = ret.scale or 11
             return ret.to_dataframely()
         else:
             return super().to_dataframely()

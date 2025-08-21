@@ -9,7 +9,7 @@ from typing import Any, cast
 import pytest
 
 import pydiverse.colspec as cs
-from pydiverse.colspec import Column
+from pydiverse.colspec import Column, Decimal
 from pydiverse.colspec.optional_dependency import Generator, dy, pl
 from pydiverse.colspec.testing import (
     COLUMN_TYPES,
@@ -36,7 +36,10 @@ def test_sample_custom_check(column_type: type[Column], generator: Generator):
 @pytest.mark.parametrize("column_type", COLUMN_TYPES + SUPERTYPE_COLUMN_TYPES)
 @pytest.mark.parametrize("nullable", [True, False])
 def test_sample_valid(column_type: type[Column], nullable: bool, generator: Generator):
-    column = column_type(nullable=nullable)
+    if column_type is Decimal:
+        column = Decimal(31, 0, nullable=nullable)
+    else:
+        column = column_type(nullable=nullable)
     samples = sample_and_validate(column, generator, n=10_000)
     if nullable:
         assert math.isclose(cast(float, samples.is_null().mean()), 0.1, abs_tol=0.01)
