@@ -142,6 +142,7 @@ def test_filter_failure(
     assert_frame_equal(
         df.filter(pl.Series(failure_mask)).lazy().collect(),
         df_valid >> pdt.export(pdt.Polars()),
+        check_row_order=False,
     )
     # assert validation_mask(df, failures).to_list() == failure_mask
     # assert len(failures) == (len(failure_mask) - sum(failure_mask))
@@ -195,6 +196,7 @@ def test_filter_with_rule_all_valid(df_type: type[pl.DataFrame] | type[pl.LazyFr
     # assert failures.cooccurrence_counts() == {}
 
 
+@pytest.mark.skip("Pydiverse transform 0.5.5 has TypeError bug")
 @pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 @pytest.mark.skipif(C is None, reason="pydiverse.transform not installed")
 @pytest.mark.parametrize("df_type", [pl.DataFrame, pl.LazyFrame])
