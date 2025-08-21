@@ -21,8 +21,8 @@ def test_dtype_validation_error_str():
     )
     assert str(exc).split("\n") == [
         "2 columns have an invalid dtype:",
-        " - 'a': got dtype 'Int64' but expected 'String'",
-        " - 'b': got dtype 'Bool' but expected 'String'",
+        " - 'a': got dtype 'Int64' but expected 'String(None)'",
+        " - 'b': got dtype 'Bool' but expected 'String(None)'",
     ]
 
 
