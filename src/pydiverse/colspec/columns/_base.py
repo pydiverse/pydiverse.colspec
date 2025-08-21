@@ -190,7 +190,7 @@ class Column(ABC, ColExpr, metaclass=ColumnMeta):
             The :mod:`pyarrow` field definition.
         """
         try:
-            return pa.field(name, self.dtype().to_arrow(), nullable=self.nullable)
+            return self.dtype().to_arrow_field(name, self.nullable)
         except NotImplementedError:
             return pa.field(
                 name,

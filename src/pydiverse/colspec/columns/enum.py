@@ -41,9 +41,7 @@ class Enum(Column):
         self.categories = categories
 
     def dtype(self) -> pdc.Dtype:
-        raise NotImplementedError(
-            "Enum column type is not yet implemented in pydiverse libraries."
-        )
+        return pdc.Enum(*self.categories)
 
     def sqlalchemy_column(self, name: str, dialect: sa.Dialect) -> sa.Column:
         """Obtain the SQL column specification of this column definition.
@@ -63,3 +61,8 @@ class Enum(Column):
             max_length=max(len(cat) for cat in self.categories),
         )
         return str_type.sqlalchemy_column(name, dialect)
+
+    def validation_rules(self, expr: ColExpr) -> dict[str, ColExpr]:
+        result = super().validation_rules(expr)
+        result["categories"] = expr.is_in(*self.categories)
+        return result
