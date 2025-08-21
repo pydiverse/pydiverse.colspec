@@ -49,7 +49,7 @@ class String(Column):
         self.regex = regex
 
     def dtype(self) -> pdc.String:
-        return pdc.String()
+        return pdc.String(self.max_length)
 
     def validation_rules(self, expr: ColExpr) -> dict[str, ColExpr]:
         result = super().validation_rules(expr)
