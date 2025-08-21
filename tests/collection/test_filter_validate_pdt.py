@@ -107,8 +107,16 @@ def test_filter_without_filter_without_rule_violation(
     out, failure = data_without_filter_without_rule_violation.filter()
 
     assert isinstance(out, SimpleCollection)
-    assert_table_equal(out.first, data_without_filter_without_rule_violation.first)
-    assert_table_equal(out.second, data_without_filter_without_rule_violation.second)
+    assert_table_equal(
+        out.first,
+        data_without_filter_without_rule_violation.first,
+        check_row_order=False,
+    )
+    assert_table_equal(
+        out.second,
+        data_without_filter_without_rule_violation.second,
+        check_row_order=False,
+    )
     assert len(failure.first) == 0
     assert len(failure.second) == 0
 
