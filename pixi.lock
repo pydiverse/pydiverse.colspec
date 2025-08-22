@@ -13130,6 +13130,7 @@ packages:
   - sqlalchemy >=2
   - __glibc >=2.17
   license: BSD-3-Clause
+  license_family: BSD
   size: 467007
   timestamp: 1755692234556
 - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/dataframely-1.9.0-py310hef8d74a_0.conda
@@ -13148,6 +13149,7 @@ packages:
   - sqlalchemy >=2
   - __glibc >=2.17
   license: BSD-3-Clause
+  license_family: BSD
   size: 457963
   timestamp: 1755692202224
 - conda: https://conda.anaconda.org/conda-forge/osx-64/dataframely-1.9.0-py310h96177ab_0.conda
@@ -13167,6 +13169,7 @@ packages:
   - sqlalchemy >=2
   - __osx >=10.13
   license: BSD-3-Clause
+  license_family: BSD
   size: 440408
   timestamp: 1755692302830
 - conda: https://conda.anaconda.org/conda-forge/osx-arm64/dataframely-1.9.0-py310h56a9420_0.conda
@@ -13186,6 +13189,7 @@ packages:
   - sqlalchemy >=2
   - __osx >=11.0
   license: BSD-3-Clause
+  license_family: BSD
   size: 425310
   timestamp: 1755692315031
 - conda: https://conda.anaconda.org/conda-forge/win-64/dataframely-1.9.0-py310hde687db_0.conda
@@ -13206,6 +13210,7 @@ packages:
   - mypy >=1.12
   - sqlalchemy >=2
   license: BSD-3-Clause
+  license_family: BSD
   size: 371518
   timestamp: 1755692207976
 - conda: https://conda.anaconda.org/conda-forge/linux-64/dbus-1.16.2-h3c4dab8_0.conda
@@ -18190,6 +18195,7 @@ packages:
   - matplotlib >=3.6.3
   - xarray >=2022.12.0
   license: BSD-3-Clause
+  license_family: BSD
   size: 15354460
   timestamp: 1755779368955
 - conda: https://conda.anaconda.org/conda-forge/linux-64/pandas-2.3.2-py312hf79963d_0.conda
@@ -18239,6 +18245,7 @@ packages:
   - fastparquet >=2022.12.0
   - scipy >=1.10.0
   license: BSD-3-Clause
+  license_family: BSD
   size: 15108897
   timestamp: 1755779512007
 - conda: https://conda.anaconda.org/conda-forge/linux-64/pandas-2.3.2-py313h08cd8bf_0.conda
@@ -18288,6 +18295,7 @@ packages:
   - s3fs >=2022.11.0
   - lxml >=4.9.2
   license: BSD-3-Clause
+  license_family: BSD
   size: 15102764
   timestamp: 1755779522491
 - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/pandas-2.3.2-py311hffd966a_0.conda
@@ -18337,6 +18345,7 @@ packages:
   - bottleneck >=1.3.6
   - numba >=0.56.4
   license: BSD-3-Clause
+  license_family: BSD
   size: 15119111
   timestamp: 1755779811685
 - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/pandas-2.3.2-py312hdc0efb6_0.conda
@@ -18386,6 +18395,7 @@ packages:
   - sqlalchemy >=2.0.0
   - python-calamine >=0.1.7
   license: BSD-3-Clause
+  license_family: BSD
   size: 14836964
   timestamp: 1755779529202
 - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/pandas-2.3.2-py313h9de0199_0.conda
@@ -18435,6 +18445,7 @@ packages:
   - openpyxl >=3.1.0
   - python-calamine >=0.1.7
   license: BSD-3-Clause
+  license_family: BSD
   size: 14792432
   timestamp: 1755779782172
 - conda: https://conda.anaconda.org/conda-forge/osx-64/pandas-2.3.2-py311hf4bc098_0.conda
@@ -18483,6 +18494,7 @@ packages:
   - pyarrow >=10.0.1
   - s3fs >=2022.11.0
   license: BSD-3-Clause
+  license_family: BSD
   size: 14631576
   timestamp: 1755779827936
 - conda: https://conda.anaconda.org/conda-forge/osx-64/pandas-2.3.2-py312hbf2c5ff_0.conda
@@ -18531,6 +18543,7 @@ packages:
   - qtpy >=2.3.0
   - pandas-gbq >=0.19.0
   license: BSD-3-Clause
+  license_family: BSD
   size: 14246389
   timestamp: 1755779512178
 - conda: https://conda.anaconda.org/conda-forge/osx-64/pandas-2.3.2-py313h366a99e_0.conda
@@ -18579,6 +18592,7 @@ packages:
   - openpyxl >=3.1.0
   - xlrd >=2.0.1
   license: BSD-3-Clause
+  license_family: BSD
   size: 14213620
   timestamp: 1755779477672
 - conda: https://conda.anaconda.org/conda-forge/osx-arm64/pandas-2.3.2-py311hff7e5bb_0.conda
@@ -18628,6 +18642,7 @@ packages:
   - tzdata >=2022.7
   - numba >=0.56.4
   license: BSD-3-Clause
+  license_family: BSD
   size: 14406952
   timestamp: 1755779878619
 - conda: https://conda.anaconda.org/conda-forge/osx-arm64/pandas-2.3.2-py312h98f7732_0.conda
@@ -18677,6 +18692,7 @@ packages:
   - tzdata >=2022.7
   - bottleneck >=1.3.6
   license: BSD-3-Clause
+  license_family: BSD
   size: 13963929
   timestamp: 1755779746492
 - conda: https://conda.anaconda.org/conda-forge/osx-arm64/pandas-2.3.2-py313hd1f53c0_0.conda
@@ -18726,6 +18742,7 @@ packages:
   - openpyxl >=3.1.0
   - html5lib >=1.1
   license: BSD-3-Clause
+  license_family: BSD
   size: 14047923
   timestamp: 1755779620427
 - conda: https://conda.anaconda.org/conda-forge/win-64/pandas-2.3.2-py311h11fd7f3_0.conda
@@ -18775,6 +18792,7 @@ packages:
   - xlrd >=2.0.1
   - numba >=0.56.4
   license: BSD-3-Clause
+  license_family: BSD
   size: 14410335
   timestamp: 1755779632554
 - conda: https://conda.anaconda.org/conda-forge/win-64/pandas-2.3.2-py312hc128f0a_0.conda
@@ -18824,6 +18842,7 @@ packages:
   - xarray >=2022.12.0
   - gcsfs >=2022.11.0
   license: BSD-3-Clause
+  license_family: BSD
   size: 13869930
   timestamp: 1755779639033
 - conda: https://conda.anaconda.org/conda-forge/win-64/pandas-2.3.2-py313hc90dcd4_0.conda
@@ -18873,6 +18892,7 @@ packages:
   - numexpr >=2.8.4
   - python-calamine >=0.1.7
   license: BSD-3-Clause
+  license_family: BSD
   size: 13966284
   timestamp: 1755779637297
 - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-0.12.1-pyhd8ed1ab_1.conda
@@ -19903,6 +19923,7 @@ packages:
   - psycopg2 >=2.9.3
   - pyodbc >=4.0.35
   license: BSD-3-Clause
+  license_family: BSD
   size: 82757
   timestamp: 1755698571898
 - conda: https://conda.anaconda.org/conda-forge/noarch/pygments-2.19.2-pyhd8ed1ab_0.conda
@@ -22946,6 +22967,7 @@ packages:
   - vc >=14.3,<15
   - vc14_runtime >=14.44.35208
   license: Apache-2.0
+  license_family: APACHE
   size: 150266
   timestamp: 1755776172092
 - conda: https://conda.anaconda.org/conda-forge/noarch/tblib-3.1.0-pyhd8ed1ab_0.conda
