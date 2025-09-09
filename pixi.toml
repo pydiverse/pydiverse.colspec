@@ -50,7 +50,7 @@ pydiverse-pipedag = ">=0.10.3"
 
 [feature.dy.dependencies]
 pyarrow = ">=20.0.0,<21"
-dataframely = ">=1.1.0"
+dataframely = ">=1.10.0"
 
 [feature.release.dependencies]
 hatch = ">=1.12.0"
