@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.2.9 (2025-09-09)
+- support time_zone argument to cs.DateTime(). The argument will not do anything except for serving as documentation.
+
 ## 0.2.8 (2025-08-21)
 - update dependency to pydiverse.common 0.3.12
 
