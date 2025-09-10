@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import datetime as dt
+import inspect
 from abc import ABC, ABCMeta, abstractmethod
 from collections.abc import Callable
 
@@ -58,6 +59,9 @@ class Column(ABC, ColExpr, metaclass=ColumnMeta):
         self.primary_key = primary_key
         self.check = check
         self.alias = alias
+
+        # cached state:
+        self.name = None  # this will be overridden by ColSpec.__getattribute__
 
     # ------------------------------------- DTYPE ------------------------------------ #
 
@@ -118,7 +122,9 @@ class Column(ABC, ColExpr, metaclass=ColumnMeta):
 
         # Get all non-private attributes
         attrs = {
-            k: convert(v) for k, v in self.__dict__.items() if not k.startswith("_")
+            k: convert(v)
+            for k, v in self.__dict__.items()
+            if not k.startswith("_") and k != "name"
         }
         return getattr(dy, self.__class__.__name__)(**attrs)
 
@@ -200,5 +206,29 @@ class Column(ABC, ColExpr, metaclass=ColumnMeta):
 
     # -------------------------------- DUNDER METHODS -------------------------------- #
 
+    # -------------------------------- DUNDER METHODS -------------------------------- #
+
+    def __repr__(self) -> str:
+        parts = [
+            f"{attribute}={repr(getattr(self, attribute))}"
+            for attribute, param_details in inspect.signature(
+                self.__class__.__init__
+            ).parameters.items()
+            if attribute
+            not in ["self", "alias"]  # alias is always equal to the column name here
+            and not (
+                # Do not include attributes that are set to their default value
+                getattr(self, attribute) == param_details.default
+            )
+        ]
+        return f"{self.__class__.__name__}({', '.join(parts)})"
+
     def __str__(self) -> str:
-        return self.__class__.__name__.lower()
+        return repr(self)
+
+    # ------------------------------------- Polars ----------------------------------- #
+    @property
+    def polars(self) -> pl.Expr | None:
+        if self.name is None:
+            return None
+        return pl.col(self.name)

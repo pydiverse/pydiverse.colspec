@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.10 (2025-09-10)
+- implemented Column.name and Column.polars fields/properties (dataframely uses Column.col)
+- implemented nicer __str__ and __repr__ for Column and ColSpec
+
 ## 0.2.9 (2025-09-09)
 - support time_zone argument to cs.DateTime(). The argument will not do anything except for serving as documentation.
 

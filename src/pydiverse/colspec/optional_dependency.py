@@ -36,7 +36,7 @@ except ImportError:
     pl.DataType = None
     pl.Series = None
     pl.Schema = None
-    pl.Expr = None
+    pl.Expr = object
     for _type in [
         "Int8",
         "Int16",

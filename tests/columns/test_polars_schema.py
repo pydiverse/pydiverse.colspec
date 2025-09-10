@@ -8,8 +8,10 @@ from pydiverse.colspec.optional_dependency import pl
 from pydiverse.colspec.testing.factory import create_colspec
 
 
-@pytest.mark.skipif(pl.Expr is None, reason="polars is required for this test")
+@pytest.mark.skipif(pl.Expr is object, reason="polars is required for this test")
 def test_polars_schema() -> None:
     schema = create_colspec("test", {"a": cs.Int32(nullable=False), "b": cs.Float32()})
     pl_schema = schema.polars_schema()
     assert pl_schema == {"a": pl.Int32, "b": pl.Float32}
+    assert str(schema.a.polars) == str(pl.col("a"))
+    assert str(schema.b.polars) == str(pl.col("b"))
