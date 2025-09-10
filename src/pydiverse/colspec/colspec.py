@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import inspect
+import textwrap
 import types
 import typing
 from collections.abc import Iterable, Mapping
@@ -45,6 +46,26 @@ class ColSpecMeta(type):
         if isinstance(val, Column):
             val.name = val.name or val.alias or name
         return val
+
+    def __repr__(cls) -> str:
+        parts = [f'[Column Specification "{cls.__name__}"]']
+        parts.append(textwrap.indent("Columns:", prefix=" " * 2))
+        for name, col in cls.columns().items():
+            parts.append(textwrap.indent(f'- "{name}": {col!r}', prefix=" " * 4))
+        validation_rules = {
+            name: rule
+            for name, rule in cls.__dict__.items()
+            if isinstance(rule, RulePolars | Rule)
+        }
+        if len(validation_rules) > 0:
+            parts.append(textwrap.indent("Rules:", prefix=" " * 2))
+            for name, rule in validation_rules.items():
+                parts.append(textwrap.indent(f'- "{name}": {rule!r}', prefix=" " * 4))
+        parts.append("")  # Add line break at the end
+        return "\n".join(parts)
+
+    def __str__(self):
+        return repr(self)
 
 
 class ColSpecBase:
