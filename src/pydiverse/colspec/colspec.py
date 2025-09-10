@@ -39,6 +39,13 @@ class ColSpecMeta(type):
         )
         return super().__new__(cls, clsname, bases, attribs)
 
+    def __getattribute__(cls, name: str) -> Any:
+        val = super().__getattribute__(name)
+        # Dynamically set the name of the column if it is a `Column` instance.
+        if isinstance(val, Column):
+            val.name = val.name or val.alias or name
+        return val
+
 
 class ColSpecBase:
     #  this is just the same as object but ruff does not kill it

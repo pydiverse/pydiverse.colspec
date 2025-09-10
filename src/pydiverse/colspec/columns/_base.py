@@ -59,6 +59,9 @@ class Column(ABC, ColExpr, metaclass=ColumnMeta):
         self.check = check
         self.alias = alias
 
+        # cached state:
+        self.name = None  # this will be overridden by ColSpec.__getattribute__
+
     # ------------------------------------- DTYPE ------------------------------------ #
 
     @abstractmethod
@@ -202,3 +205,10 @@ class Column(ABC, ColExpr, metaclass=ColumnMeta):
 
     def __str__(self) -> str:
         return self.__class__.__name__.lower()
+
+    # ------------------------------------- Polars ----------------------------------- #
+    @property
+    def polars(self) -> pl.Expr | None:
+        if self.name is None:
+            return None
+        return pl.col(self.name)

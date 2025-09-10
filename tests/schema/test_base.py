@@ -13,7 +13,7 @@ from pydiverse.colspec.testing.factory import create_colspec
 class MyColSpec(cs.ColSpec):
     a = cs.Integer(primary_key=True)
     b = cs.String(primary_key=True)
-    c = cs.Float64()
+    c = cs.Float64(alias="d")
     e = cs.Any()
 
 
@@ -21,22 +21,29 @@ def test_column_names():
     _ = MyColSpec.e
     with pytest.raises(AttributeError):
         _ = MyColSpec.d
-    assert MyColSpec.column_names() == ["a", "b", "c", "e"]
+    assert MyColSpec.column_names() == ["a", "b", "d", "e"]
 
 
 def test_columns():
     columns = MyColSpec.columns()
     assert isinstance(columns["a"], cs.Integer)
     assert isinstance(columns["b"], cs.String)
-    assert isinstance(columns["c"], cs.Float64)
+    assert isinstance(columns["d"], cs.Float64)
     assert isinstance(columns["e"], cs.Any)
+
+
+def test_names():
+    assert MyColSpec.a.name == "a"
+    assert MyColSpec.c.name == "d"
+    columns = MyColSpec.columns()
+    assert all(col.name == name for name, col in columns.items())
 
 
 def test_nullability():
     columns = MyColSpec.columns()
     assert not columns["a"].nullable
     assert not columns["b"].nullable
-    assert columns["c"].nullable
+    assert columns["d"].nullable
     assert columns["e"].nullable
 
 
