@@ -122,7 +122,9 @@ class Column(ABC, ColExpr, metaclass=ColumnMeta):
 
         # Get all non-private attributes
         attrs = {
-            k: convert(v) for k, v in self.__dict__.items() if not k.startswith("_")
+            k: convert(v)
+            for k, v in self.__dict__.items()
+            if not k.startswith("_") and k != "name"
         }
         return getattr(dy, self.__class__.__name__)(**attrs)
 
