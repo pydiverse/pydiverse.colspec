@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.2.12 (2025-09-11)
+- added py.typed to package so mypy recognizes it as typed package
+
 ## 0.2.11 (2025-09-11)
 - implemented Column.metadata field
 - updated sample_polars interface to match dataframely changes (num_rows=None by default)
