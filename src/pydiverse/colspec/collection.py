@@ -9,7 +9,7 @@ from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from functools import reduce
 from pathlib import Path
-from typing import Self
+from typing import Any, Self
 
 import structlog
 
@@ -22,15 +22,59 @@ from pydiverse.colspec.exc import (
     ValidationError,
 )
 from pydiverse.colspec.failure import FailureInfo
-from pydiverse.colspec.optional_dependency import ColExpr, FrameType, dy, pdt, pl
+from pydiverse.colspec.optional_dependency import (
+    ColExpr,
+    FrameType,
+    Generator,
+    Sequence,
+    dy,
+    pdt,
+    pl,
+)
 
 from . import exc
 from ._filter import Filter, FilterPolars
 from .colspec import ColSpec, convert_to_dy_anno_dict
 
 
+@dataclass(kw_only=True)
+class CollectionMember:
+    """An annotation class that configures different behavior for a collection member.
+
+    Members:
+        ignored_in_filters: Indicates that a member should be ignored in the
+            ``@dy.filter`` methods of a collection. This also affects the computation
+            of the shared primary key in the collection.
+
+    Example:
+        .. code:: python
+
+            class MyCollection(dy.Collection):
+                a: dy.LazyFrame[MySchema1]
+                b: dy.LazyFrame[MySchema2]
+
+                ignored_member: Annotated[
+                    dy.LazyFrame[MySchema3],
+                    dy.CollectionMember(ignored_in_filters=True)
+                ]
+
+                @dy.filter
+                def my_filter(self) -> pl.DataFrame:
+                    return self.a.join(self.b, on="shared_key")
+    """
+
+    #: Whether the member should be ignored in the filter method.
+    ignored_in_filters: bool = False
+    #: Whether the member's non-primary key columns should be inlined for sampling.
+    #: This means that value overrides are supplied on the top-level rather than in
+    #: a subkey with the member's name. Only valid if the member's primary key matches
+    #: the collection's common primary key. Two members that share common column names
+    #: may not both be inlined for sampling.
+    inline_for_sampling: bool = False
+
+
 @dataclass
-class MemberInfo:
+class MemberInfo(CollectionMember):
     """Information about a member of a collection."""
 
     #: The schema of the member.
@@ -812,6 +856,79 @@ class Collection:
                 f"in '{self}': {','.join(errors)}"
             )
 
+    # ---------------------------------- SAMPLING --------------------------------- #
+
+    @classmethod
+    def sample(
+        cls,
+        num_rows: int | None = None,
+        *,
+        overrides: Sequence[Mapping[str, Any]] | None = None,
+        generator: Generator | None = None,
+    ) -> Self:
+        """Create a random sample from the members of this collection.
+
+        Just like sampling for schemas, **this method should only be used for testing**.
+        Contrary to sampling for schemas, the core difficulty when sampling related
+        values data frames is that they must share primary keys and individual members
+        may have a different number of rows. For this reason, overrides passed to this
+        function must be "row-oriented" (or "sample-oriented").
+
+        Args:
+            num_rows: The number of rows to sample for each member. If this is set to
+                ``None``, the number of rows is inferred from the length of the
+                overrides.
+            overrides: The overrides to set values in member schemas. The overrides must
+                be provided as a list of samples. The structure of the samples must be
+                as follows:
+
+                .. code::
+
+                    {
+                        "<primary_key_1>": <value>,
+                        "<primary_key_2>": <value>,
+                        "<member_with_common_primary_key>": {
+                            "<column_1>": <value>,
+                            ...
+                        },
+                        "<member_with_superkey_of_primary_key>": [
+                            {
+                                "<column_1>": <value>,
+                                ...
+                            }
+                        ],
+                        ...
+                    }
+
+                *Any* member/value can be left out and will be sampled automatically.
+                Note that overrides for columns of members that are annotated with
+                ``inline_for_sampling=True`` can be supplied on the top-level instead
+                of in a nested dictionary.
+            generator: The (seeded) generator to use for sampling data. If ``None``, a
+                generator with random seed is automatically created.
+
+        Returns:
+            A collection where all members (including optional ones) have been sampled
+            according to the input parameters.
+
+        Attention:
+            In case the collection has members with a common primary key, the
+            `_preprocess_sample` method must return distinct primary key values for each
+            sample. The default implementation does this on a best-effort basis but may
+            cause primary key violations. Hence, it is recommended to override this
+            method and ensure that all primary key columns are set.
+
+        Raises:
+            ValueError: If the :meth:`_preprocess_sample` method does not return all
+                common primary key columns for all samples.
+            ValidationError: If the sampled members violate any of the collection
+                filters. If the collection does not have filters, this error is never
+                raised. To prevent validation errors, overwrite the
+                :meth:`_preprocess_sample` method appropriately.
+        """
+        DynCollection = convert_collection_to_dy(cls)
+        return DynCollection.sample(num_rows, overrides=overrides, generator=generator)
+
     # ----------------------------------- UTILITIES ---------------------------------- #
 
     @classmethod
@@ -870,12 +987,18 @@ def convert_collection_to_dy(
         for k, v in collection.__dict__.items()
         if isinstance(v, FilterPolars)
     }
+    preprocess = {
+        k: v for k, v in collection.__dict__.items() if k == "_preprocess_sample"
+    }
     DynCollection = type[dy.Collection](
         cls.__name__,
         (dy.Collection,),
         {
-            "__annotations__": convert_to_dy_anno_dict(typing.get_type_hints(cls)),
+            "__annotations__": convert_to_dy_anno_dict(
+                typing.get_type_hints(cls, include_extras=True)
+            ),
             **filters,
+            **preprocess,
         },
     )  # type:type[dy.Collection]
     return DynCollection

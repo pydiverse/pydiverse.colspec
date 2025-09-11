@@ -15,6 +15,7 @@ from pydiverse.colspec.columns._base import Column
 from . import GroupRule, GroupRulePolars, Rule, RulePolars
 from .config import Config, alias_subquery
 from .exc import (
+    AnnotationImplementationError,
     ColumnValidationError,
     ImplementationError,
     RuleValidationError,
@@ -598,9 +599,23 @@ def convert_to_dy_col_spec(col_spec: type[ColSpec]) -> type[dy.Schema]:
     return dy_schema
 
 
-def convert_to_dy_anno(annotation):
-    if isinstance(annotation, types.UnionType):
-        anno_types = [convert_to_dy_anno(t) for t in typing.get_args(annotation)]
+def convert_to_dy_anno(name: str, annotation):
+    origin = typing.get_origin(annotation)
+    if origin == typing.Annotated:
+        # Maybe happy path: annotated member, dispatch recursively
+        annotation_args = typing.get_args(annotation)
+        if len(annotation_args) > 2:
+            raise AnnotationImplementationError(name, annotation)
+        from pydiverse.colspec import CollectionMember
+
+        if not isinstance(annotation_args[1], CollectionMember):
+            raise AnnotationImplementationError(name, annotation)
+        return typing.Annotated[
+            convert_to_dy_anno(name, annotation_args[0]),
+            dy.CollectionMember(**annotation_args[1].__dict__),
+        ]
+    elif isinstance(annotation, types.UnionType):
+        anno_types = [convert_to_dy_anno(name, t) for t in typing.get_args(annotation)]
         return reduce(lambda x, y: x | y, anno_types)
     elif inspect.isclass(annotation) and issubclass(annotation, dy.Schema):
         raise ImplementationError(
@@ -614,7 +629,7 @@ def convert_to_dy_anno(annotation):
 
 
 def convert_to_dy_anno_dict(annotations: dict[str, typing.Any]):
-    return {k: convert_to_dy_anno(v) for k, v in annotations.items()}
+    return {k: convert_to_dy_anno(k, v) for k, v in annotations.items()}
 
 
 def convert_to_dy(value):

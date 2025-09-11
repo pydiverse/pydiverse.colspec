@@ -69,11 +69,14 @@ try:
     import dataframely as dy
     from dataframely._base_schema import SchemaMeta
     from dataframely._polars import FrameType
-    from dataframely.random import Generator
+    from dataframely.random import Generator, Sequence
     from dataframely.testing import validation_mask
 except ImportError:
 
     class Generator:
+        pass
+
+    class Sequence:
         pass
 
     T = TypeVar("T")
