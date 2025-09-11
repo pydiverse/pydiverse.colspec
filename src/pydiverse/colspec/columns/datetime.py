@@ -3,6 +3,7 @@
 
 import datetime as dt
 from collections.abc import Callable
+from typing import Any
 
 import pydiverse.common as pdc
 
@@ -36,6 +37,7 @@ class Date(OrdinalMixin[dt.date], Column):
         resolution: str | None = None,
         check: Callable[[ColExpr], ColExpr] | None = None,
         alias: str | None = None,
+        metadata: dict[str, Any] | None = None,
     ):
         """
         Args:
@@ -70,6 +72,8 @@ class Date(OrdinalMixin[dt.date], Column):
                 name that is not a valid Python identifier. Especially note that setting
                 this option does _not_ allow to refer to the column with two different
                 names, the specified alias is the only valid name.
+            metadata: A dictionary of metadata to attach to the column. Nothing will
+                happen with metadata. It is just stored.
         """
         # TODO: implement date_matches_resolution
         # if resolution is not None:
@@ -99,6 +103,7 @@ class Date(OrdinalMixin[dt.date], Column):
             max_exclusive=max_exclusive,
             check=check,
             alias=alias,
+            metadata=metadata,
         )
         self.resolution = resolution
 
@@ -129,7 +134,7 @@ class Time(OrdinalMixin[dt.time], Column):
         max_exclusive: dt.time | None = None,
         resolution: str | None = None,
         check: Callable[[ColExpr], ColExpr] | None = None,
-        alias: str | None = None,
+        metadata: dict[str, Any] | None = None,
     ):
         """
         Args:
@@ -163,6 +168,8 @@ class Time(OrdinalMixin[dt.time], Column):
             alias: An overwrite for this column's name which allows for using a column
                 name that is not a valid Python identifier. Especially note that setting
                 this option does _not_ allow to refer to the column with two different
+                happen with metadata. It is just stored.
+            metadata: A dictionary of metadata to attach to the column. Nothing will
                 names, the specified alias is the only valid name.
         """
         # # pydiverse.transform is currently not able to check resolution problems.
@@ -194,7 +201,7 @@ class Time(OrdinalMixin[dt.time], Column):
             max=max,
             max_exclusive=max_exclusive,
             check=check,
-            alias=alias,
+            metadata=metadata,
         )
         self.resolution = resolution
 
@@ -233,6 +240,7 @@ class Datetime(OrdinalMixin[dt.datetime], Column):
         time_zone: str | dt.tzinfo | None = None,
         check: Callable[[ColExpr], ColExpr] | None = None,
         alias: str | None = None,
+        metadata: dict[str, Any] | None = None,
     ):
         """
         Args:
@@ -271,6 +279,8 @@ class Datetime(OrdinalMixin[dt.datetime], Column):
                 name that is not a valid Python identifier. Especially note that setting
                 this option does _not_ allow to refer to the column with two different
                 names, the specified alias is the only valid name.
+            metadata: A dictionary of metadata to attach to the column. Nothing will
+                happen with metadata. It is just stored.
         """
         # if resolution is not None and min is not None:
         #     if not datetime_matches_resolution(min, resolution):
@@ -294,6 +304,7 @@ class Datetime(OrdinalMixin[dt.datetime], Column):
             max_exclusive=max_exclusive,
             check=check,
             alias=alias,
+            metadata=metadata,
         )
         self.resolution = resolution
         self.time_zone = time_zone
@@ -326,6 +337,7 @@ class Duration(OrdinalMixin[dt.timedelta], Column):
         resolution: str | None = None,
         check: Callable[[ColExpr], ColExpr] | None = None,
         alias: str | None = None,
+        metadata: dict[str, Any] | None = None,
     ):
         """
         Args:
@@ -360,6 +372,8 @@ class Duration(OrdinalMixin[dt.timedelta], Column):
                 name that is not a valid Python identifier. Especially note that setting
                 this option does _not_ allow to refer to the column with two different
                 names, the specified alias is the only valid name.
+            metadata: A dictionary of metadata to attach to the column. Nothing will
+                happen with metadata. It is just stored.
         """
         # if resolution is not None and min is not None:
         #     if not timedelta_matches_resolution(min, resolution):
@@ -383,6 +397,7 @@ class Duration(OrdinalMixin[dt.timedelta], Column):
             max_exclusive=max_exclusive,
             check=check,
             alias=alias,
+            metadata=metadata,
         )
         self.resolution = resolution
 

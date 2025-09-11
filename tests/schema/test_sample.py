@@ -136,7 +136,9 @@ def test_sample_overrides_with_removing_groups():
     generator = Generator()
     n = 333  # we cannot use something too large here or we'll never return
     overrides = np.random.randint(100, size=n)
-    df = LimitedComplexColSpec.sample_polars(n, generator, overrides={"b": overrides})
+    df = LimitedComplexColSpec.sample_polars(
+        n, generator=generator, overrides={"b": overrides}
+    )
     LimitedComplexColSpec.validate_polars(df)
     tbl = pdt.Table(df)
     LimitedComplexColSpec.validate(tbl)
@@ -173,5 +175,6 @@ def test_sample_overrides_invalid_column():
 
 @pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_sample_overrides_invalid_length():
+    MySimpleColSpec.sample_polars(overrides={"a": [1, 2]})
     with pytest.raises(ValueError, match=r"`num_rows` is different"):
-        MySimpleColSpec.sample_polars(overrides={"a": [1, 2]})
+        MySimpleColSpec.sample_polars(num_rows=1, overrides={"a": [1, 2]})

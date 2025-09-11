@@ -5,6 +5,7 @@ import datetime as dt
 import inspect
 from abc import ABC, ABCMeta, abstractmethod
 from collections.abc import Callable
+from typing import Any
 
 from pydiverse.colspec.optional_dependency import dy
 from pydiverse.common import Dtype
@@ -41,6 +42,7 @@ class Column(ABC, ColExpr, metaclass=ColumnMeta):
         primary_key: bool = False,
         check: Callable[[ColExpr], ColExpr] | None = None,
         alias: str | None = None,
+        metadata: dict[str, Any] | None = None,
     ):
         """
         Args:
@@ -54,11 +56,14 @@ class Column(ABC, ColExpr, metaclass=ColumnMeta):
                 this option does _not_ allow to refer to the column with two different
                 names, the specified alias is the only valid name. If unset, colspec
                 internally sets the alias to the column's name in the parent schema.
+            metadata: A dictionary of metadata to attach to the column. Nothing will
+                happen with metadata. It is just stored.
         """
         self.nullable = nullable and not primary_key
         self.primary_key = primary_key
         self.check = check
         self.alias = alias
+        self.metadata = metadata
 
         # cached state:
         self.name = None  # this will be overridden by ColSpec.__getattribute__

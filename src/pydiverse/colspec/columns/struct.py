@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 from collections.abc import Callable
+from typing import Any
 
 import pydiverse.common as pdc
 
@@ -20,6 +21,7 @@ class Struct(Column):
         primary_key: bool = False,
         check: Callable[[ColExpr], ColExpr] | None = None,
         alias: str | None = None,
+        metadata: dict[str, Any] | None = None,
     ):
         """
         Args:
@@ -35,9 +37,15 @@ class Struct(Column):
                 name that is not a valid Python identifier. Especially note that setting
                 this option does _not_ allow to refer to the column with two different
                 names, the specified alias is the only valid name.
+            metadata: A dictionary of metadata to attach to the column. Nothing will
+                happen with metadata. It is just stored.
         """
         super().__init__(
-            nullable=nullable, primary_key=primary_key, check=check, alias=alias
+            nullable=nullable,
+            primary_key=primary_key,
+            check=check,
+            alias=alias,
+            metadata=metadata,
         )
         self.inner = inner
 
