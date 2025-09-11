@@ -1,6 +1,6 @@
 [project]
 name = "pydiverse-colspec"
-version = "0.2.10"
+version = "0.2.11"
 description = "Validate column specifications and constraints for SQL tables and polars data frames."
 authors = [
   { name = "QuantCo, Inc." },
