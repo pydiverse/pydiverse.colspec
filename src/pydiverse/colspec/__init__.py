@@ -31,6 +31,7 @@ from .columns import (
     UInt32,
     UInt64,
 )
+from .failure import FailureInfo
 from .version import __version__
 
 __all__ = [
@@ -71,4 +72,5 @@ __all__ = [
     "String",
     "List",
     "Struct",
+    "FailureInfo",
 ]
