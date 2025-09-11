@@ -5,7 +5,7 @@ import inspect
 import textwrap
 import types
 import typing
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Mapping, Sequence
 from functools import reduce
 from typing import Any, Literal, Self, overload
 
@@ -283,10 +283,12 @@ class ColSpec(
     @classmethod
     def sample_polars(
         cls,
-        num_rows: int = 1,
-        generator: Generator | None = None,
+        num_rows: int | None = None,
         *,
-        overrides: Mapping[str, Iterable[Any]] | None = None,
+        overrides: Mapping[str, Iterable[Any]]
+        | Sequence[Mapping[str, Any]]
+        | None = None,
+        generator: Generator | None = None,
     ) -> pl.DataFrame | pl.LazyFrame:
         dy_schema = convert_to_dy_col_spec(cls)
         return dy_schema.sample(num_rows, generator=generator, overrides=overrides)
