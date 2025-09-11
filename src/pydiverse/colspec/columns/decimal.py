@@ -5,6 +5,7 @@ import copy
 import decimal
 import math
 from collections.abc import Callable
+from typing import Any
 
 import pydiverse.common as pdc
 
@@ -29,6 +30,7 @@ class Decimal(OrdinalMixin[decimal.Decimal], Column):
         max_exclusive: decimal.Decimal | float | int | None = None,
         check: Callable[[ColExpr], ColExpr] | None = None,
         alias: str | None = None,
+        metadata: dict[str, Any] | None = None,
     ):
         """
         Args:
@@ -76,6 +78,7 @@ class Decimal(OrdinalMixin[decimal.Decimal], Column):
             max_exclusive=max_exclusive,
             check=check,
             alias=alias,
+            metadata=metadata,
         )
         self.precision = precision
         self.scale = scale

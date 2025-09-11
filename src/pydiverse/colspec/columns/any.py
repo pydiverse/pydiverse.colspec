@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 from collections.abc import Callable
+from typing import Any
 
 import pydiverse.common as pdc
 
@@ -17,6 +18,7 @@ class Any(Column):
         *,
         check: Callable[[ColExpr], ColExpr] | None = None,
         alias: str | None = None,
+        metadata: dict[str, Any] | None = None,
     ):
         """
         Args:
@@ -26,8 +28,16 @@ class Any(Column):
                 name that is not a valid Python identifier. Especially note that setting
                 this option does _not_ allow to refer to the column with two different
                 names, the specified alias is the only valid name.
+            metadata: A dictionary of metadata to attach to the column. Nothing will
+                happen with metadata. It is just stored.
         """
-        super().__init__(nullable=True, primary_key=False, check=check, alias=alias)
+        super().__init__(
+            nullable=True,
+            primary_key=False,
+            check=check,
+            alias=alias,
+            metadata=metadata,
+        )
 
     def dtype(self) -> pdc.Dtype:
         raise NotImplementedError(

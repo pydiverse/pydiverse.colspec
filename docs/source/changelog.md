@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.11 (2025-09-11)
+- implemented Column.metadata field
+- updated sample_polars interface to match dataframely changes (num_rows=None by default)
+
 ## 0.2.10 (2025-09-10)
 - implemented Column.name and Column.polars fields/properties (dataframely uses Column.col)
 - implemented nicer __str__ and __repr__ for Column and ColSpec

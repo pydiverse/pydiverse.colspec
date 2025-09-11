@@ -3,6 +3,7 @@
 import sys
 from abc import abstractmethod
 from collections.abc import Callable
+from typing import Any
 
 import pydiverse.common as pdc
 
@@ -24,6 +25,7 @@ class _BaseFloat(OrdinalMixin[float], Column):
         max_exclusive: float | None = None,
         check: Callable[[ColExpr], ColExpr] | None = None,
         alias: str | None = None,
+        metadata: dict[str, Any] | None = None,
     ):
         """
         Args:
@@ -42,6 +44,8 @@ class _BaseFloat(OrdinalMixin[float], Column):
                 name that is not a valid Python identifier. Especially note that setting
                 this option does _not_ allow to refer to the column with two different
                 names, the specified alias is the only valid name.
+            metadata: A dictionary of metadata to attach to the column. Nothing will
+                happen with metadata. It is just stored.
         """
         if min is not None and min < self.min_value:
             raise ValueError("Minimum value is too small for the data type.")
@@ -57,6 +61,7 @@ class _BaseFloat(OrdinalMixin[float], Column):
             max_exclusive=max_exclusive,
             check=check,
             alias=alias,
+            metadata=metadata,
         )
 
     @classproperty

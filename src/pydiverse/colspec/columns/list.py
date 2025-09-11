@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 from collections.abc import Callable
+from typing import Any
 
 import pydiverse.common as pdc
 
@@ -23,6 +24,7 @@ class List(Column):
         alias: str | None = None,
         min_length: int | None = None,
         max_length: int | None = None,
+        metadata: dict[str, Any] | None = None,
     ):
         """
         Args:
@@ -41,7 +43,11 @@ class List(Column):
                 names, the specified alias is the only valid name.
         """
         super().__init__(
-            nullable=nullable, primary_key=primary_key, check=check, alias=alias
+            nullable=nullable,
+            primary_key=primary_key,
+            check=check,
+            alias=alias,
+            metadata=metadata,
         )
         self.inner = inner
         self.min_length = min_length
