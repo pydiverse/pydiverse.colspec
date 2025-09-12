@@ -5,7 +5,7 @@ import inspect
 import operator
 import types
 import typing
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from functools import reduce
 from pathlib import Path
@@ -26,7 +26,6 @@ from pydiverse.colspec.optional_dependency import (
     ColExpr,
     FrameType,
     Generator,
-    Sequence,
     dy,
     pdt,
     pl,

@@ -7,10 +7,14 @@
 from typing import Annotated, Any
 
 import pytest
-from dataframely.random import Generator
 
 import pydiverse.colspec as cs
+from pydiverse.colspec.optional_dependency import Generator, dy
 from pydiverse.colspec.testing.factory import create_collection_raw
+
+pytestmark = pytest.mark.skipif(
+    dy.Column is None, reason="dataframely is required for this test"
+)
 
 
 class MyFirstSchema(cs.ColSpec):
