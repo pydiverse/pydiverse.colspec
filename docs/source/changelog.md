@@ -2,6 +2,7 @@
 
 ## 0.2.12 (2025-09-11)
 - added py.typed to package so mypy recognizes it as typed package
+- implemented CollectionMember annotations from dataframely
 
 ## 0.2.11 (2025-09-11)
 - implemented Column.metadata field
