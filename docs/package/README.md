@@ -25,4 +25,23 @@ pydiverse library collection also with the benefit to enable smoother integratio
 ## Usage
 
 pydiverse.colspec can either be installed via pypi with `pip install pydiverse-colspec` or via
-conda-forge with `conda install pydiverse-colspec -c conda-forge`.
+conda-forge with `conda install pydiverse-colspec -c conda-forge`. Our recommendation would be
+to use [pixi](https://pixi.sh/latest/) which is also based on conda-forge:
+
+```bash
+mkdir my_project
+pixi init
+pixi add pydiverse-colspec
+```
+
+With pixi, you run python like this:
+
+```bash
+pixi run python -c 'import pydiverse.colspec'
+```
+
+or this:
+
+```bash
+pixi run python my_script.py
+```
