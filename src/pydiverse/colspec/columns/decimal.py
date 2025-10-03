@@ -88,23 +88,14 @@ class Decimal(OrdinalMixin[decimal.Decimal], Column):
 
     def to_dataframely(self) -> dy.Column:
         if self.scale is None or any(
-            isinstance(x, float | int)
-            for x in [self.min, self.max, self.min_exclusive, self.max_exclusive]
+            isinstance(x, float | int) for x in [self.min, self.max, self.min_exclusive, self.max_exclusive]
         ):
             ret = copy.copy(self)
             # in colspec we don't use python decimals for defining boundaries
             ret.min = decimal.Decimal(ret.min) if ret.min is not None else None
             ret.max = decimal.Decimal(ret.max) if ret.max is not None else None
-            ret.min_exclusive = (
-                decimal.Decimal(ret.min_exclusive)
-                if ret.min_exclusive is not None
-                else None
-            )
-            ret.max_exclusive = (
-                decimal.Decimal(ret.max_exclusive)
-                if ret.max_exclusive is not None
-                else None
-            )
+            ret.min_exclusive = decimal.Decimal(ret.min_exclusive) if ret.min_exclusive is not None else None
+            ret.max_exclusive = decimal.Decimal(ret.max_exclusive) if ret.max_exclusive is not None else None
             # polars cannot deal with scale=None as opposed to SQL
             if ret.precision:
                 ret.scale = ret.scale or (ret.precision // 3 + 1)
@@ -127,9 +118,7 @@ class Decimal(OrdinalMixin[decimal.Decimal], Column):
         _ = dialect  # may be used in the future
         return sa.Column(
             name,
-            sa.Numeric(
-                self.precision or (38 if self.scale is not None else None), self.scale
-            ),
+            sa.Numeric(self.precision or (38 if self.scale is not None else None), self.scale),
             nullable=self.nullable,
             primary_key=self.primary_key,
             autoincrement=False,
@@ -152,11 +141,7 @@ def _validate(
         raise ValueError(f"Encountered 'inf' or 'NaN' for `{name}`.")
     if exponent is not None and scale is not None and -exponent > scale:
         raise ValueError(f"Scale of `{name}` exceeds scale of column.")
-    if (
-        precision is not None
-        and scale is not None
-        and _num_digits(int(value)) > precision - scale
-    ):
+    if precision is not None and scale is not None and _num_digits(int(value)) > precision - scale:
         raise ValueError(f"`{name}` exceeds precision of column.")
 
 

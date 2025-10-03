@@ -12,9 +12,7 @@ import pydiverse.colspec as cs
 from pydiverse.colspec.optional_dependency import Generator, dy
 from pydiverse.colspec.testing.factory import create_collection_raw
 
-pytestmark = pytest.mark.skipif(
-    dy.Column is None, reason="dataframely is required for this test"
-)
+pytestmark = pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 
 
 class MyFirstSchema(cs.ColSpec):
@@ -68,9 +66,7 @@ class IncorrectOverrideCollection(cs.Collection):
     second: MySecondSchema | None
 
     @classmethod
-    def _preprocess_sample(
-        cls, sample: dict[str, Any], index: int, generator: Generator
-    ) -> dict[str, Any]:
+    def _preprocess_sample(cls, sample: dict[str, Any], index: int, generator: Generator) -> dict[str, Any]:
         return sample
 
 
@@ -118,9 +114,7 @@ def test_sample_with_primary_key_override() -> None:
     assert collection.second.collect()["a"].to_list() == [1, 1, 2]
 
 
-@pytest.mark.parametrize(
-    "collection_type", [MyInlinedCollection, MyInlinedCollectionWithOptional]
-)
+@pytest.mark.parametrize("collection_type", [MyInlinedCollection, MyInlinedCollectionWithOptional])
 def test_sample_inline_with_overrides(
     collection_type: type[MyInlinedCollection] | type[MyInlinedCollectionWithOptional],
 ) -> None:
@@ -167,9 +161,7 @@ def test_sample_incorrect_override() -> None:
 def test_invalid_inline_for_sampling() -> None:
     import dataframely as dy
 
-    with pytest.raises(
-        dy.exc.ImplementationError, match=r"its primary key is a superset"
-    ):
+    with pytest.raises(dy.exc.ImplementationError, match=r"its primary key is a superset"):
         create_collection_raw(
             "test",
             {

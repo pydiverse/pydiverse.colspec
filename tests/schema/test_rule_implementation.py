@@ -22,11 +22,7 @@ def test_group_rule_group_by_error():
         create_colspec(
             "test",
             columns={"a": cs.Integer(), "b": cs.Integer()},
-            rules={
-                "b_greater_zero": GroupRulePolars(
-                    (pl.col("b") > 0).all(), group_columns=["c"]
-                )
-            },
+            rules={"b_greater_zero": GroupRulePolars((pl.col("b") > 0).all(), group_columns=["c"])},
         ).validate_polars(None)
 
 
@@ -51,9 +47,7 @@ def test_group_rule_implementation_error():
         create_colspec(
             "test",
             columns={"a": cs.Integer(), "b": cs.Integer()},
-            rules={
-                "b_greater_zero": GroupRulePolars(pl.col("b") > 0, group_columns=["a"])
-            },
+            rules={"b_greater_zero": GroupRulePolars(pl.col("b") > 0, group_columns=["a"])},
         ).validate_polars(pl.DataFrame(dict(a=[1], b=[2])))
 
 

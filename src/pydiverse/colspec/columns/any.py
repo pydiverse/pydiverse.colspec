@@ -40,9 +40,7 @@ class Any(Column):
         )
 
     def dtype(self) -> pdc.Dtype:
-        raise NotImplementedError(
-            "The Type Any is intentionally not implemented in pydiverse libraries."
-        )
+        raise NotImplementedError("The Type Any is intentionally not implemented in pydiverse libraries.")
 
     def to_dataframely(self):
         return dy.Any(check=self.check, alias=self.alias)

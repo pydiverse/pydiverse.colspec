@@ -86,8 +86,7 @@ class MemberInfo(CollectionMember):
         if dy.Column is not None:
             if inspect.isclass(anno) and issubclass(anno, dy.Schema):
                 raise exc.AnnotationImplementationErrorDetail(
-                    "Table annotations in Collections must not be a "
-                    "dataframely Schema type. Use ColSpec instead.",
+                    "Table annotations in Collections must not be a dataframely Schema type. Use ColSpec instead.",
                     anno,
                 )
 
@@ -95,8 +94,7 @@ class MemberInfo(CollectionMember):
             union_types = typing.get_args(anno)
             if dy.Column is not None:
                 dy_schemas_in_union = sum(
-                    1 if (inspect.isclass(t) and issubclass(t, dy.Schema)) else 0
-                    for t in union_types
+                    1 if (inspect.isclass(t) and issubclass(t, dy.Schema)) else 0 for t in union_types
                 )
                 if dy_schemas_in_union > 0:
                     raise exc.AnnotationImplementationErrorDetail(
@@ -105,20 +103,14 @@ class MemberInfo(CollectionMember):
                         f"{union_types}",
                         anno,
                     )
-            col_specs_in_union = sum(
-                1 if (inspect.isclass(t) and issubclass(t, ColSpec)) else 0
-                for t in union_types
-            )
+            col_specs_in_union = sum(1 if (inspect.isclass(t) and issubclass(t, ColSpec)) else 0 for t in union_types)
             if col_specs_in_union > 1:
                 raise exc.AnnotationImplementationErrorDetail(
-                    "Table annotations in Collections must contain at most one "
-                    f"ColSpec type. Found: {union_types}",
+                    f"Table annotations in Collections must contain at most one ColSpec type. Found: {union_types}",
                     anno,
                 )
             all_but_one_none = all(
-                t is type(None)
-                for t in union_types
-                if not (inspect.isclass(t) and issubclass(t, ColSpec))
+                t is type(None) for t in union_types if not (inspect.isclass(t) and issubclass(t, ColSpec))
             )
             if not all_but_one_none and col_specs_in_union == 1:
                 raise exc.AnnotationImplementationErrorDetail(
@@ -126,20 +118,14 @@ class MemberInfo(CollectionMember):
                     f"next to ColSpec type. Found: {union_types}",
                     anno,
                 )
-            return (
-                1 <= len(union_types) <= 2
-                and col_specs_in_union == 1
-                and all_but_one_none
-            )
+            return 1 <= len(union_types) <= 2 and col_specs_in_union == 1 and all_but_one_none
         return inspect.isclass(anno) and issubclass(anno, ColSpec)
 
     @staticmethod
     def new(anno: type):
         if isinstance(anno, types.UnionType):
             union_types = typing.get_args(anno)
-            col_spec = [
-                t for t in union_types if inspect.isclass(t) and issubclass(t, ColSpec)
-            ][0]
+            col_spec = [t for t in union_types if inspect.isclass(t) and issubclass(t, ColSpec)][0]
             is_optional = any(t == type(None) for t in union_types)  # noqa: E721
         else:
             col_spec = anno
@@ -148,9 +134,7 @@ class MemberInfo(CollectionMember):
 
     @staticmethod
     def common_primary_keys(col_specs: Iterable[type[ColSpec]]) -> set[str]:
-        return set.intersection(
-            *[set(col_spec.primary_keys()) for col_spec in col_specs]
-        )
+        return set.intersection(*[set(col_spec.primary_keys()) for col_spec in col_specs])
 
 
 class Collection:
@@ -202,8 +186,7 @@ class Collection:
         tbl = getattr(self, name)
         if not isinstance(tbl, pdt.Table):
             raise TypeError(
-                f"Collection member '{name}' is not a pydiverse transform Table, but "
-                f"{type(tbl)}; collection={self}"
+                f"Collection member '{name}' is not a pydiverse transform Table, but {type(tbl)}; collection={self}"
             )
         if cfg.fix_table_names:
             # fix the name of the table according to Collection member name
@@ -214,18 +197,13 @@ class Collection:
         out, failure = self.filter(cast=cast)
         if any(len(getattr(failure, tbl_name)) > 0 for tbl_name in failure.members()):
             raise MemberValidationError(
-                {
-                    tbl_name: RuleValidationError(getattr(failure, tbl_name).counts())
-                    for tbl_name in failure.members()
-                }
+                {tbl_name: RuleValidationError(getattr(failure, tbl_name).counts()) for tbl_name in failure.members()}
             )
         return out
 
     def validate_polars(self, *, cast: bool = False, fault_tolerant: bool = False):
         self.finalize()
-        return self.validate_polars_data(
-            self.__dict__, cast=cast, fault_tolerant=fault_tolerant
-        )
+        return self.validate_polars_data(self.__dict__, cast=cast, fault_tolerant=fault_tolerant)
 
     @classmethod
     def validate_polars_data(
@@ -265,9 +243,7 @@ class Collection:
             return cls.from_dy_collection(DynCollection.validate(data, cast=True))
         except dy_exc.ImplementationError as e:
             logger = structlog.getLogger(logger_name)
-            logger.exception(
-                "Dataframely raised column specification implementation error"
-            )
+            logger.exception("Dataframely raised column specification implementation error")
             if not fault_tolerant:
                 raise exc.ImplementationError(str(e))  # noqa: B904
         except plexc.InvalidOperationError as e:
@@ -319,9 +295,7 @@ class Collection:
 
     def is_valid_polars(self, *, cast: bool = False, fault_tolerant: bool = False):
         self.finalize()
-        return self.is_valid_polars_data(
-            self.__dict__, cast=cast, fault_tolerant=fault_tolerant
-        )
+        return self.is_valid_polars_data(self.__dict__, cast=cast, fault_tolerant=fault_tolerant)
 
     @classmethod
     def is_valid_polars_data(
@@ -354,9 +328,7 @@ class Collection:
         except ValidationError:
             return False
 
-    def filter(
-        self, *, cast: bool = False, cfg: Config = Config.default
-    ) -> tuple[Self, Self]:
+    def filter(self, *, cast: bool = False, cfg: Config = Config.default) -> tuple[Self, Self]:
         """Filter rows which conform to column specifications and collections rules.
 
         Returns a tuple of two new collections one with the filtered tables as member
@@ -411,11 +383,7 @@ class Collection:
 
         for pred_name, pred in self.filter_rules().items():
             logic = pred.logic_fn(self)
-            expr_tbl_names = [
-                tbl_name
-                for tbl_name in members.keys()
-                if logic.uses_table(self.get_pdt(tbl_name, cfg))
-            ]
+            expr_tbl_names = [tbl_name for tbl_name in members.keys() if logic.uses_table(self.get_pdt(tbl_name, cfg))]
             expr_col_specs = [members[tbl_name].col_spec for tbl_name in expr_tbl_names]
 
             expr_pk_union = self._pk_union(*expr_col_specs)
@@ -424,15 +392,11 @@ class Collection:
                 tbl = members[name].col_spec
                 join = self.get_join(name, set(expr_tbl_names) - {name}, cfg=cfg)
                 pk_overlap = expr_pk_union.intersection(tbl.primary_keys())
-                requires_grouping = (
-                    len(expr_pk_union.difference(tbl.primary_keys())) > 0
-                )
+                requires_grouping = len(expr_pk_union.difference(tbl.primary_keys())) > 0
 
                 if join is not None:
                     if requires_grouping:
-                        key = tuple(
-                            *pk_overlap, 0, *sorted(tbl.primary_keys() + expr_pk_union)
-                        )
+                        key = tuple(*pk_overlap, 0, *sorted(tbl.primary_keys() + expr_pk_union))
                         if key not in group_subqueries:
                             group_subqueries[key] = GroupSubquery.build()
                         group_subqueries[key].keys = pk_overlap
@@ -443,9 +407,7 @@ class Collection:
                         join_members[name] |= set(expr_tbl_names) - {name}
                         extra_rules[name][pred.logic_fn.__name__] = logic
 
-        join_subqueries: dict[str, list[tuple[pdt.Table, set[str]]]] = {
-            name: [] for name in members
-        }
+        join_subqueries: dict[str, list[tuple[pdt.Table, set[str]]]] = {name: [] for name in members}
 
         for group_subquery in group_subqueries.values():
             for name in group_subquery.tbls:
@@ -466,9 +428,7 @@ class Collection:
             col_spec = self.member_col_specs()[name]
 
             if len(join_members[name]) > 0:
-                filter_join = individually_filtered.get_join(
-                    name, *join_members[name], cfg=cfg
-                )
+                filter_join = individually_filtered.get_join(name, *join_members[name], cfg=cfg)
             else:
                 filter_join = tbl
             if len(join_subqueries[name]):
@@ -478,17 +438,11 @@ class Collection:
             # NOTE: we currently throw rows out if a rule results in null. We could also
             # keep everything, but then we should do the same if no match in the join
             # is found.
-            extra_rules[name] = {
-                name: rule.fill_null(False) for name, rule in extra_rules[name].items()
-            }
+            extra_rules[name] = {name: rule.fill_null(False) for name, rule in extra_rules[name].items()}
 
             # The above left_join should not duplicate rows of `tbl`, so we don't need
             # to care about uniqueness here.
-            ok_rows = (
-                filter_join
-                >> pdt.filter(*extra_rules.get(name).values())
-                >> select(*tbl)
-            )
+            ok_rows = filter_join >> pdt.filter(*extra_rules.get(name).values()) >> select(*tbl)
             setattr(new, name, ok_rows)
 
             collection_level_invalid_rows = (
@@ -496,13 +450,9 @@ class Collection:
                 >> pdt.filter(~pdt.all(True, *extra_rules.get(name).values()))
                 >> mutate(**extra_rules.get(name))
             )
-            table_level_invalid_rows: pdt.Table = getattr(
-                table_level_fail, name
-            )._invalid_rows
+            table_level_invalid_rows: pdt.Table = getattr(table_level_fail, name)._invalid_rows
 
-            rule_columns: dict[str, ColExpr] = (
-                getattr(table_level_fail, name).rule_columns | extra_rules[name]
-            )
+            rule_columns: dict[str, ColExpr] = getattr(table_level_fail, name).rule_columns | extra_rules[name]
 
             if cfg.dialect_name == "mssql":
 
@@ -526,9 +476,7 @@ class Collection:
                 >> full_join(
                     (
                         coll_failure := collection_level_invalid_rows
-                        >> alias_collection_fail(
-                            cfg, self.__class__.__name__.lower() + "_coll_invalid"
-                        )
+                        >> alias_collection_fail(cfg, self.__class__.__name__.lower() + "_coll_invalid")
                     )
                     >> drop(*col_spec.column_names()),
                     on=[
@@ -540,18 +488,11 @@ class Collection:
                 )
                 >> mutate(
                     **{
-                        col_name: table_level_invalid_rows[col_name].fill_null(
-                            coll_failure[col_name]
-                        )
+                        col_name: table_level_invalid_rows[col_name].fill_null(coll_failure[col_name])
                         for col_name in col_spec.column_names()
                     }
                 )
-                >> mutate(
-                    **{
-                        rule: cast_bool(C[rule]).fill_null(True)
-                        for rule in rule_columns.keys()
-                    }
-                )
+                >> mutate(**{rule: cast_bool(C[rule]).fill_null(True) for rule in rule_columns.keys()})
             )
 
             original_tbl = getattr(table_level_fail, name).tbl
@@ -560,62 +501,32 @@ class Collection:
         return new, fail
 
     def filter_rules(self) -> dict[str, Filter]:
-        rules = {
-            pred: getattr(self, pred)
-            for pred in dir(self)
-            if isinstance(getattr(self, pred), Filter)
-        }
+        rules = {pred: getattr(self, pred) for pred in dir(self) if isinstance(getattr(self, pred), Filter)}
         if "_primary_key_" in rules:
-            raise ImplementationError(
-                "Collection cannot have a filter named '_primary_key_'"
-            )
+            raise ImplementationError("Collection cannot have a filter named '_primary_key_'")
         return rules
 
-    def _pk_overlap(
-        self, tbl: str | type[ColSpec], *more_tbls: str | type[ColSpec]
-    ) -> set[str]:
-        tbls: list[ColSpec] = [
-            self.member_col_specs()[t] if isinstance(t, str) else t
-            for t in (tbl, *more_tbls)
-        ]
-        return set(tbls[0].primary_keys()).intersection(
-            *(other.primary_keys() for other in tbls[1:])
-        )
+    def _pk_overlap(self, tbl: str | type[ColSpec], *more_tbls: str | type[ColSpec]) -> set[str]:
+        tbls: list[ColSpec] = [self.member_col_specs()[t] if isinstance(t, str) else t for t in (tbl, *more_tbls)]
+        return set(tbls[0].primary_keys()).intersection(*(other.primary_keys() for other in tbls[1:]))
 
-    def _pk_union(
-        self, tbl: str | type[ColSpec], *more_tbls: Iterable[str | type[ColSpec]]
-    ) -> set[str]:
-        tbls: list[ColSpec] = [
-            self.member_col_specs()[t] if isinstance(t, str) else t
-            for t in (tbl, *more_tbls)
-        ]
-        return set(tbls[0].primary_keys()).union(
-            *(other.primary_keys() for other in tbls[1:])
-        )
+    def _pk_union(self, tbl: str | type[ColSpec], *more_tbls: Iterable[str | type[ColSpec]]) -> set[str]:
+        tbls: list[ColSpec] = [self.member_col_specs()[t] if isinstance(t, str) else t for t in (tbl, *more_tbls)]
+        return set(tbls[0].primary_keys()).union(*(other.primary_keys() for other in tbls[1:]))
 
-    def _get_join(
-        self, *tbls: Iterable[str], cfg: Config = Config.default
-    ) -> pdt.Table | None:
+    def _get_join(self, *tbls: Iterable[str], cfg: Config = Config.default) -> pdt.Table | None:
         """
         Similar to get_join(), but without given leftmost table.
 
         It is used for constructing grouped subqueries.
         """
         col_specs = self.member_col_specs()
-        primary_keyss = {
-            name: spec.primary_keys()
-            for name, spec in col_specs.items()
-            if name in tbls
-        }
+        primary_keyss = {name: spec.primary_keys() for name, spec in col_specs.items() if name in tbls}
         # the ordering should match that of get_join()
-        ordered_tbls = sorted(
-            primary_keyss.keys(), key=lambda name: (len(primary_keyss[name]), name)
-        )
+        ordered_tbls = sorted(primary_keyss.keys(), key=lambda name: (len(primary_keyss[name]), name))
         return self.get_join(*ordered_tbls, cfg=cfg)
 
-    def get_join(
-        self, tbl: str, *more_tbls: Iterable[str], cfg: Config = Config.default
-    ) -> pdt.Table | None:
+    def get_join(self, tbl: str, *more_tbls: Iterable[str], cfg: Config = Config.default) -> pdt.Table | None:
         """
         Get a left join expression if tables should be joinable.
 
@@ -631,16 +542,10 @@ class Collection:
         more_tbls = list(more_tbls)
         result = self.get_pdt(tbl, cfg)
         col_specs = self.member_col_specs()
-        primary_keyss = {
-            name: spec.primary_keys()
-            for name, spec in col_specs.items()
-            if name in more_tbls
-        }
+        primary_keyss = {name: spec.primary_keys() for name, spec in col_specs.items() if name in more_tbls}
         # it is important to ensure consistent ordering in case additional tables are
         # added to `more_tbls`
-        ordered_tbls = sorted(
-            primary_keyss.keys(), key=lambda name: (len(primary_keyss[name]), name)
-        )
+        ordered_tbls = sorted(primary_keyss.keys(), key=lambda name: (len(primary_keyss[name]), name))
         primary_keyss[tbl] = col_specs[tbl].primary_keys()
         ordered_tbls = [tbl, *ordered_tbls]
         for i, name in enumerate(ordered_tbls):
@@ -653,11 +558,7 @@ class Collection:
                     if len(pk_overlap) > 0:
                         on = reduce(
                             operator.and_,
-                            (
-                                self.get_pdt(name, cfg)[f]
-                                == self.get_pdt(join_name, cfg)[f]
-                                for f in pk_overlap
-                            ),
+                            (self.get_pdt(name, cfg)[f] == self.get_pdt(join_name, cfg)[f] for f in pk_overlap),
                             on or pdt.lit(True),
                         )
                         pk_set -= pk_overlap
@@ -670,8 +571,7 @@ class Collection:
                         members=self.members(),
                     )
                     logger.debug(
-                        "Heuristic failed to join table {name}. "
-                        "Please override get_join method in this collection.",
+                        "Heuristic failed to join table {name}. Please override get_join method in this collection.",
                         join_tbls=join_tbls,
                         primary_key=pk_set,
                     )
@@ -679,9 +579,7 @@ class Collection:
                 result = result >> pdt.left_join(self.get_pdt(name, cfg), on)
         return result
 
-    def filter_polars(
-        self, *, cast: bool = False
-    ) -> tuple[Self, dict[str, dy.FailureInfo]]:
+    def filter_polars(self, *, cast: bool = False) -> tuple[Self, dict[str, dy.FailureInfo]]:
         self.finalize()
         return self.filter_polars_data(self.__dict__, cast=cast)
 
@@ -728,11 +626,7 @@ class Collection:
     @classmethod
     def member_col_specs(cls) -> dict[str, type[ColSpec]]:
         """The column specifications of all members of the collection."""
-        return {
-            k: MemberInfo.new(v).col_spec
-            for k, v in typing.get_type_hints(cls).items()
-            if MemberInfo.is_member(v)
-        }
+        return {k: MemberInfo.new(v).col_spec for k, v in typing.get_type_hints(cls).items() if MemberInfo.is_member(v)}
 
     @classmethod
     def required_members(cls) -> set[str]:
@@ -760,9 +654,7 @@ class Collection:
     def to_dict(self) -> dict[str, ColSpec]:
         """Return a dictionary representation of this collection."""
         return {
-            member: getattr(self, member)
-            for member in self.member_col_specs()
-            if getattr(self, member) is not None
+            member: getattr(self, member) for member in self.member_col_specs() if getattr(self, member) is not None
         }
 
     # ---------------------------------- COLLECTION ---------------------------------- #
@@ -787,18 +679,14 @@ class Collection:
             dfs = pl.collect_all([lf for lf in self.to_dict().values()])
         except plexc.PolarsError as e:
             raise ValidationError(str(e)) from e
-        return self._init_polars_data(
-            {key: dfs[i].lazy() for i, key in enumerate(self.to_dict().keys())}
-        )
+        return self._init_polars_data({key: dfs[i].lazy() for i, key in enumerate(self.to_dict().keys())})
 
     # -------------------------- Polars/Parquet PERSISTENCE ----------------------- #
 
     def write_parquet(self, directory: Path):
         self.finalize()
         DynCollection = convert_collection_to_dy(self.__class__)
-        coll = DynCollection._init(
-            {k: v for k, v in self.__dict__.items() if v is not None}
-        )
+        coll = DynCollection._init({k: v for k, v in self.__dict__.items() if v is not None})
         coll.write_parquet(directory)
 
     @classmethod
@@ -833,9 +721,7 @@ class Collection:
     def finalize(self, assert_pdt=False):
         # finalize builder stage and ensure that all dataclass members have been set
         errors = {
-            member
-            for member, info in self.members().items()
-            if not info.is_optional and getattr(self, member) is None
+            member for member, info in self.members().items() if not info.is_optional and getattr(self, member) is None
         }
         assert len(errors) == 0, (
             f"Dataclass building was not finalized before usage. "
@@ -846,8 +732,7 @@ class Collection:
             errors = {
                 member: type(getattr(self, member))
                 for member, info in self.members().items()
-                if getattr(self, member) is not None
-                and not isinstance(getattr(self, member), pdt.Table)
+                if getattr(self, member) is not None and not isinstance(getattr(self, member), pdt.Table)
             }
             assert len(errors) == 0, (
                 f"Collection includes other member type than expected. "
@@ -934,9 +819,7 @@ class Collection:
     def _init_polars_data(cls, data: Mapping[str, FrameType]) -> Self:
         out = cls.build()
         for member_name, member in cls.members().items():
-            if member.is_optional and (
-                member_name not in data or data[member_name] is None
-            ):
+            if member.is_optional and (member_name not in data or data[member_name] is None):
                 setattr(out, member_name, None)
             else:
                 setattr(out, member_name, data[member_name].lazy())
@@ -944,9 +827,7 @@ class Collection:
 
     @classmethod
     def from_dy_collection(cls, c: dy.Collection) -> Self:
-        return cls._init_polars_data(
-            {name: getattr(c, name) for name in c.members().keys()}
-        )
+        return cls._init_polars_data({name: getattr(c, name) for name in c.members().keys()})
 
     @classmethod
     def _validate_polars_input_keys(cls, data: Mapping[str, FrameType]):
@@ -954,16 +835,13 @@ class Collection:
 
         missing = cls.required_members() - actual
         if len(missing) > 0:
-            raise ValueError(
-                f"Input misses {len(missing)} required members: {', '.join(missing)}."
-            )
+            raise ValueError(f"Input misses {len(missing)} required members: {', '.join(missing)}.")
 
         superfluous = actual - set(cls.members())
         if len(superfluous) > 0:
             logger = structlog.getLogger(__name__ + "." + cls.__name__ + ".cast")
             logger.warning(
-                f"Input provides {len(superfluous)} superfluous members that are "
-                f"ignored: {', '.join(superfluous)}."
+                f"Input provides {len(superfluous)} superfluous members that are ignored: {', '.join(superfluous)}."
             )
 
     def pk_is_null(self, tbl: pdt.Table) -> ColExpr:
@@ -981,21 +859,13 @@ def convert_collection_to_dy(
     from pydiverse.colspec import FilterPolars
 
     cls = collection.__class__ if isinstance(collection, Collection) else collection
-    filters = {
-        k: convert_filter_to_dy(v)
-        for k, v in collection.__dict__.items()
-        if isinstance(v, FilterPolars)
-    }
-    preprocess = {
-        k: v for k, v in collection.__dict__.items() if k == "_preprocess_sample"
-    }
+    filters = {k: convert_filter_to_dy(v) for k, v in collection.__dict__.items() if isinstance(v, FilterPolars)}
+    preprocess = {k: v for k, v in collection.__dict__.items() if k == "_preprocess_sample"}
     DynCollection = type[dy.Collection](
         cls.__name__,
         (dy.Collection,),
         {
-            "__annotations__": convert_to_dy_anno_dict(
-                typing.get_type_hints(cls, include_extras=True)
-            ),
+            "__annotations__": convert_to_dy_anno_dict(typing.get_type_hints(cls, include_extras=True)),
             **filters,
             **preprocess,
         },

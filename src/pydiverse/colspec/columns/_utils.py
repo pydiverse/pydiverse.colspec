@@ -39,9 +39,7 @@ def map_optional(
 
 
 @overload
-def first_non_null(
-    *values: T | None, allow_null_response: Literal[True]
-) -> T | None: ...
+def first_non_null(*values: T | None, allow_null_response: Literal[True]) -> T | None: ...
 
 
 @overload

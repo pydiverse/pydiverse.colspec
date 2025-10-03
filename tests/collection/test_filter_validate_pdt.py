@@ -43,11 +43,7 @@ class MyCollection(pydiverse.colspec.collection.Collection):
 
     @cs.filter()
     def first_b_greater_second_b(self) -> ColExpr:
-        return (
-            (self.first.b > self.second.b)
-            | self.pk_is_null(self.first)
-            | self.pk_is_null(self.second)
-        )
+        return (self.first.b > self.second.b) | self.pk_is_null(self.first) | self.pk_is_null(self.second)
 
 
 @dataclass
@@ -197,9 +193,7 @@ def test_validate_without_filter_with_rule_violation(
 ):
     assert not data_without_filter_with_rule_violation.is_valid()
 
-    with pytest.raises(
-        MemberValidationError, match=r"2 members failed validation"
-    ) as exc:
+    with pytest.raises(MemberValidationError, match=r"2 members failed validation") as exc:
         data_without_filter_with_rule_violation.validate()
 
     exc.match(r"Member 'first' failed validation")
@@ -217,9 +211,7 @@ def test_validate_with_filter_without_rule_violation(
 
     assert not my_collection.is_valid()
 
-    with pytest.raises(
-        MemberValidationError, match=r"2 members failed validation"
-    ) as exc:
+    with pytest.raises(MemberValidationError, match=r"2 members failed validation") as exc:
         my_collection.validate()
 
     exc.match(r"Member 'first' failed validation")
@@ -236,9 +228,7 @@ def test_validate_with_filter_with_rule_violation(
     my_collection = to_my_collection(data_with_filter_with_rule_violation)
     assert not my_collection.is_valid()
 
-    with pytest.raises(
-        MemberValidationError, match=r"2 members failed validation"
-    ) as exc:
+    with pytest.raises(MemberValidationError, match=r"2 members failed validation") as exc:
         my_collection.validate()
 
     exc.match(r"Member 'first' failed validation")

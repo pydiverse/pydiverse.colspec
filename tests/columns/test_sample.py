@@ -65,16 +65,8 @@ def test_sample_integer_min_max(
     column = column_type(**min_kwargs, **max_kwargs)
     samples = sample_and_validate(column, generator, n=10_000)
     if min_kwargs and max_kwargs:
-        assert samples.min() == (
-            min_kwargs["min"]
-            if "min" in min_kwargs
-            else min_kwargs["min_exclusive"] + 1
-        )
-        assert samples.max() == (
-            max_kwargs["max"]
-            if "max" in max_kwargs
-            else max_kwargs["max_exclusive"] - 1
-        )
+        assert samples.min() == (min_kwargs["min"] if "min" in min_kwargs else min_kwargs["min_exclusive"] + 1)
+        assert samples.max() == (max_kwargs["max"] if "max" in max_kwargs else max_kwargs["max_exclusive"] - 1)
 
 
 @pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
@@ -126,9 +118,7 @@ def test_sample_decimal(generator: Generator):
 
 @pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_sample_date(generator: Generator):
-    column = cs.Date(
-        min=dt.date(2020, 1, 1), max=dt.date(2021, 12, 1), resolution="1mo"
-    )
+    column = cs.Date(min=dt.date(2020, 1, 1), max=dt.date(2021, 12, 1), resolution="1mo")
     samples = sample_and_validate(column, generator, n=100_000)
     assert samples.min() == dt.date(2020, 1, 1)
     assert samples.max() == dt.date(2021, 12, 1)
@@ -136,9 +126,7 @@ def test_sample_date(generator: Generator):
 
 @pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_sample_date_9999(generator: Generator):
-    column = cs.Date(
-        min=dt.date(9998, 1, 1), max=dt.date(9999, 12, 1), resolution="1mo"
-    )
+    column = cs.Date(min=dt.date(9998, 1, 1), max=dt.date(9999, 12, 1), resolution="1mo")
     samples = sample_and_validate(column, generator, n=100_000)
     assert samples.min() == dt.date(9998, 1, 1)
     assert samples.max() == dt.date(9999, 12, 1)
@@ -166,9 +154,7 @@ def test_sample_time(generator: Generator):
 
 @pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_sample_duration(generator: Generator):
-    column = cs.Duration(
-        min=dt.timedelta(hours=24), max=dt.timedelta(hours=120), resolution="12h"
-    )
+    column = cs.Duration(min=dt.timedelta(hours=24), max=dt.timedelta(hours=120), resolution="12h")
     samples = sample_and_validate(column, generator, n=100_000)
     assert samples.min() == dt.timedelta(hours=24)
     assert samples.max() == dt.timedelta(hours=120)

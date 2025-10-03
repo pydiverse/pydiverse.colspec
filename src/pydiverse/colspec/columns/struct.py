@@ -50,22 +50,14 @@ class Struct(Column):
         self.inner = inner
 
     def dtype(self) -> pdc.Dtype:
-        raise NotImplementedError(
-            "Struct column type is not yet implemented in pydiverse libraries."
-        )
+        raise NotImplementedError("Struct column type is not yet implemented in pydiverse libraries.")
 
     def validation_rules(self, expr: ColExpr) -> dict[str, ColExpr]:
-        raise NotImplementedError(
-            "Struct column type is not yet implemented in pydiverse libraries."
-        )
+        raise NotImplementedError("Struct column type is not yet implemented in pydiverse libraries.")
         inner_rules = {
-            f"inner_{name}_{rule_name}": (
-                pl.when(expr.is_null()).then(pl.lit(True)).otherwise(inner_expr)
-            )
+            f"inner_{name}_{rule_name}": (pl.when(expr.is_null()).then(pl.lit(True)).otherwise(inner_expr))
             for name, col in self.inner.items()
-            for rule_name, inner_expr in col.validation_rules(
-                expr.struct.field(name)
-            ).items()
+            for rule_name, inner_expr in col.validation_rules(expr.struct.field(name)).items()
         }
         return {
             **super().validation_rules(expr),

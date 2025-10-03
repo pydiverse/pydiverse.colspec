@@ -17,9 +17,7 @@ def rules_from_exprs_polars(exprs: dict[str, pl.Expr]) -> dict[str, RulePolars]:
     return {name: RulePolars(expr) for name, expr in exprs.items()}
 
 
-def evaluate_rules_polars(
-    lf: pl.LazyFrame, rules: dict[str, RulePolars]
-) -> pl.LazyFrame:
+def evaluate_rules_polars(lf: pl.LazyFrame, rules: dict[str, RulePolars]) -> pl.LazyFrame:
     """Evaluate the provided rules and return the rules' evaluation.
 
     Args:
@@ -36,8 +34,5 @@ def evaluate_rules_polars(
 
 def evaluate_rules(tbl: pdt.Table, rules: dict[str, ColExpr]):
     return {
-        k: (tbl >> pdt.select() >> pdt.mutate(out=v) >> pdt.export(pdt.DictOfLists()))[
-            "out"
-        ]
-        for k, v in rules.items()
+        k: (tbl >> pdt.select() >> pdt.mutate(out=v) >> pdt.export(pdt.DictOfLists()))["out"] for k, v in rules.items()
     }

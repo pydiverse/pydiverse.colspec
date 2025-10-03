@@ -127,9 +127,7 @@ def test_postgres_datatype(column: cs.Column, datatype: str):
 @pytest.mark.parametrize("column_type", COLUMN_TYPES)
 @pytest.mark.parametrize("nullable", [True, False])
 @pytest.mark.parametrize("dialect", [MSDialect_pyodbc()])
-def test_sql_nullability(
-    column_type: type[cs.Column], nullable: bool, dialect: sa.Dialect
-):
+def test_sql_nullability(column_type: type[cs.Column], nullable: bool, dialect: sa.Dialect):
     schema = create_colspec("test", {"a": column_type(nullable=nullable)})
     columns = schema.sql_schema(dialect)
     assert len(columns) == 1
@@ -143,9 +141,7 @@ def test_sql_nullability(
 @pytest.mark.parametrize("column_type", COLUMN_TYPES)
 @pytest.mark.parametrize("primary_key", [True, False])
 @pytest.mark.parametrize("dialect", [MSDialect_pyodbc(), PGDialect_psycopg2()])
-def test_sql_primary_key(
-    column_type: type[cs.Column], primary_key: bool, dialect: sa.Dialect
-):
+def test_sql_primary_key(column_type: type[cs.Column], primary_key: bool, dialect: sa.Dialect):
     schema = create_colspec("test", {"a": column_type(primary_key=primary_key)})
     columns = schema.sql_schema(dialect)
     assert len(columns) == 1
@@ -180,7 +176,5 @@ def test_raise_for_list_column(dialect: sa.Dialect):
 #   pyodbc are needed for this test")
 # @pytest.mark.parametrize("dialect", [MSDialect_pyodbc(), PGDialect_psycopg2()])
 def test_raise_for_struct_column():  # dialect: sa.Dialect):
-    with pytest.raises(
-        NotImplementedError, match="Struct column type is not yet implemented"
-    ):
+    with pytest.raises(NotImplementedError, match="Struct column type is not yet implemented"):
         cs.Struct({"a": cs.String()}).dtype()

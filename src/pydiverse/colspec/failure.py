@@ -59,12 +59,7 @@ class FailureInfo:
             # have been converted to integers.
             cnts: dict[str, int] = (
                 self._invalid_rows
-                >> summarize(
-                    **{
-                        k: (C[k] == 0).sum().fill_null(0)
-                        for k in self.rule_columns.keys()
-                    }
-                )
+                >> summarize(**{k: (C[k] == 0).sum().fill_null(0) for k in self.rule_columns.keys()})
                 >> export(pdt.Dict())
             )
         else:
@@ -125,14 +120,10 @@ def _compute_counts(df: pl.DataFrame, rule_columns: list[str]) -> dict[str, int]
         return {}
 
     counts = df.select((~pl.col(rule_columns)).sum())
-    return {
-        name: count for name, count in (counts.row(0, named=True).items()) if count > 0
-    }
+    return {name: count for name, count in (counts.row(0, named=True).items()) if count > 0}
 
 
-def _compute_cooccurrence_counts(
-    df: pl.DataFrame, rule_columns: list[str]
-) -> dict[frozenset[str], int]:
+def _compute_cooccurrence_counts(df: pl.DataFrame, rule_columns: list[str]) -> dict[frozenset[str], int]:
     if len(rule_columns) == 0:
         return {}
 
@@ -143,10 +134,6 @@ def _compute_cooccurrence_counts(
     groups = group_lengths.drop("len")
     counts = group_lengths.get_column("len")
     return {
-        frozenset(
-            name
-            for name, success in zip(rule_columns, row, strict=False)
-            if not success
-        ): count
+        frozenset(name for name, success in zip(rule_columns, row, strict=False) if not success): count
         for row, count in zip(groups.iter_rows(), counts, strict=False)
     }

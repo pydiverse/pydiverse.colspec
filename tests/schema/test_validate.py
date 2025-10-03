@@ -147,12 +147,8 @@ def test_violated_custom_rule():
 def test_success_multi_row_strip_cast(
     df_type: type[pl.DataFrame] | type[pl.LazyFrame],
 ):
-    df = df_type(
-        {"a": [1, 2, 3], "b": ["x", "y", "z"], "c": [1, None, None], "d": [1, 2, 3]}
-    )
+    df = df_type({"a": [1, 2, 3], "b": ["x", "y", "z"], "c": [1, None, None], "d": [1, 2, 3]})
     actual = MyColSpec.validate_polars(df, cast=True)
-    expected = pl.DataFrame(
-        {"a": [1, 2, 3], "b": ["x", "y", "z"], "c": ["1", None, None]}
-    )
+    expected = pl.DataFrame({"a": [1, 2, 3], "b": ["x", "y", "z"], "c": ["1", None, None]})
     assert_frame_equal(actual, expected)
     assert MyColSpec.is_valid_polars(df, cast=True)

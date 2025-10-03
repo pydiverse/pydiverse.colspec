@@ -346,9 +346,7 @@ def test_args_resolution_valid(column_type: type[Column], kwargs: dict[str, Any]
         ),
     ],
 )
-def test_validate_min_max(
-    column: Column, values: list[Any], valid: dict[str, list[bool]]
-):
+def test_validate_min_max(column: Column, values: list[Any], valid: dict[str, list[bool]]):
     tbl = pdt.Table({"a": values})
     actual = evaluate_rules(tbl, column.validation_rules(tbl.a))
     assert actual == valid
@@ -401,9 +399,7 @@ def test_validate_min_max(
         ),
     ],
 )
-def test_validate_resolution(
-    column: Column, values: list[Any], valid: dict[str, list[bool]]
-):
+def test_validate_resolution(column: Column, values: list[Any], valid: dict[str, list[bool]]):
     tbl = pdt.Table({"a": values})
     actual = evaluate_rules(tbl, column.validation_rules(tbl.a))
     assert actual == valid
@@ -411,11 +407,7 @@ def test_validate_resolution(
 
 @pytest.mark.parametrize(
     "column",
-    [
-        cs.Datetime(
-            min=dt.datetime(2020, 1, 1), max=dt.datetime(2021, 1, 1), resolution="1h"
-        )
-    ],
+    [cs.Datetime(min=dt.datetime(2020, 1, 1), max=dt.datetime(2021, 1, 1), resolution="1h")],
 )
 @pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_sample_resolution(column: cs.Column):

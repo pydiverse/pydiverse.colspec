@@ -28,9 +28,7 @@ def test_single_column_multi_rule():
     }
     actual = evaluate_rules_polars(lf, rules)
 
-    expected = pl.LazyFrame(
-        {"a|min": [False, True, True], "a|max": [True, True, False]}
-    )
+    expected = pl.LazyFrame({"a|min": [False, True, True], "a|max": [True, True, False]})
     assert_frame_equal(actual, expected)
 
 
@@ -67,9 +65,7 @@ def test_cross_column_rule():
 @pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_group_rule():
     lf = pl.LazyFrame({"a": [1, 1, 2, 2, 3], "b": [1, 1, 1, 2, 1]})
-    rules: dict[str, RulePolars] = {
-        "unique_b": GroupRulePolars(pl.col("b").n_unique() == 1, group_columns=["a"])
-    }
+    rules: dict[str, RulePolars] = {"unique_b": GroupRulePolars(pl.col("b").n_unique() == 1, group_columns=["a"])}
     actual = evaluate_rules_polars(lf, rules)
 
     expected = pl.LazyFrame({"unique_b": [True, True, False, False, True]})

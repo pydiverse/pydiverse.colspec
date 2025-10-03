@@ -126,11 +126,7 @@ class Column(ABC, ColExpr, metaclass=ColumnMeta):
             return value
 
         # Get all non-private attributes
-        attrs = {
-            k: convert(v)
-            for k, v in self.__dict__.items()
-            if not k.startswith("_") and k != "name"
-        }
+        attrs = {k: convert(v) for k, v in self.__dict__.items() if not k.startswith("_") and k != "name"}
         return getattr(dy, self.__class__.__name__)(**attrs)
 
     def validate_dtype_polars(self, dtype: PolarsDataType) -> bool:
@@ -216,11 +212,8 @@ class Column(ABC, ColExpr, metaclass=ColumnMeta):
     def __repr__(self) -> str:
         parts = [
             f"{attribute}={repr(getattr(self, attribute))}"
-            for attribute, param_details in inspect.signature(
-                self.__class__.__init__
-            ).parameters.items()
-            if attribute
-            not in ["self", "alias"]  # alias is always equal to the column name here
+            for attribute, param_details in inspect.signature(self.__class__.__init__).parameters.items()
+            if attribute not in ["self", "alias"]  # alias is always equal to the column name here
             and not (
                 # Do not include attributes that are set to their default value
                 getattr(self, attribute) == param_details.default

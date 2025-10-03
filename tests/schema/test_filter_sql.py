@@ -42,9 +42,7 @@ class MyColSpec(cs.ColSpec):
         ({"a": pl.Int64, "b": pl.String, "c": pl.String}, ["a", "b"]),
     ],
 )
-def test_filter_extra_columns(
-    schema: dict[str, DataTypeClass], expected_columns: list[str] | None
-):
+def test_filter_extra_columns(schema: dict[str, DataTypeClass], expected_columns: list[str] | None):
     tbl = sql_table(pl.DataFrame(schema=schema), name="tbl")
     try:
         filtered, _ = MyColSpec.filter(tbl)

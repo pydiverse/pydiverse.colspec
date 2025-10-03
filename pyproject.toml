@@ -1,6 +1,6 @@
 [project]
 name = "pydiverse-colspec"
-version = "0.2.12"
+version = "0.3.0"
 description = "Validate column specifications and constraints for SQL tables and polars data frames."
 authors = [
   { name = "QuantCo, Inc." },
@@ -25,7 +25,11 @@ classifiers = [
 ]
 
 requires-python = ">=3.11,<3.14"
-dependencies = ["pydiverse-common >=0.3.12,<0.4", "structlog >=25.4.0,<26"]
+dependencies = [
+  "pydiverse-common >=0.4.0,<0.5",
+  "structlog >=25.4.0,<26",
+  # taplo should not collapse this list in one line
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/pydiverse"]
@@ -43,6 +47,8 @@ include = [
 target-version = "py310"
 extend-exclude = ["docs/*"]
 fix = true
+# 88 leads to worse comments
+line-length = 120
 
 [tool.ruff.lint]
 select = ["F", "E", "UP", "W", "I001", "I002", "B", "A"]

@@ -21,9 +21,7 @@ def test_first_non_null_with_terminal():
 def test_first_non_null_mixed_types():
     assert first_non_null(None, "a", default=3) == "a"
     assert first_non_null(None, 0, default="b") == 0  # 0 is a valid non-null value
-    assert (
-        first_non_null(None, False, default=1) is False
-    )  # False is a valid non-null value
+    assert first_non_null(None, False, default=1) is False  # False is a valid non-null value
 
 
 def test_first_non_null_with_kwargs():

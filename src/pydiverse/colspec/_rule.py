@@ -24,9 +24,7 @@ class RulePolars:
         self.expr = expr
 
     @staticmethod
-    def append_rules_polars(
-        lf: pl.LazyFrame, rules: dict[str, "RulePolars"]
-    ) -> pl.LazyFrame:
+    def append_rules_polars(lf: pl.LazyFrame, rules: dict[str, "RulePolars"]) -> pl.LazyFrame:
         return _with_evaluation_rules(lf, rules)
 
 
@@ -91,9 +89,7 @@ def rule(*, group_by: list[str] | None = None) -> Callable[[ValidationFunction],
     return decorator
 
 
-def rule_polars(
-    *, group_by: list[str] | None = None
-) -> Callable[[ValidationFunctionPolars], RulePolars]:
+def rule_polars(*, group_by: list[str] | None = None) -> Callable[[ValidationFunctionPolars], RulePolars]:
     """Mark a function as a rule to evaluate during validation.
 
     The name of the function will be used as the name of the rule. The function should
@@ -144,9 +140,7 @@ def rule_polars(
 # ------------------------------------------------------------------------------------ #
 
 
-def _with_evaluation_rules(
-    lf: pl.LazyFrame, rules: dict[str, RulePolars]
-) -> pl.LazyFrame:
+def _with_evaluation_rules(lf: pl.LazyFrame, rules: dict[str, RulePolars]) -> pl.LazyFrame:
     """Add evaluations of a set of rules on a data frame.
 
     Args:
@@ -162,14 +156,8 @@ def _with_evaluation_rules(
     # Rules must be distinguished into two types of rules:
     #  1. Simple rules can simply be selected on the data frame
     #  2. "Group" rules require a `group_by` and a subsequent join
-    simple_exprs = {
-        name: rule.expr
-        for name, rule in rules.items()
-        if not isinstance(rule, GroupRulePolars)
-    }
-    group_rules = {
-        name: rule for name, rule in rules.items() if isinstance(rule, GroupRulePolars)
-    }
+    simple_exprs = {name: rule.expr for name, rule in rules.items() if not isinstance(rule, GroupRulePolars)}
+    group_rules = {name: rule for name, rule in rules.items() if isinstance(rule, GroupRulePolars)}
 
     # Before we can select all of the simple expressions, we need to turn the
     # group rules into something to use in a `select` statement as well.
@@ -182,9 +170,7 @@ def _with_evaluation_rules(
     )
 
 
-def _with_group_rules(
-    lf: pl.LazyFrame, rules: dict[str, GroupRulePolars]
-) -> pl.LazyFrame:
+def _with_group_rules(lf: pl.LazyFrame, rules: dict[str, GroupRulePolars]) -> pl.LazyFrame:
     # First, we partition the rules by group columns. This will minimize the number
     # of `group_by` calls and joins to make.
     grouped_rules: dict[frozenset[str], dict[str, pl.Expr]] = defaultdict(dict)

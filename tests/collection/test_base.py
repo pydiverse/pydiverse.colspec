@@ -60,15 +60,9 @@ def test_cast():
             "second": pl.LazyFrame({"a": [1, 2, 3], "b": [4, 5, 6]}),
         },
     )
-    assert (
-        collection.first.collect_schema()
-        == MyFirstColSpec.create_empty_polars().collect_schema()
-    )
+    assert collection.first.collect_schema() == MyFirstColSpec.create_empty_polars().collect_schema()
     assert collection.second is not None
-    assert (
-        collection.second.collect_schema()
-        == MySecondColSpec.create_empty_polars().collect_schema()
-    )
+    assert collection.second.collect_schema() == MySecondColSpec.create_empty_polars().collect_schema()
 
 
 @pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
@@ -80,15 +74,9 @@ def test_cast2():
         },
     )
     collection = collection.cast_polars()
-    assert (
-        collection.first.collect_schema()
-        == MyFirstColSpec.create_empty_polars().collect_schema()
-    )
+    assert collection.first.collect_schema() == MyFirstColSpec.create_empty_polars().collect_schema()
     assert collection.second is not None
-    assert (
-        collection.second.collect_schema()
-        == MySecondColSpec.create_empty_polars().collect_schema()
-    )
+    assert collection.second.collect_schema() == MySecondColSpec.create_empty_polars().collect_schema()
 
 
 @pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
@@ -97,9 +85,7 @@ def test_cast2():
     [
         {
             "first": pl.LazyFrame({"a": [1, 2, 3]}, schema={"a": pl.UInt8}),
-            "second": pl.LazyFrame(
-                {"a": [1, 2, 3], "b": [4, 5, 6]}, schema={"a": pl.UInt16, "b": pl.Int64}
-            ),
+            "second": pl.LazyFrame({"a": [1, 2, 3], "b": [4, 5, 6]}, schema={"a": pl.UInt16, "b": pl.Int64}),
         },
         {"first": pl.LazyFrame({"a": [1, 2, 3]}, schema={"a": pl.UInt8})},
     ],
@@ -122,9 +108,7 @@ def test_collect_all():
     collection = MyCollection.cast_polars_data(
         {
             "first": pl.LazyFrame({"a": [1, 2, 3]}).filter(pl.col("a") < 3),
-            "second": pl.LazyFrame({"a": [1, 2, 3], "b": [4, 5, 6]}).filter(
-                pl.col("b") <= 5
-            ),
+            "second": pl.LazyFrame({"a": [1, 2, 3], "b": [4, 5, 6]}).filter(pl.col("b") <= 5),
         }
     )
     out = collection.collect_all_polars()
@@ -139,9 +123,7 @@ def test_collect_all():
 
 @pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_collect_all_optional():
-    collection = MyCollection.cast_polars_data(
-        {"first": pl.LazyFrame({"a": [1, 2, 3]})}
-    )
+    collection = MyCollection.cast_polars_data({"first": pl.LazyFrame({"a": [1, 2, 3]})})
     out = collection.collect_all_polars()
 
     assert isinstance(out, MyCollection)
@@ -150,9 +132,7 @@ def test_collect_all_optional():
 
 
 @pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
-@pytest.mark.parametrize(
-    "read_fn", [MyCollection.scan_parquet, MyCollection.read_parquet]
-)
+@pytest.mark.parametrize("read_fn", [MyCollection.scan_parquet, MyCollection.read_parquet])
 def test_read_write_parquet(tmp_path: Path, read_fn: Callable[[Path], MyCollection]):
     collection = MyCollection.cast_polars_data(
         {
@@ -170,15 +150,9 @@ def test_read_write_parquet(tmp_path: Path, read_fn: Callable[[Path], MyCollecti
 
 
 @pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
-@pytest.mark.parametrize(
-    "read_fn", [MyCollection.scan_parquet, MyCollection.read_parquet]
-)
-def test_read_write_parquet_optional(
-    tmp_path: Path, read_fn: Callable[[Path], MyCollection]
-):
-    collection = MyCollection.cast_polars_data(
-        {"first": pl.LazyFrame({"a": [1, 2, 3]})}
-    )
+@pytest.mark.parametrize("read_fn", [MyCollection.scan_parquet, MyCollection.read_parquet])
+def test_read_write_parquet_optional(tmp_path: Path, read_fn: Callable[[Path], MyCollection]):
+    collection = MyCollection.cast_polars_data({"first": pl.LazyFrame({"a": [1, 2, 3]})})
     collection.write_parquet(tmp_path)
 
     read = read_fn(tmp_path)
@@ -197,14 +171,10 @@ def test_dataframely_columns_fail():
         a = cs.Float64()
         b = dy.String
 
-    with pytest.raises(
-        ImplementationError, match="Dataframely Columns won't work in ColSpec classes."
-    ):
+    with pytest.raises(ImplementationError, match="Dataframely Columns won't work in ColSpec classes."):
         FailColSpec.column_names()
 
-    with pytest.raises(
-        ImplementationError, match="Dataframely Columns won't work in ColSpec classes."
-    ):
+    with pytest.raises(ImplementationError, match="Dataframely Columns won't work in ColSpec classes."):
         FailColSpec2.column_names()
 
     class FailCollection(cs.Collection):
@@ -213,13 +183,9 @@ def test_dataframely_columns_fail():
     class FailCollection2(cs.Collection):
         first: FailColSpec2
 
-    with pytest.raises(
-        ImplementationError, match="Dataframely Columns won't work in ColSpec classes."
-    ):
+    with pytest.raises(ImplementationError, match="Dataframely Columns won't work in ColSpec classes."):
         cs.collection.convert_collection_to_dy(FailCollection)
-    with pytest.raises(
-        ImplementationError, match="Dataframely Columns won't work in ColSpec classes."
-    ):
+    with pytest.raises(ImplementationError, match="Dataframely Columns won't work in ColSpec classes."):
         cs.collection.convert_collection_to_dy(FailCollection2)
 
 
@@ -246,9 +212,7 @@ def test_dataframely_columns_fail_inheritance():
     ):
         convert_to_dy_col_spec(FailColSpec)
 
-    with pytest.raises(
-        ImplementationError, match="Dataframely Columns won't work in ColSpec classes."
-    ):
+    with pytest.raises(ImplementationError, match="Dataframely Columns won't work in ColSpec classes."):
         FailColSpec.column_names()
 
 

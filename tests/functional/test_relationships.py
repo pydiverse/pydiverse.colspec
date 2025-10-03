@@ -36,9 +36,7 @@ def departments() -> dy.LazyFrame[DepartmentColSpec]:
 @pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 @pytest.fixture()
 def managers() -> dy.LazyFrame[ManagerColSpec]:
-    return ManagerColSpec.cast_polars(
-        pl.LazyFrame({"department_id": [1], "name": ["Donald Duck"]})
-    )
+    return ManagerColSpec.cast_polars(pl.LazyFrame({"department_id": [1], "name": ["Donald Duck"]}))
 
 
 @pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
@@ -65,9 +63,7 @@ def test_one_to_one(
     departments: dy.LazyFrame[DepartmentColSpec],
     managers: dy.LazyFrame[ManagerColSpec],
 ):
-    actual = dy.filter_relationship_one_to_one(
-        departments, managers, on="department_id"
-    )
+    actual = dy.filter_relationship_one_to_one(departments, managers, on="department_id")
     assert actual.select("department_id").collect().to_series().to_list() == [1]
 
 
@@ -76,7 +72,5 @@ def test_one_to_at_least_one(
     departments: dy.LazyFrame[DepartmentColSpec],
     employees: dy.LazyFrame[EmployeeColSpec],
 ):
-    actual = dy.filter_relationship_one_to_at_least_one(
-        departments, employees, on="department_id"
-    )
+    actual = dy.filter_relationship_one_to_at_least_one(departments, employees, on="department_id")
     assert actual.select("department_id").collect().to_series().to_list() == [2]

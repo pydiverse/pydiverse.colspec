@@ -36,9 +36,7 @@ class IntegerColSpec(cs.ColSpec):
         {"max": 2, "max_exclusive": 2},
     ],
 )
-def test_args_consistency_min_max(
-    column_type: type[_BaseInteger], kwargs: dict[str, Any]
-):
+def test_args_consistency_min_max(column_type: type[_BaseInteger], kwargs: dict[str, Any]):
     with pytest.raises(ValueError):
         column_type(**kwargs)
 
@@ -128,9 +126,7 @@ def test_validate_max(column_type: type[_BaseInteger], inclusive: bool):
 @pytest.mark.parametrize("column_type", INTEGER_COLUMN_TYPES)
 @pytest.mark.parametrize("min_inclusive", [True, False])
 @pytest.mark.parametrize("max_inclusive", [True, False])
-def test_validate_range(
-    column_type: type[_BaseInteger], min_inclusive: bool, max_inclusive: bool
-):
+def test_validate_range(column_type: type[_BaseInteger], min_inclusive: bool, max_inclusive: bool):
     kwargs = {
         ("min" if min_inclusive else "min_exclusive"): 2,
         ("max" if max_inclusive else "max_exclusive"): 4,
@@ -207,8 +203,6 @@ def test_is_unsigned(column_type: type[_BaseInteger], is_unsigned: bool):
         (cs.UInt64, 0, 18446744073709551615),
     ],
 )
-def test_type_min_max_values(
-    column_type: type[_BaseInteger], min_value: int, max_value: int
-):
+def test_type_min_max_values(column_type: type[_BaseInteger], min_value: int, max_value: int):
     assert column_type.min_value == min_value
     assert column_type.max_value == max_value
