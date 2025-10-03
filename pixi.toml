@@ -16,7 +16,7 @@ hatchling = "*"
 
 [dependencies]
 python = ">=3.11.13,<3.14"
-pydiverse-common = ">=0.4,<0.5"
+pydiverse-common = ">=0.4.0,<0.5"
 structlog = ">=25.4.0,<26"
 
 [feature.dev.dependencies]
