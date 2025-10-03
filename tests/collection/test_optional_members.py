@@ -7,9 +7,7 @@ import pydiverse.colspec as cs
 import pydiverse.colspec.collection
 from pydiverse.colspec.optional_dependency import dy, pl
 
-pytestmark = pytest.mark.skipif(
-    dy.Column is None, reason="dataframely is required for this test"
-)
+pytestmark = pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 
 
 class TestColSpec(cs.ColSpec):
@@ -26,9 +24,7 @@ def test_collection_optional_member():
 
 
 def test_filter_failure_info_keys_only_required():
-    out, failure = MyCollection.filter_polars_data(
-        {"first": pl.LazyFrame({"a": [1, 2, 3]})}
-    )
+    out, failure = MyCollection.filter_polars_data({"first": pl.LazyFrame({"a": [1, 2, 3]})})
     assert out.second is None
     assert set(failure.keys()) == {"first"}
 

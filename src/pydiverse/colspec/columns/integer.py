@@ -55,9 +55,7 @@ class _BaseInteger(IsInMixin[int], OrdinalMixin[int], Column):
         if max is not None and max > self.max_value:
             raise ValueError("`max` is too big for the data type.")
         if is_in is not None and (min is not None or max is not None):
-            raise ValueError(
-                "`is_in` may only be specified if `min` and `max` are unspecified."
-            )
+            raise ValueError("`is_in` may only be specified if `min` and `max` are unspecified.")
 
         super().__init__(
             nullable=nullable,
@@ -85,11 +83,7 @@ class _BaseInteger(IsInMixin[int], OrdinalMixin[int], Column):
     @classproperty
     def max_value(self) -> int:
         """Maximum value of the column's type."""
-        return (
-            2 ** (self.num_bytes * 8) - 1
-            if self.is_unsigned
-            else 2 ** (self.num_bytes * 8 - 1) - 1
-        )
+        return 2 ** (self.num_bytes * 8) - 1 if self.is_unsigned else 2 ** (self.num_bytes * 8 - 1) - 1
 
     @classproperty
     def min_value(self) -> int:

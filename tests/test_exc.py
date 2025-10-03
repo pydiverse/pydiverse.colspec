@@ -16,9 +16,7 @@ def test_validation_error_str():
 
 
 def test_dtype_validation_error_str():
-    exc = DtypeValidationError(
-        errors={"a": (pdc.Int64(), pdc.String()), "b": (pdc.Bool(), pdc.String())}
-    )
+    exc = DtypeValidationError(errors={"a": (pdc.Int64(), pdc.String()), "b": (pdc.Bool(), pdc.String())})
     assert str(exc).split("\n") == [
         "2 columns have an invalid dtype:",
         " - 'a': got dtype 'Int64' but expected 'String(None)'",

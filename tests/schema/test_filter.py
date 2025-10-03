@@ -37,9 +37,7 @@ class MyColSpec(cs.ColSpec):
         ),
     ],
 )
-def test_filter_extra_columns(
-    schema: dict[str, DataTypeClass], expected_columns: list[str] | None
-):
+def test_filter_extra_columns(schema: dict[str, DataTypeClass], expected_columns: list[str] | None):
     df = pl.DataFrame(schema=schema)
     try:
         filtered, _ = MyColSpec.filter_polars(df)
@@ -230,12 +228,7 @@ def test_filter_cast(df_type: type[pl.DataFrame] | type[pl.LazyFrame]):
     df_valid, failures = MyColSpec.filter(tbl, cast=True)
     assert isinstance(df_valid, pdt.Table)
     assert [c.name for c in df_valid] == MyColSpec.column_names()
-    assert (
-        failures.invalid_rows
-        >> pdt.summarize(x=pdt.count())
-        >> pdt.export(pdt.Scalar())
-        == 5
-    )
+    assert failures.invalid_rows >> pdt.summarize(x=pdt.count()) >> pdt.export(pdt.Scalar()) == 5
     assert failures.counts() == {
         "a|dtype": 3,
         "a|nullability": 1,

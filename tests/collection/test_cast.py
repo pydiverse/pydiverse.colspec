@@ -28,15 +28,9 @@ def test_cast_valid(df_type: type[pl.DataFrame] | type[pl.LazyFrame]):
     first = df_type({"a": [3]})
     second = df_type({"a": [1]})
     out = Collection.cast_polars_data({"first": first, "second": second})  # type: ignore
-    assert (
-        out.first.collect_schema()
-        == FirstColSpec.create_empty_polars().collect_schema()
-    )
+    assert out.first.collect_schema() == FirstColSpec.create_empty_polars().collect_schema()
     assert out.second is not None
-    assert (
-        out.second.collect_schema()
-        == SecondColSpec.create_empty_polars().collect_schema()
-    )
+    assert out.second.collect_schema() == SecondColSpec.create_empty_polars().collect_schema()
 
 
 @pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
@@ -44,10 +38,7 @@ def test_cast_valid(df_type: type[pl.DataFrame] | type[pl.LazyFrame]):
 def test_cast_valid_optional(df_type: type[pl.DataFrame] | type[pl.LazyFrame]):
     first = df_type({"a": [3]})
     out = Collection.cast_polars_data({"first": first})  # type: ignore
-    assert (
-        out.first.collect_schema()
-        == FirstColSpec.create_empty_polars().collect_schema()
-    )
+    assert out.first.collect_schema() == FirstColSpec.create_empty_polars().collect_schema()
     assert out.second is None
 
 

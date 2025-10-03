@@ -20,9 +20,7 @@ def test_annotation_union_success():
     res = create_collection_raw(
         "test",
         {
-            "first": (
-                create_colspec("first", {"a": cs.Integer(primary_key=True)}) | None
-            ),
+            "first": (create_colspec("first", {"a": cs.Integer(primary_key=True)}) | None),
         },
     ).members()
     assert len(res) == 1

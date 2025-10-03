@@ -7,9 +7,7 @@ import pydiverse.colspec as cs
 import pydiverse.colspec.collection
 from pydiverse.colspec.optional_dependency import dy, pl
 
-pytestmark = pytest.mark.skipif(
-    dy.Column is None, reason="dataframely is required for this test"
-)
+pytestmark = pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 
 
 class TestColSpec(cs.ColSpec):

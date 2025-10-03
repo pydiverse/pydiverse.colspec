@@ -50,12 +50,8 @@ def test_valid_failure_infos_polars():
         cast=True,
     )
 
-    assert len(car_fleet.cars.collect()) + len(failures["cars"].invalid()) == len(
-        cars["vin"]
-    )
-    assert len(car_fleet.car_parts.collect()) + len(
-        failures["car_parts"].invalid()
-    ) == len(car_parts["vin"])
+    assert len(car_fleet.cars.collect()) + len(failures["cars"].invalid()) == len(cars["vin"])
+    assert len(car_fleet.car_parts.collect()) + len(failures["car_parts"].invalid()) == len(car_parts["vin"])
     assert len(failures["cars"].invalid()) == 1
     assert len(failures["car_parts"].invalid()) == 2
 
@@ -85,8 +81,6 @@ def test_valid_failure_infos():
     car_fleet, failures = raw_fleet.filter(cast=True)  # type: CarFleet[pdt.Table], CarFleet[FailureInfo]
 
     assert num_rows(car_fleet.cars) + num_rows(failures.cars.invalid_rows) == len(cars)
-    assert num_rows(car_fleet.car_parts) + num_rows(
-        failures.car_parts.invalid_rows
-    ) == len(car_parts)
+    assert num_rows(car_fleet.car_parts) + num_rows(failures.car_parts.invalid_rows) == len(car_parts)
     assert num_rows(failures.cars.invalid_rows) == 1
     assert num_rows(failures.car_parts.invalid_rows) == 2

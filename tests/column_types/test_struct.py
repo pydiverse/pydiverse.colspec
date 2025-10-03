@@ -11,12 +11,8 @@ from pydiverse.colspec.testing.factory import create_colspec
 
 @pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_simple_struct():
-    schema = create_colspec(
-        "test", {"s": cs.Struct({"a": cs.Integer(), "b": cs.String()})}
-    )
-    assert schema.is_valid_polars(
-        pl.DataFrame({"s": [{"a": 1, "b": "foo"}, {"a": 2, "b": "foo"}]})
-    )
+    schema = create_colspec("test", {"s": cs.Struct({"a": cs.Integer(), "b": cs.String()})})
+    assert schema.is_valid_polars(pl.DataFrame({"s": [{"a": 1, "b": "foo"}, {"a": 2, "b": "foo"}]}))
 
 
 @pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
@@ -98,9 +94,7 @@ def test_nested_structs():
             )
         },
     )
-    assert schema.is_valid_polars(
-        pl.DataFrame({"s1": [{"s2": {"a": 1, "b": "foo"}, "c": "bar"}]})
-    )
+    assert schema.is_valid_polars(pl.DataFrame({"s1": [{"s2": {"a": 1, "b": "foo"}, "c": "bar"}]}))
 
 
 @pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
@@ -109,26 +103,18 @@ def test_struct_with_pk():
         "test",
         {"s": cs.Struct({"a": cs.String(), "b": cs.Integer()}, primary_key=True)},
     )
-    df = pl.DataFrame(
-        {"s": [{"a": "foo", "b": 1}, {"a": "bar", "b": 1}, {"a": "bar", "b": 1}]}
-    )
+    df = pl.DataFrame({"s": [{"a": "foo", "b": 1}, {"a": "bar", "b": 1}, {"a": "bar", "b": 1}]})
     _, failures = schema.filter_polars(df)
-    assert failures.invalid().to_dict(as_series=False) == {
-        "s": [{"a": "bar", "b": 1}, {"a": "bar", "b": 1}]
-    }
+    assert failures.invalid().to_dict(as_series=False) == {"s": [{"a": "bar", "b": 1}, {"a": "bar", "b": 1}]}
     assert failures.counts() == {"primary_key": 2}
 
 
 @pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_struct_with_rules():
-    schema = create_colspec(
-        "test", {"s": cs.Struct({"a": cs.String(min_length=2, nullable=False)})}
-    )
+    schema = create_colspec("test", {"s": cs.Struct({"a": cs.String(min_length=2, nullable=False)})})
     df = pl.DataFrame({"s": [{"a": "ab"}, {"a": "a"}, {"a": None}]})
     _, failures = schema.filter_polars(df)
-    assert failures.invalid().to_dict(as_series=False) == {
-        "s": [{"a": "a"}, {"a": None}]
-    }
+    assert failures.invalid().to_dict(as_series=False) == {"s": [{"a": "a"}, {"a": None}]}
     assert failures.counts() == {"s|inner_a_nullability": 1, "s|inner_a_min_length": 1}
 
 
@@ -136,19 +122,11 @@ def test_struct_with_rules():
 def test_nested_struct_with_rules():
     schema = create_colspec(
         "test",
-        {
-            "s1": cs.Struct(
-                {"s2": cs.Struct({"a": cs.String(min_length=2, nullable=False)})}
-            )
-        },
+        {"s1": cs.Struct({"s2": cs.Struct({"a": cs.String(min_length=2, nullable=False)})})},
     )
-    df = pl.DataFrame(
-        {"s1": [{"s2": {"a": "ab"}}, {"s2": {"a": "a"}}, {"s2": {"a": None}}]}
-    )
+    df = pl.DataFrame({"s1": [{"s2": {"a": "ab"}}, {"s2": {"a": "a"}}, {"s2": {"a": None}}]})
     _, failures = schema.filter_polars(df)
-    assert failures.invalid().to_dict(as_series=False) == {
-        "s1": [{"s2": {"a": "a"}}, {"s2": {"a": None}}]
-    }
+    assert failures.invalid().to_dict(as_series=False) == {"s1": [{"s2": {"a": "a"}}, {"s2": {"a": None}}]}
     assert failures.counts() == {
         "s1|inner_s2_inner_a_nullability": 1,
         "s1|inner_s2_inner_a_min_length": 1,

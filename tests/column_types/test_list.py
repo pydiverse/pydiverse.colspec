@@ -76,9 +76,7 @@ def test_list_with_pk():
 
 @pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_list_with_rules():
-    spec = create_colspec(
-        "test", {"a": cs.List(cs.String(min_length=2, nullable=False))}
-    )
+    spec = create_colspec("test", {"a": cs.List(cs.String(min_length=2, nullable=False))})
     df = pl.DataFrame({"a": [["ab"], ["a"], [None]]})
     _, failures = spec.filter_polars(df)
     assert validation_mask(df, failures).to_list() == [True, False, False]
@@ -87,9 +85,7 @@ def test_list_with_rules():
 
 @pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_nested_list_with_rules():
-    spec = create_colspec(
-        "test", {"a": cs.List(cs.List(cs.String(min_length=2, nullable=False)))}
-    )
+    spec = create_colspec("test", {"a": cs.List(cs.List(cs.String(min_length=2, nullable=False)))})
     df = pl.DataFrame({"a": [[["ab"]], [["a"]], [[None]]]})
     _, failures = spec.filter_polars(df)
     # NOTE: `validation_mask` currently fails for multiply nested lists

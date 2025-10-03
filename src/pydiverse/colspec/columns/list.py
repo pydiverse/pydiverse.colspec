@@ -65,22 +65,14 @@ class List(Column):
 
         inner_rules = {
             f"inner_{rule_name}": expr.list.eval(inner_expr).list.all()
-            for rule_name, inner_expr in self.inner.validation_rules(
-                pl.element()
-            ).items()
+            for rule_name, inner_expr in self.inner.validation_rules(pl.element()).items()
         }
 
         list_rules: dict[str, ColExpr] = {}
         if self.inner.primary_key:
-            list_rules["primary_key"] = ~expr.list.eval(
-                pl.element().is_duplicated()
-            ).list.any()
-        elif isinstance(self.inner, Struct) and any(
-            col.primary_key for col in self.inner.inner.values()
-        ):
-            primary_key_columns = [
-                name for name, col in self.inner.inner.items() if col.primary_key
-            ]
+            list_rules["primary_key"] = ~expr.list.eval(pl.element().is_duplicated()).list.any()
+        elif isinstance(self.inner, Struct) and any(col.primary_key for col in self.inner.inner.values()):
+            primary_key_columns = [name for name, col in self.inner.inner.items() if col.primary_key]
             # NOTE: We optimize for a single primary key column here as it is much
             #  faster to run duplication checks for non-struct types in polars 1.22.
             if len(primary_key_columns) == 1:
@@ -89,22 +81,16 @@ class List(Column):
                 ).list.any()
             else:
                 list_rules["primary_key"] = ~expr.list.eval(
-                    pl.struct(
-                        pl.element().struct.field(primary_key_columns)
-                    ).is_duplicated()
+                    pl.struct(pl.element().struct.field(primary_key_columns)).is_duplicated()
                 ).list.any()
 
         if self.min_length is not None:
             list_rules["min_length"] = (
-                pl.when(expr.is_null())
-                .then(pl.lit(None))
-                .otherwise(expr.list.len() >= self.min_length)
+                pl.when(expr.is_null()).then(pl.lit(None)).otherwise(expr.list.len() >= self.min_length)
             )
         if self.max_length is not None:
             list_rules["max_length"] = (
-                pl.when(expr.is_null())
-                .then(pl.lit(None))
-                .otherwise(expr.list.len() <= self.max_length)
+                pl.when(expr.is_null()).then(pl.lit(None)).otherwise(expr.list.len() <= self.max_length)
             )
         return {
             **super().validation_rules(expr),

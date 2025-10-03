@@ -33,8 +33,7 @@ class ColumnValidationError(ValidationError):
         if extra:
             msg.append(f"Additional columns: {', '.join(extra)}")
         super().__init__(
-            f"{len(missing)} columns are missing: {', '.join(missing)}; "
-            f"found: {', '.join(actual)}"
+            f"{len(missing)} columns are missing: {', '.join(missing)}; found: {', '.join(actual)}"
             if actual
             else "; ".join(msg)
             if msg
@@ -89,18 +88,14 @@ class RuleValidationError(ValidationError):
 
     def __str__(self) -> str:
         schema_details = [
-            f" - '{name}' failed validation for {count:,} rows"
-            for name, count in self.schema_errors.items()
+            f" - '{name}' failed validation for {count:,} rows" for name, count in self.schema_errors.items()
         ]
         column_details = [
             msg
             for column, errors in self.column_errors.items()
             for msg in (
                 [f" * Column '{column}' failed validation for {len(errors)} rules:"]
-                + [
-                    f"   - '{name}' failed for {count:,} rows"
-                    for name, count in errors.items()
-                ]
+                + [f"   - '{name}' failed for {count:,} rows" for name, count in errors.items()]
             )
         ]
         return "\n".join([f"{self.message}:"] + schema_details + column_details)
@@ -115,8 +110,7 @@ class MemberValidationError(ValidationError):
 
     def __str__(self):
         details = [
-            f" > Member '{name}' failed validation:\n"
-            + "\n".join("   " + line for line in str(error).split("\n"))
+            f" > Member '{name}' failed validation:\n" + "\n".join("   " + line for line in str(error).split("\n"))
             for name, error in self.errors.items()
         ]
         return "\n".join([f"{self.message}:"] + details)
@@ -137,8 +131,7 @@ class AnnotationImplementationError(ImplementationError):
 
     def __init__(self, attr: str, kls: type):
         message = (
-            "Annotations of a 'dy.Collection' may only be an (optional) "
-            f"'ColSpec', but \"{attr}\" has type '{kls}'."
+            f"Annotations of a 'dy.Collection' may only be an (optional) 'ColSpec', but \"{attr}\" has type '{kls}'."
         )
         super().__init__(message)
 
@@ -159,8 +152,7 @@ class RuleImplementationError(ImplementationError):
 
         message = (
             f"Validation rule '{name}' has not been implemented correctly. It "
-            f"returns dtype '{return_dtype}' but it must return a boolean value."
-            + details
+            f"returns dtype '{return_dtype}' but it must return a boolean value." + details
         )
         super().__init__(message)
 

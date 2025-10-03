@@ -37,9 +37,7 @@ class FloatColSpec(cs.ColSpec):
         {"max": 2, "max_exclusive": 2},
     ],
 )
-def test_args_consistency_min_max(
-    column_type: type[_BaseFloat], kwargs: dict[str, Any]
-):
+def test_args_consistency_min_max(column_type: type[_BaseFloat], kwargs: dict[str, Any]):
     with pytest.raises(ValueError):
         column_type(**kwargs)
 
@@ -83,9 +81,7 @@ def test_non_integer_dtype_fails(dtype: DataTypeClass):
         (False, {"min_exclusive": [False, False, False, True, True]}),
     ],
 )
-def test_validate_min(
-    column_type: type[_BaseFloat], inclusive: bool, valid: dict[str, list[bool]]
-):
+def test_validate_min(column_type: type[_BaseFloat], inclusive: bool, valid: dict[str, list[bool]]):
     kwargs = {("min" if inclusive else "min_exclusive"): 3}
     column = column_type(**kwargs)  # type: ignore
     tbl = pdt.Table({"a": [1, 2, 3, 4, 5]})
@@ -102,9 +98,7 @@ def test_validate_min(
         (False, {"max_exclusive": [True, True, False, False, False]}),
     ],
 )
-def test_validate_max(
-    column_type: type[_BaseFloat], inclusive: bool, valid: dict[str, list[bool]]
-):
+def test_validate_max(column_type: type[_BaseFloat], inclusive: bool, valid: dict[str, list[bool]]):
     kwargs = {("max" if inclusive else "max_exclusive"): 3}
     column = column_type(**kwargs)  # type: ignore
     tbl = pdt.Table({"a": [1, 2, 3, 4, 5]})

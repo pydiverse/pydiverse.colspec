@@ -44,6 +44,4 @@ SUPERTYPE_COLUMN_TYPES: list[type[cs.Column]] = [
     cs.Integer,
 ]
 
-ALL_COLUMN_TYPES: list[type[cs.Column]] = (
-    [cs.Any] + COLUMN_TYPES + SUPERTYPE_COLUMN_TYPES
-)
+ALL_COLUMN_TYPES: list[type[cs.Column]] = [cs.Any] + COLUMN_TYPES + SUPERTYPE_COLUMN_TYPES

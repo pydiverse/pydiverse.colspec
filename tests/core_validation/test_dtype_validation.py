@@ -40,9 +40,7 @@ def test_success(
 ):
     df = pl.DataFrame(schema=actual)
     tbl = pdt.Table(df.lazy())
-    lf = validate_dtypes(tbl, expected=expected, casting=casting) >> pdt.export(
-        pdt.Polars
-    )
+    lf = validate_dtypes(tbl, expected=expected, casting=casting) >> pdt.export(pdt.Polars)
     schema = lf.collect_schema()
     for key, col in expected.items():
         assert col.validate_dtype_polars(schema[key])
@@ -116,7 +114,5 @@ def test_strict_casting():
         expected={"a": cs.UInt8(), "b": cs.UInt8()},
         casting="strict",
     ) >> pdt.export(pdt.Polars(lazy=True))
-    with pytest.raises(
-        plexc.InvalidOperationError, match=r'for 2 out of 3 values: \["foo", "1313"\]'
-    ):
+    with pytest.raises(plexc.InvalidOperationError, match=r'for 2 out of 3 values: \["foo", "1313"\]'):
         lf_valid.collect()

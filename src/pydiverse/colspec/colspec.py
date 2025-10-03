@@ -32,12 +32,7 @@ class ColSpecMeta(type):
     def __new__(cls, clsname, bases, attribs):
         # change bases to remove those which were just added for code completion reasons
         bases = tuple(
-            [
-                base
-                for base in bases
-                if base
-                not in (FailureInfo, pdt.Table, dag.Table, pl.LazyFrame, pl.DataFrame)
-            ]
+            [base for base in bases if base not in (FailureInfo, pdt.Table, dag.Table, pl.LazyFrame, pl.DataFrame)]
         )
         return super().__new__(cls, clsname, bases, attribs)
 
@@ -53,11 +48,7 @@ class ColSpecMeta(type):
         parts.append(textwrap.indent("Columns:", prefix=" " * 2))
         for name, col in cls.columns().items():
             parts.append(textwrap.indent(f'- "{name}": {col!r}', prefix=" " * 4))
-        validation_rules = {
-            name: rule
-            for name, rule in cls.__dict__.items()
-            if isinstance(rule, RulePolars | Rule)
-        }
+        validation_rules = {name: rule for name, rule in cls.__dict__.items() if isinstance(rule, RulePolars | Rule)}
         if len(validation_rules) > 0:
             parts.append(textwrap.indent("Rules:", prefix=" " * 2))
             for name, rule in validation_rules.items():
@@ -115,20 +106,14 @@ class ColSpec(
             if any(
                 [
                     isinstance(getattr(cls, c), dy.Column | dy._rule.Rule)
-                    or (
-                        inspect.isclass(getattr(cls, c))
-                        and issubclass(getattr(cls, c), dy.Column)
-                    )
+                    or (inspect.isclass(getattr(cls, c)) and issubclass(getattr(cls, c), dy.Column))
                     for c in dir(cls)
                 ]
             ):
                 if any(
                     [
                         isinstance(getattr(cls, c), dy.Column)
-                        or (
-                            inspect.isclass(getattr(cls, c))
-                            and issubclass(getattr(cls, c), dy.Column)
-                        )
+                        or (inspect.isclass(getattr(cls, c)) and issubclass(getattr(cls, c), dy.Column))
                         for c in dir(cls)
                     ]
                 ):
@@ -146,15 +131,12 @@ class ColSpec(
                     )
         if any(
             [
-                isinstance(getattr(cls, c), staticmethod)
-                and isinstance(getattr(cls, c).__wrapped__, Rule | RulePolars)
+                isinstance(getattr(cls, c), staticmethod) and isinstance(getattr(cls, c).__wrapped__, Rule | RulePolars)
                 for c in dir(cls)
             ]
         ):
             # TODO: better message showing member which causes error
-            raise ImplementationError(
-                "The @staticmethod decorator needs to be after @cs.rule decorator."
-            )
+            raise ImplementationError("The @staticmethod decorator needs to be after @cs.rule decorator.")
 
     @classmethod
     def primary_keys(cls) -> list[str]:
@@ -165,9 +147,7 @@ class ColSpec(
         """
 
         cls.fail_dy_columns_in_colspec()
-        result = [
-            col.alias or name for name, col in cls.columns().items() if col.primary_key
-        ]
+        result = [col.alias or name for name, col in cls.columns().items() if col.primary_key]
         return result
 
     @classmethod
@@ -181,30 +161,22 @@ class ColSpec(
     def columns(cls) -> dict[str, Column]:
         cls.fail_dy_columns_in_colspec()
         return {
-            name
-            if inspect.isclass(getattr(cls, name))
-            else getattr(cls, name).alias or name: getattr(cls, name)()
+            name if inspect.isclass(getattr(cls, name)) else getattr(cls, name).alias or name: getattr(cls, name)()
             if inspect.isclass(getattr(cls, name))
             else getattr(cls, name)
             for name in dir(cls)
             if isinstance(getattr(cls, name), Column)
-            or (
-                inspect.isclass(getattr(cls, name))
-                and issubclass(getattr(cls, name), Column)
-            )
+            or (inspect.isclass(getattr(cls, name)) and issubclass(getattr(cls, name), Column))
         }
 
     @classmethod
     def alias_map(cls) -> dict[str, str]:
         return {
-            getattr(cls, name).alias or name: name
-            for name in dir(cls)
-            if isinstance(getattr(cls, name), Column)
+            getattr(cls, name).alias or name: name for name in dir(cls) if isinstance(getattr(cls, name), Column)
         } | {
             name: name
             for name in dir(cls)
-            if inspect.isclass(getattr(cls, name))
-            and issubclass(getattr(cls, name), Column)
+            if inspect.isclass(getattr(cls, name)) and issubclass(getattr(cls, name), Column)
         }
 
     @classmethod
@@ -215,9 +187,7 @@ class ColSpec(
         return valid_rows
 
     @classmethod
-    def validate_polars(
-        cls, data: pl.DataFrame | pl.LazyFrame, cast: bool = False
-    ) -> pl.DataFrame | pl.LazyFrame:
+    def validate_polars(cls, data: pl.DataFrame | pl.LazyFrame, cast: bool = False) -> pl.DataFrame | pl.LazyFrame:
         import dataframely.exc as dy_exc
 
         dy_schema = convert_to_dy_col_spec(cls)
@@ -256,9 +226,7 @@ class ColSpec(
             raise e
 
     @classmethod
-    def is_valid_polars(
-        cls, df: pl.DataFrame | pl.LazyFrame, *, cast: bool = False
-    ) -> bool:
+    def is_valid_polars(cls, df: pl.DataFrame | pl.LazyFrame, *, cast: bool = False) -> bool:
         """Utility method to check whether :meth:`validate` raises an exception.
 
         Args:
@@ -286,9 +254,7 @@ class ColSpec(
         cls,
         num_rows: int | None = None,
         *,
-        overrides: Mapping[str, Iterable[Any]]
-        | Sequence[Mapping[str, Any]]
-        | None = None,
+        overrides: Mapping[str, Iterable[Any]] | Sequence[Mapping[str, Any]] | None = None,
         generator: Generator | None = None,
     ) -> pl.DataFrame | pl.LazyFrame:
         dy_schema = convert_to_dy_col_spec(cls)
@@ -303,28 +269,20 @@ class ColSpec(
 
     @overload
     @classmethod
-    def cast_polars(
-        cls, df: pl.DataFrame
-    ) -> dy.DataFrame[Self]: ...  # pragma: no cover
+    def cast_polars(cls, df: pl.DataFrame) -> dy.DataFrame[Self]: ...  # pragma: no cover
 
     @overload
     @classmethod
-    def cast_polars(
-        cls, df: pl.LazyFrame
-    ) -> dy.LazyFrame[Self]: ...  # pragma: no cover
+    def cast_polars(cls, df: pl.LazyFrame) -> dy.LazyFrame[Self]: ...  # pragma: no cover
 
     @classmethod
-    def cast_polars(
-        cls, df: pl.DataFrame | pl.LazyFrame
-    ) -> dy.DataFrame[Self] | dy.LazyFrame[Self]:
+    def cast_polars(cls, df: pl.DataFrame | pl.LazyFrame) -> dy.DataFrame[Self] | dy.LazyFrame[Self]:
         dy_schema = convert_to_dy_col_spec(cls)
         return dy_schema.cast(df)
 
     @classmethod
     def polars_schema(cls) -> pl.Schema:
-        return pl.Schema(
-            {name: col.dtype().to_polars() for name, col in cls.columns().items()}
-        )
+        return pl.Schema({name: col.dtype().to_polars() for name, col in cls.columns().items()})
 
     # ----------------------------------- FILTERING ---------------------------------- #
 
@@ -372,21 +330,15 @@ class ColSpec(
 
         if cast:
             dtype_rules = {
-                f"{col}|dtype": (
-                    tbl[col].is_null() == tbl[f"{col}{_ORIGINAL_NULL_SUFFIX}"]
-                )
+                f"{col}|dtype": (tbl[col].is_null() == tbl[f"{col}{_ORIGINAL_NULL_SUFFIX}"])
                 for col in cls.column_names()
             }
             rules.update(dtype_rules)
 
         if "_primary_key_" in rules or "_primary_key_" in group_rules:
-            raise ImplementationError(
-                "@cs.rule annotated functions must not be called `_primary_key_`"
-            )
+            raise ImplementationError("@cs.rule annotated functions must not be called `_primary_key_`")
         if len(cls.primary_keys()) > 0:
-            group_rules["_primary_key_"] = GroupRule(
-                pdt.count() == 1, group_columns=cls.primary_keys()
-            )
+            group_rules["_primary_key_"] = GroupRule(pdt.count() == 1, group_columns=cls.primary_keys())
 
         for name, group_rule in group_rules.items():
             subquery = (
@@ -397,9 +349,7 @@ class ColSpec(
             )
             tbl >>= pdt.left_join(
                 subquery,
-                on=pdt.all(
-                    *[tbl[col] == subquery[col] for col in group_rule.group_columns]
-                ),
+                on=pdt.all(*[tbl[col] == subquery[col] for col in group_rule.group_columns]),
             ) >> pdt.select(*tbl)
             if cfg.dialect_name == "mssql":
                 rules[name] = subquery.expr != 0
@@ -417,22 +367,15 @@ class ColSpec(
             # that failed the cast.
             all_dtype_casts_valid = pdt.all(
                 True,
-                *(
-                    tbl[col].is_null() == tbl[f"{col}{_ORIGINAL_NULL_SUFFIX}"]
-                    for col in cls.column_names()
-                ),
+                *(tbl[col].is_null() == tbl[f"{col}{_ORIGINAL_NULL_SUFFIX}"] for col in cls.column_names()),
             )
 
             # remove original null information again
-            tbl >>= pdt.drop(
-                *(tbl[f"{col}{_ORIGINAL_NULL_SUFFIX}"] for col in cls.column_names())
-            )
+            tbl >>= pdt.drop(*(tbl[f"{col}{_ORIGINAL_NULL_SUFFIX}"] for col in cls.column_names()))
 
             rules.update(
                 {
-                    name: pdt.when(all_dtype_casts_valid)
-                    .then(expr)
-                    .otherwise(pdt.lit(None, dtype=pdt.Bool))
+                    name: pdt.when(all_dtype_casts_valid).then(expr).otherwise(pdt.lit(None, dtype=pdt.Bool))
                     for name, expr in rules.items()
                     if not name.endswith("|dtype")
                 }
@@ -453,37 +396,25 @@ class ColSpec(
         )
 
     @classmethod
-    def _validate_columns(
-        cls, tbl: pdt.Table, *, casting: Literal["none", "lenient", "strict"]
-    ):
+    def _validate_columns(cls, tbl: pdt.Table, *, casting: Literal["none", "lenient", "strict"]):
         cls.fail_dy_columns_in_colspec()
 
         tbl = validate_columns(tbl, expected=cls.column_names())
 
         if casting == "lenient":
-            tbl >>= pdt.mutate(
-                **{f"{col.name}{_ORIGINAL_NULL_SUFFIX}": col.is_null() for col in tbl}
-            )
+            tbl >>= pdt.mutate(**{f"{col.name}{_ORIGINAL_NULL_SUFFIX}": col.is_null() for col in tbl})
 
         return validate_dtypes(tbl, expected=cls.columns(), casting=casting)
 
     @classmethod
-    def _validation_rules(
-        cls, tbl: pdt.Table
-    ) -> tuple[dict[str, ColExpr], dict[str, GroupRule]]:
+    def _validation_rules(cls, tbl: pdt.Table) -> tuple[dict[str, ColExpr], dict[str, GroupRule]]:
         cls.fail_dy_columns_in_colspec()
         return {
             f"{name}|{rule_name}": rule.fill_null(True)
             for name, col in cls.columns().items()
             for rule_name, rule in col.validation_rules(tbl[name]).items()
-        } | {
-            rule: getattr(cls, rule).expr
-            for rule in dir(cls)
-            if isinstance(getattr(cls, rule), Rule)
-        }, {
-            rule: getattr(cls, rule)
-            for rule in dir(cls)
-            if isinstance(getattr(cls, rule), GroupRule)
+        } | {rule: getattr(cls, rule).expr for rule in dir(cls) if isinstance(getattr(cls, rule), Rule)}, {
+            rule: getattr(cls, rule) for rule in dir(cls) if isinstance(getattr(cls, rule), GroupRule)
         }
 
     @classmethod
@@ -539,9 +470,7 @@ class ColSpec(
             A list of :mod:`sqlalchemy` columns that can be used to create a table
             with the schema as defined by this class.
         """
-        return [
-            col.sqlalchemy_column(name, dialect) for name, col in cls.columns().items()
-        ]
+        return [col.sqlalchemy_column(name, dialect) for name, col in cls.columns().items()]
 
     @classmethod
     def pyarrow_schema(cls) -> pa.Schema:
@@ -550,37 +479,28 @@ class ColSpec(
         Returns:
             A :mod:`pyarrow` schema that mirrors the schema defined by this class.
         """
-        return pa.schema(
-            [col.pyarrow_field(name) for name, col in cls.columns().items()]
-        )
+        return pa.schema([col.pyarrow_field(name) for name, col in cls.columns().items()])
 
 
 def convert_to_dy_col_spec(col_spec: type[ColSpec]) -> type[dy.Schema]:
     assert inspect.isclass(col_spec)
     if issubclass(col_spec, dy.Schema):
-        raise ImplementationError(
-            "Don't mix Dataframely Schema with ColSpec classes in "
-            f"inheritance: {col_spec}"
-        )
+        raise ImplementationError(f"Don't mix Dataframely Schema with ColSpec classes in inheritance: {col_spec}")
     if not issubclass(col_spec, ColSpec):
         raise ImplementationError(
-            f"Expected a ColSpec class, got {col_spec.__name__} which is not "
-            "a subclass of ColSpec."
+            f"Expected a ColSpec class, got {col_spec.__name__} which is not a subclass of ColSpec."
         )
     col_spec.fail_dy_columns_in_colspec()
     dy_cols = {name: convert_to_dy(col) for name, col in col_spec.columns().items()}
     dy_rule_cols = {
-        k: dy._rule.GroupRule(v.expr, v.group_columns)
-        if isinstance(v, GroupRulePolars)
-        else dy._rule.Rule(v.expr)
+        k: dy._rule.GroupRule(v.expr, v.group_columns) if isinstance(v, GroupRulePolars) else dy._rule.Rule(v.expr)
         for k, v in col_spec.__dict__.items()
         if isinstance(v, RulePolars)
     }
     failures = set(dy_cols.keys()).intersection(dy_rule_cols.keys())
     if failures:
         raise ImplementationError(
-            "Rules and columns must not be named equally but found "
-            f"{len(failures)} overlaps: {', '.join(failures)}"
+            f"Rules and columns must not be named equally but found {len(failures)} overlaps: {', '.join(failures)}"
         )
     dy_cols.update(dy_rule_cols)
     import dataframely.exc as dy_exc
@@ -618,9 +538,7 @@ def convert_to_dy_anno(name: str, annotation):
         anno_types = [convert_to_dy_anno(name, t) for t in typing.get_args(annotation)]
         return reduce(lambda x, y: x | y, anno_types)
     elif inspect.isclass(annotation) and issubclass(annotation, dy.Schema):
-        raise ImplementationError(
-            f"Don't use Dataframely Schema in ColSpec Collection: {annotation}"
-        )
+        raise ImplementationError(f"Don't use Dataframely Schema in ColSpec Collection: {annotation}")
     elif inspect.isclass(annotation) and issubclass(annotation, ColSpec):
         col_spec = convert_to_dy_col_spec(annotation)
         return dy.LazyFrame[col_spec]

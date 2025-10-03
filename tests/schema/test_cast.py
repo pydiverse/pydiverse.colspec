@@ -23,9 +23,7 @@ class MyColSpec(cs.ColSpec):
         {"a": [1], "b": [2], "c": [3]},
     ],
 )
-def test_cast_valid(
-    df_type: type[pl.DataFrame] | type[pl.LazyFrame], data: dict[str, Any]
-):
+def test_cast_valid(df_type: type[pl.DataFrame] | type[pl.LazyFrame], data: dict[str, Any]):
     df = df_type(data)
     out = MyColSpec.cast_polars(df)
     assert isinstance(out, df_type)

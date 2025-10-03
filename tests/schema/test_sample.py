@@ -81,9 +81,7 @@ def test_sample_deterministic(n: int):
         MySimpleColSpec.validate(tbl)
 
 
-@pytest.mark.skip(
-    "wait for PR https://github.com/pydiverse/pydiverse.transform/pull/76"
-)
+@pytest.mark.skip("wait for PR https://github.com/pydiverse/pydiverse.transform/pull/76")
 @pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 @pytest.mark.skipif(C is None, reason="pydiverse.transform not installed")
 def test_enum_validate(n: int = 1):
@@ -136,9 +134,7 @@ def test_sample_overrides_with_removing_groups():
     generator = Generator()
     n = 333  # we cannot use something too large here or we'll never return
     overrides = np.random.randint(100, size=n)
-    df = LimitedComplexColSpec.sample_polars(
-        n, generator=generator, overrides={"b": overrides}
-    )
+    df = LimitedComplexColSpec.sample_polars(n, generator=generator, overrides={"b": overrides})
     LimitedComplexColSpec.validate_polars(df)
     tbl = pdt.Table(df)
     LimitedComplexColSpec.validate(tbl)

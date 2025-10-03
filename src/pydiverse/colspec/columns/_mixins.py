@@ -41,14 +41,8 @@ class OrdinalMixin(Generic[T], Column):
             raise ValueError("`min_exclusive` must not be greater or equal to `max`.")
         if min is not None and max_exclusive is not None and min >= max_exclusive:
             raise ValueError("`min` must not be greater or equal to `max_exclusive`.")
-        if (
-            min_exclusive is not None
-            and max_exclusive is not None
-            and min_exclusive >= max_exclusive
-        ):
-            raise ValueError(
-                "`min_exclusive` must not be greater or equal to `max_exclusive`."
-            )
+        if min_exclusive is not None and max_exclusive is not None and min_exclusive >= max_exclusive:
+            raise ValueError("`min_exclusive` must not be greater or equal to `max_exclusive`.")
 
         super().__init__(**kwargs)
         self.min = min

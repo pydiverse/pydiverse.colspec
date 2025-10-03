@@ -51,9 +51,7 @@ def test_dataframely_columns_fail():
         a = cs.Float64()
         b = dy.String()
 
-    with pytest.raises(
-        ImplementationError, match="Dataframely Columns won't work in ColSpec classes."
-    ):
+    with pytest.raises(ImplementationError, match="Dataframely Columns won't work in ColSpec classes."):
         FailColSpec.column_names()
 
 

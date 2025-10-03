@@ -89,9 +89,7 @@ def test_collection_filter_return_value():
 
 @pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_collection_filter_return_value2():
-    c = MyCollection(
-        first=MyFirstColSpec.sample_polars(3), second=MySecondColSpec.sample_polars(2)
-    )
+    c = MyCollection(first=MyFirstColSpec.sample_polars(3), second=MySecondColSpec.sample_polars(2))
     _, failure = c.filter_polars()
     assert len(failure["first"]) == 0  # type: ignore[misc]
 
@@ -163,17 +161,13 @@ def test_iter_rows_colspec_subtypes(my_colspec_df: pl.DataFrame):
     class MySubSubColSpec(MySubColSpec):
         j = cs.Int64()
 
-    my_sub_colspec_df = MySubColSpec.validate_polars(
-        my_colspec_df.with_columns(i=pl.lit(2, dtype=pl.Int64))
-    )
+    my_sub_colspec_df = MySubColSpec.validate_polars(my_colspec_df.with_columns(i=pl.lit(2, dtype=pl.Int64)))
     entry1 = next(my_sub_colspec_df.iter_rows(named=True))
 
     a1: int = entry1["a"]  # noqa: F841
     i1: int = entry1["i"]  # noqa: F841
 
-    my_sub_sub_colspec_df = MySubSubColSpec.validate_polars(
-        my_sub_colspec_df.with_columns(j=pl.lit(2, dtype=pl.Int64))
-    )
+    my_sub_sub_colspec_df = MySubSubColSpec.validate_polars(my_sub_colspec_df.with_columns(j=pl.lit(2, dtype=pl.Int64)))
     entry2 = next(my_sub_sub_colspec_df.iter_rows(named=True))
 
     a2: int = entry2["a"]  # noqa: F841
