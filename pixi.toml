@@ -6,7 +6,6 @@ authors = [
 channels = ["conda-forge"]
 name = "pydiverse.colspec"
 platforms = ["linux-64", "osx-64", "osx-arm64", "win-64", "linux-aarch64"]
-version = "0.1.0"
 
 [tasks]
 postinstall = "pip install --no-build-isolation --no-deps --disable-pip-version-check -e ."
@@ -17,7 +16,7 @@ hatchling = "*"
 
 [dependencies]
 python = ">=3.11.13,<3.14"
-pydiverse-common = ">=0.3.12,<0.4"
+pydiverse-common = ">=0.4,<0.5"
 structlog = ">=25.4.0,<26"
 
 [feature.dev.dependencies]
@@ -43,14 +42,15 @@ sqlalchemy = ">=1.4.39, <3"
 duckdb = ">=1.3.0,<2"
 duckdb-engine = ">=0.15.0, <0.16"
 pyodbc = ">=5.2.0,<6"
-pydiverse-transform = ">=0.5.3,<0.6"
+pydiverse-transform = ">=0.6.0,<0.7"
 
 [feature.dag.dependencies]
-pydiverse-pipedag = ">=0.10.3"
+#temporarily disabled until 0.12 is released
+#pydiverse-pipedag = ">=0.12.0"
 
 [feature.dy.dependencies]
 pyarrow = ">=20.0.0,<21"
-dataframely = ">=1.10.0"
+dataframely = ">=1.13.0"
 
 [feature.release.dependencies]
 hatch = ">=1.12.0"
@@ -69,6 +69,7 @@ sphinx-copybutton = ">=0.5.2"
 [feature.docs.tasks]
 docs = "cd docs && make html "
 readthedocs = "rm -rf $READTHEDOCS_OUTPUT/html && cp -r docs/build/html $READTHEDOCS_OUTPUT/html"
+install-all = "sh -c 'cd .pixi/envs/ && for i in */; do pixi install -e $(basename $i /); done && cd -'"
 
 [feature.lint.dependencies]
 #commitit-internal = "*"
@@ -115,9 +116,9 @@ py311dag = ["py311", "dev", "dag"]
 py313dag = ["py313", "dev", "dag"]
 py311dy = ["py311", "dev", "dy"]
 py313dy = ["py313", "dev", "dy"]
-py311all = ["py311", "dev", "pdt", "dag", "dy"]
-py312all = ["py312", "dev", "pdt", "dag", "dy"]
-py313all = ["py313", "dev", "pdt", "dag", "dy"]
+py311all = ["py311", "dev", "pdt", "dy"]
+py312all = ["py312", "dev", "pdt", "dy"]
+py313all = ["py313", "dev", "pdt", "dy"]
 docs = ["docs"]
 lint = { features = ["lint"], no-default-feature = true }
 release = { features = ["release"], no-default-feature = true }

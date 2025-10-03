@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.3.0 (2025-10-03)
+- bump dependency to pydiverse.common 0.4.0 (switch structlog config to stdlib logging)
+
 ## 0.2.12 (2025-09-11)
 - added py.typed to package so mypy recognizes it as typed package
 - implemented CollectionMember annotations from dataframely
