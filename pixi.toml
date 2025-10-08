@@ -45,11 +45,10 @@ pyodbc = ">=5.2.0,<6"
 pydiverse-transform = ">=0.6.0,<0.7"
 
 [feature.dag.dependencies]
-#temporarily disabled until 0.12 is released
-#pydiverse-pipedag = ">=0.12.0"
+pydiverse-pipedag = ">=0.12.0"
 
 [feature.dy.dependencies]
-pyarrow = ">=20.0.0,<21"
+pyarrow = ">=20.0.0,<22"
 dataframely = ">=1.13.0"
 
 [feature.release.dependencies]
