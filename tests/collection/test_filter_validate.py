@@ -7,7 +7,7 @@ import pytest
 
 import pydiverse.colspec as cs
 import pydiverse.colspec.collection
-from pydiverse.colspec.exc import MemberValidationError
+from pydiverse.colspec.exc import ValidationError
 from pydiverse.colspec.optional_dependency import assert_frame_equal, dy, pl
 
 pytestmark = pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
@@ -33,11 +33,11 @@ class MyCollection(pydiverse.colspec.collection.Collection):
 
     @cs.filter_polars()
     def equal_primary_keys(self) -> pl.LazyFrame:
-        return self.first.join(self.second, on=self.common_primary_keys())
+        return self.first.join(self.second, on=self.common_primary_key())
 
     @cs.filter_polars()
     def first_b_greater_second_b(self) -> pl.LazyFrame:
-        return self.first.join(self.second, on=self.common_primary_keys(), how="full", coalesce=True).filter(
+        return self.first.join(self.second, on=self.common_primary_key(), how="full", coalesce=True).filter(
             (pl.col("b") > pl.col("b_right")).fill_null(True)
         )
 
@@ -183,11 +183,11 @@ def test_validate_without_filter_with_rule_violation(
     }
     assert not SimpleCollection.is_valid_polars_data(data)
 
-    with pytest.raises(MemberValidationError, match=r"2 members failed validation") as exc:
+    with pytest.raises(ValidationError, match=r"2 members failed validation") as exc:
         SimpleCollection.validate_polars_data(data)
 
     exc.match(r"Member 'first' failed validation")
-    exc.match(r"'primary_key' failed validation for 2 rows")
+    exc.match(r"'primary_key' failed for 2 rows")
     exc.match(r"Member 'second' failed validation")
     exc.match(r"'min' failed for 1 rows")
 
@@ -201,14 +201,14 @@ def test_validate_with_filter_without_rule_violation(
     }
     assert not MyCollection.is_valid_polars_data(data)
 
-    with pytest.raises(MemberValidationError, match=r"2 members failed validation") as exc:
+    with pytest.raises(ValidationError, match=r"2 members failed validation") as exc:
         MyCollection.validate_polars_data(data)
 
     exc.match(r"Member 'first' failed validation")
-    exc.match(r"'equal_primary_keys' failed validation for 1 rows")
-    exc.match(r"'first_b_greater_second_b' failed validation for 1 rows")
+    exc.match(r"'equal_primary_keys' failed for 1 rows")
+    exc.match(r"'first_b_greater_second_b' failed for 1 rows")
     exc.match(r"Member 'second' failed validation")
-    exc.match(r"'equal_primary_keys' failed validation for 2 rows")
+    exc.match(r"'equal_primary_keys' failed for 2 rows")
 
 
 def test_validate_with_filter_with_rule_violation(
@@ -220,10 +220,10 @@ def test_validate_with_filter_with_rule_violation(
     }
     assert not MyCollection.is_valid_polars_data(data)
 
-    with pytest.raises(MemberValidationError, match=r"2 members failed validation") as exc:
+    with pytest.raises(ValidationError, match=r"2 members failed validation") as exc:
         MyCollection.validate_polars_data(data)
 
     exc.match(r"Member 'first' failed validation")
-    exc.match(r"'equal_primary_keys' failed validation for 2 rows")
+    exc.match(r"'equal_primary_keys' failed for 2 rows")
     exc.match(r"Member 'second' failed validation")
     exc.match(r"'min' failed for 1 rows")

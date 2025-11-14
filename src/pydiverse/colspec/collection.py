@@ -133,7 +133,7 @@ class MemberInfo(CollectionMember):
         return MemberInfo(col_spec, is_optional)
 
     @staticmethod
-    def common_primary_keys(col_specs: Iterable[type[ColSpec]]) -> set[str]:
+    def common_primary_key(col_specs: Iterable[type[ColSpec]]) -> set[str]:
         return set.intersection(*[set(col_spec.primary_keys()) for col_spec in col_specs])
 
 
@@ -647,9 +647,9 @@ class Collection:
         }
 
     @classmethod
-    def common_primary_keys(cls) -> list[str]:
+    def common_primary_key(cls) -> list[str]:
         """The primary keys which are shared by all members of the collection."""
-        return sorted(MemberInfo.common_primary_keys(cls.member_col_specs().values()))
+        return sorted(MemberInfo.common_primary_key(cls.member_col_specs().values()))
 
     def to_dict(self) -> dict[str, ColSpec]:
         """Return a dictionary representation of this collection."""

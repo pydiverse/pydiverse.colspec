@@ -6,16 +6,48 @@ from collections.abc import Iterable
 
 from pydiverse.common import Dtype
 
+# ------------------------------------ VALIDATION ------------------------------------ #
+
+
+class SchemaError(Exception):
+    """Error raised when the data frame schema does not match the dataframely schema."""
+
 
 class ValidationError(Exception):
-    """Error raised when :mod:`dataframely` validation encounters an issue."""
+    """Error raised when data fails eager validation against a schema."""
 
-    def __init__(self, message: str):
-        super().__init__()
-        self.message = message
 
-    def __str__(self) -> str:
-        return self.message
+# ---------------------------------- IMPLEMENTATION ---------------------------------- #
+
+
+class ImplementationError(Exception):
+    """Error raised when a schema is implemented incorrectly."""
+
+
+class AnnotationImplementationError(ImplementationError):
+    """Error raised when the annotations of a collection are invalid."""
+
+    def __init__(self, attr: str, kls: type) -> None:
+        message = (
+            "Annotations of a 'dy.Collection' may only be an (optional) "
+            f"'dy.LazyFrame', but \"{attr}\" has type '{kls}'."
+        )
+        if type(kls) is str:
+            message += (
+                " Type annotation is a string, make sure to not use "
+                "`from __future__ import annotations` in the file that defines the collection."
+            )
+        super().__init__(message)
+
+
+# ---------------------------------------- IO ---------------------------------------- #
+
+
+class ValidationRequiredError(Exception):
+    """Error raised when validation is required when reading a parquet file."""
+
+
+# ------------------------------------ ColSpec --------------------------------------- #
 
 
 class ColumnValidationError(ValidationError):
@@ -49,7 +81,7 @@ class ColumnValidationError(ValidationError):
             f" - Extra columns: {', '.join(self.extra)}",
             f" - Actual columns: {', '.join(self.actual)}",
         ]
-        return "\n".join([f"{self.message}:"] + details)
+        return "\n".join([super().__str__() + ":"] + details)
 
 
 class DtypeValidationError(ValidationError):
@@ -64,7 +96,7 @@ class DtypeValidationError(ValidationError):
             f" - '{col}': got dtype '{actual}' but expected '{expected}'"
             for col, (actual, expected) in self.errors.items()
         ]
-        return "\n".join([f"{self.message}:"] + details)
+        return "\n".join([super().__str__() + ":"] + details)
 
 
 class RuleValidationError(ValidationError):
@@ -98,7 +130,7 @@ class RuleValidationError(ValidationError):
                 + [f"   - '{name}' failed for {count:,} rows" for name, count in errors.items()]
             )
         ]
-        return "\n".join([f"{self.message}:"] + schema_details + column_details)
+        return "\n".join([super().__str__() + ":"] + schema_details + column_details)
 
 
 class MemberValidationError(ValidationError):
@@ -113,26 +145,12 @@ class MemberValidationError(ValidationError):
             f" > Member '{name}' failed validation:\n" + "\n".join("   " + line for line in str(error).split("\n"))
             for name, error in self.errors.items()
         ]
-        return "\n".join([f"{self.message}:"] + details)
-
-
-class ImplementationError(Exception):
-    """Error raised when a schema is implemented incorrectly."""
+        return "\n".join([super().__str__() + ":"] + details)
 
 
 class AnnotationImplementationErrorDetail(ImplementationError):
     def __init__(self, message: str, _type: type):
         self._type = _type
-        super().__init__(message)
-
-
-class AnnotationImplementationError(ImplementationError):
-    """Error raised when the annotations of a collection are invalid."""
-
-    def __init__(self, attr: str, kls: type):
-        message = (
-            f"Annotations of a 'dy.Collection' may only be an (optional) 'ColSpec', but \"{attr}\" has type '{kls}'."
-        )
         super().__init__(message)
 
 

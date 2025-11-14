@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import pytest
+from polars.exceptions import ComputeError
 
 import pydiverse.colspec as cs
 from pydiverse.colspec._rule import GroupRulePolars, RulePolars
@@ -28,20 +29,20 @@ def test_group_rule_group_by_error():
 
 @pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_rule_implementation_error():
-    # dataframely does not throw in this case any more
-    create_colspec(
-        "test",
-        columns={"a": cs.Integer()},
-        rules={"integer_rule": RulePolars(pl.col("a") + 1)},
-    ).validate_polars(pl.DataFrame(dict(a=[1])))
+    with pytest.raises(
+        ComputeError, match=r".*Rule 'integer_rule' did not evaluate to a boolean \(got i64 instead\).*"
+    ):
+        create_colspec(
+            "test",
+            columns={"a": cs.Integer()},
+            rules={"integer_rule": RulePolars(pl.col("a") + 1)},
+        ).validate_polars(pl.DataFrame(dict(a=[1])))
 
 
 @pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_group_rule_implementation_error():
-    from polars.polars import SchemaError
-
     with pytest.raises(
-        SchemaError,
+        pl.exceptions.SchemaError,
         match=(r"failed to determine supertype of list\[bool\] and bool"),
     ):
         create_colspec(
