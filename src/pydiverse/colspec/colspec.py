@@ -9,8 +9,6 @@ from collections.abc import Iterable, Mapping, Sequence
 from functools import reduce
 from typing import Any, Literal, Self, overload
 
-from dataframely._rule import RuleFactory
-
 from pydiverse.colspec._validation import validate_columns, validate_dtypes
 from pydiverse.colspec.columns._base import Column
 
@@ -26,7 +24,7 @@ from .exc import (
     colspec_exception,
 )
 from .failure import FailureInfo
-from .optional_dependency import ColExpr, Generator, dag, dy, pa, pdt, pl, sa
+from .optional_dependency import ColExpr, Generator, RuleFactory, dag, dy, pa, pdt, pl, sa
 
 _ORIGINAL_NULL_SUFFIX = "__orig_null__"
 
