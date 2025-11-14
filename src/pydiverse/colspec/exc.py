@@ -84,7 +84,7 @@ class ColumnValidationError(ValidationError):
         return "\n".join([super().__str__() + ":"] + details)
 
 
-class DtypeValidationError(ValidationError):
+class DtypeValidationError(SchemaError):
     """Validation error raised when column dtypes are wrong."""
 
     def __init__(self, errors: dict[str, tuple[Dtype, Dtype]]):

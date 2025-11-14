@@ -221,7 +221,7 @@ class ColSpec(
         try:
             cls.validate(tbl, cast=cast)
             return True
-        except (ValidationError, PlInvalidOperationError):
+        except (ValidationError, SchemaError, PlInvalidOperationError):
             return False
         except Exception as e:  # pragma: no cover
             raise e
@@ -456,7 +456,7 @@ class ColSpec(
 
         try:
             return dy_schema.filter(df, cast=cast)
-        except (dy_exc.ValidationError, dy_exc.ImplementationError) as e:
+        except (dy_exc.ValidationError, dy_exc.SchemaError, dy_exc.ImplementationError) as e:
             raise colspec_exception(e) from e
 
     @classmethod
