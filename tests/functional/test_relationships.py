@@ -27,19 +27,16 @@ class EmployeeColSpec(cs.ColSpec):
 # ------------------------------------- FIXTURES ------------------------------------- #
 
 
-@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 @pytest.fixture()
 def departments() -> dy.LazyFrame[DepartmentColSpec]:
     return DepartmentColSpec.cast_polars(pl.LazyFrame({"department_id": [1, 2]}))
 
 
-@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 @pytest.fixture()
 def managers() -> dy.LazyFrame[ManagerColSpec]:
     return ManagerColSpec.cast_polars(pl.LazyFrame({"department_id": [1], "name": ["Donald Duck"]}))
 
 
-@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 @pytest.fixture()
 def employees() -> dy.LazyFrame[EmployeeColSpec]:
     return EmployeeColSpec.cast_polars(

@@ -99,12 +99,15 @@ python = "3.11.*"
 python = "3.12.*"
 [feature.py313.dependencies]
 python = "3.13.*"
+[feature.py314.dependencies]
+python = "3.14.*"
 
 [environments]
 default = ["py312", "dev"]
 py311 = ["py311", "dev"]
 py312 = ["py312", "dev"]
 py313 = ["py313", "dev"]
+py314 = ["py314", "dev"]
 py311pl = ["py311", "dev", "pl"]
 py313pl = ["py313", "dev", "pl"]
 py311sa = ["py311", "dev", "sa"]
@@ -118,6 +121,7 @@ py313dy = ["py313", "dev", "dy"]
 py311all = ["py311", "dev", "pdt", "dy"]
 py312all = ["py312", "dev", "pdt", "dy"]
 py313all = ["py313", "dev", "pdt", "dy"]
+py314all = ["py314", "dev", "pdt", "dy"]
 docs = ["docs"]
 lint = { features = ["lint"], no-default-feature = true }
 release = { features = ["release"], no-default-feature = true }
