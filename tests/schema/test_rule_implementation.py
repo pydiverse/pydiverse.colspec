@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import pytest
-from polars.exceptions import ComputeError
 
 import pydiverse.colspec as cs
 from pydiverse.colspec._rule import GroupRulePolars, RulePolars
@@ -29,6 +28,8 @@ def test_group_rule_group_by_error():
 
 @pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_rule_implementation_error():
+    from polars.exceptions import ComputeError
+
     with pytest.raises(
         ComputeError, match=r".*Rule 'integer_rule' did not evaluate to a boolean \(got i64 instead\).*"
     ):
