@@ -25,7 +25,7 @@ classifiers = [
   "Topic :: Software Development",
 ]
 
-requires-python = ">=3.11,<3.15"
+requires-python = ">=3.10.18,<3.15.0a0"
 dependencies = [
   "pydiverse-common >=0.4.0,<0.5",
   "structlog >=25.4.0,<26",
