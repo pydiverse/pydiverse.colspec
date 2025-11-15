@@ -27,27 +27,24 @@ class EmployeeColSpec(cs.ColSpec):
 # ------------------------------------- FIXTURES ------------------------------------- #
 
 
-@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 @pytest.fixture()
 def departments() -> dy.LazyFrame[DepartmentColSpec]:
-    return DepartmentColSpec.cast_polars(pl.LazyFrame({"department_id": [1, 2]}))
+    return DepartmentColSpec.cast_polars(pl.LazyFrame({"department_id": [1, 2, 3]}))
 
 
-@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 @pytest.fixture()
 def managers() -> dy.LazyFrame[ManagerColSpec]:
-    return ManagerColSpec.cast_polars(pl.LazyFrame({"department_id": [1], "name": ["Donald Duck"]}))
+    return ManagerColSpec.cast_polars(pl.LazyFrame({"department_id": [1, 3], "name": ["Donald Duck", "Minnie Mouse"]}))
 
 
-@pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 @pytest.fixture()
 def employees() -> dy.LazyFrame[EmployeeColSpec]:
     return EmployeeColSpec.cast_polars(
         pl.LazyFrame(
             {
-                "department_id": [2, 2, 2],
-                "employee_number": [101, 102, 103],
-                "name": ["Huey", "Dewey", "Louie"],
+                "department_id": [2, 2, 2, 3],
+                "employee_number": [101, 102, 103, 104],
+                "name": ["Huey", "Dewey", "Louie", "Daisy"],
             }
         )
     )
@@ -58,13 +55,20 @@ def employees() -> dy.LazyFrame[EmployeeColSpec]:
 # ------------------------------------------------------------------------------------ #
 
 
+@pytest.mark.parametrize("drop_duplicates", [True, False])
 @pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_one_to_one(
     departments: dy.LazyFrame[DepartmentColSpec],
     managers: dy.LazyFrame[ManagerColSpec],
+    drop_duplicates: bool,
 ):
-    actual = dy.filter_relationship_one_to_one(departments, managers, on="department_id")
-    assert actual.select("department_id").collect().to_series().to_list() == [1]
+    actual = dy.require_relationship_one_to_one(
+        departments,
+        managers,
+        on="department_id",
+        drop_duplicates=drop_duplicates,
+    )
+    assert set(actual.select("department_id").collect().to_series().to_list()) == {1, 3}
 
 
 @pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
@@ -72,5 +76,7 @@ def test_one_to_at_least_one(
     departments: dy.LazyFrame[DepartmentColSpec],
     employees: dy.LazyFrame[EmployeeColSpec],
 ):
-    actual = dy.filter_relationship_one_to_at_least_one(departments, employees, on="department_id")
-    assert actual.select("department_id").collect().to_series().to_list() == [2]
+    actual = dy.require_relationship_one_to_at_least_one(
+        departments, employees, on="department_id", drop_duplicates=False
+    )
+    assert set(actual.select("department_id").collect().to_series().to_list()) == {2, 3}

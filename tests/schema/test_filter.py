@@ -6,7 +6,7 @@ import random
 import pytest
 
 import pydiverse.colspec as cs
-from pydiverse.colspec.exc import DtypeValidationError, ValidationError
+from pydiverse.colspec.exc import SchemaError, ValidationError
 from pydiverse.colspec.optional_dependency import (
     C,
     DataTypeClass,
@@ -43,7 +43,7 @@ def test_filter_extra_columns(schema: dict[str, DataTypeClass], expected_columns
         filtered, _ = MyColSpec.filter_polars(df)
         assert expected_columns is not None
         assert set(filtered.columns) == set(expected_columns)
-    except ValidationError:
+    except SchemaError:
         assert expected_columns is None
     except Exception as e:
         raise AssertionError() from e
@@ -72,7 +72,7 @@ def test_filter_dtypes(schema: dict[str, DataTypeClass], cast: bool, success: bo
     try:
         MyColSpec.filter_polars(df, cast=cast)
         assert success
-    except DtypeValidationError:
+    except SchemaError:
         assert not success
     except Exception as e:
         raise AssertionError() from e
@@ -80,7 +80,7 @@ def test_filter_dtypes(schema: dict[str, DataTypeClass], cast: bool, success: bo
     try:
         MyColSpec.filter(tbl, cast=cast)
         assert success
-    except DtypeValidationError:
+    except SchemaError:
         assert not success
     except Exception as e:
         raise AssertionError() from e

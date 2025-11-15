@@ -5,8 +5,8 @@ import pytest
 
 import pydiverse.colspec as cs
 from pydiverse.colspec.exc import (
-    DtypeValidationError,
     RuleValidationError,
+    SchemaError,
     ValidationError,
 )
 from pydiverse.colspec.optional_dependency import (
@@ -57,7 +57,7 @@ class MyComplexColSpec(cs.ColSpec):
 @pytest.mark.parametrize("df_type", [pl.DataFrame, pl.LazyFrame])
 def test_missing_columns(df_type: type[pl.DataFrame] | type[pl.LazyFrame]):
     df = df_type({"a": [1], "b": [""]})
-    with pytest.raises(ValidationError):
+    with pytest.raises(SchemaError):
         MyColSpec.validate_polars(df)
     assert not MyColSpec.is_valid_polars(df)
 
@@ -69,11 +69,11 @@ def test_missing_columns(df_type: type[pl.DataFrame] | type[pl.LazyFrame]):
 @pytest.mark.parametrize("df_type", [pl.DataFrame, pl.LazyFrame])
 def test_invalid_dtype(df_type: type[pl.DataFrame] | type[pl.LazyFrame]):
     df = df_type({"a": [1], "b": [1], "c": [1]})
-    try:
+    with pytest.raises(
+        SchemaError,
+        match=r"2 columns with invalid dtype for schema",
+    ):
         MyColSpec.validate_polars(df)
-        raise AssertionError()  # above should raise
-    except DtypeValidationError as exc:
-        assert len(exc.errors) == 2
     assert not MyColSpec.is_valid_polars(df)
 
 
@@ -94,12 +94,11 @@ def test_invalid_dtype_cast(df_type: type[pl.DataFrame] | type[pl.LazyFrame]):
 @pytest.mark.parametrize("df_type", [pl.DataFrame, pl.LazyFrame])
 def test_invalid_column_contents(df_type: type[pl.DataFrame] | type[pl.LazyFrame]):
     df = df_type({"a": [1, 2, 3], "b": ["x", "longtext", None], "c": ["1", None, "3"]})
-    try:
+    with pytest.raises(
+        ValidationError,
+        match=r"2 rules failed validation",
+    ):
         MyColSpec.validate_polars(df)
-        raise AssertionError()  # above should raise
-    except RuleValidationError as exc:
-        assert len(exc.schema_errors) == 0
-        assert exc.column_errors == {"b": {"nullability": 1, "max_length": 1}}
     assert not MyColSpec.is_valid_polars(df)
 
 
@@ -107,12 +106,11 @@ def test_invalid_column_contents(df_type: type[pl.DataFrame] | type[pl.LazyFrame
 @pytest.mark.parametrize("df_type", [pl.DataFrame, pl.LazyFrame])
 def test_invalid_primary_key(df_type: type[pl.DataFrame] | type[pl.LazyFrame]):
     df = df_type({"a": [1, 1], "b": ["x", "y"], "c": ["1", "2"]})
-    try:
+    with pytest.raises(
+        ValidationError,
+        match=r"1 rules failed validation",
+    ):
         MyColSpec.validate_polars(df)
-        raise AssertionError()  # above should raise
-    except RuleValidationError as exc:
-        assert exc.schema_errors == {"primary_key": 2}
-        assert len(exc.column_errors) == 0
     assert not MyColSpec.is_valid_polars(df)
 
 
@@ -120,12 +118,11 @@ def test_invalid_primary_key(df_type: type[pl.DataFrame] | type[pl.LazyFrame]):
 @pytest.mark.parametrize("df_type", [pl.DataFrame, pl.LazyFrame])
 def test_violated_custom_rule_polars(df_type: type[pl.DataFrame] | type[pl.LazyFrame]):
     df = df_type({"a": [1, 1, 2, 3, 3], "b": [2, 2, 2, 4, 5]})
-    try:
+    with pytest.raises(
+        ValidationError,
+        match=r"2 rules failed validation",
+    ):
         MyComplexColSpec.validate_polars(df)
-        raise AssertionError()  # above should raise
-    except RuleValidationError as exc:
-        assert exc.schema_errors == {"b_greater_a": 1, "b_unique_within_a": 2}
-        assert len(exc.column_errors) == 0
     assert not MyComplexColSpec.is_valid_polars(df)
 
 

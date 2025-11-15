@@ -67,7 +67,7 @@ def test_any_decimal_dtype_passes(dtype: DataTypeClass):
 @pytest.mark.skipif(C is None, reason="pydiverse.transform not installed")
 @pytest.mark.parametrize("dtype", [pl.Boolean, pl.String] + list(INTEGER_DTYPES) + list(FLOAT_DTYPES))
 def test_non_decimal_dtype_fails(dtype: DataTypeClass):
-    if dtype == pl.Int128:
+    if dtype in [pl.Int128, pl.UInt128]:
         # this type is not supported by pydiverse libraries, yet
         return
     df = pl.DataFrame(schema={"a": dtype})

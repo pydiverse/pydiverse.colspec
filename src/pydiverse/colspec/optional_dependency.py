@@ -69,6 +69,7 @@ try:
     import dataframely as dy
     from dataframely._base_schema import SchemaMeta
     from dataframely._polars import FrameType
+    from dataframely._rule import RuleFactory
     from dataframely.random import Generator
     from dataframely.testing import validation_mask
 except ImportError:
@@ -87,6 +88,7 @@ except ImportError:
 
     FrameType = None
     SchemaMeta = None
+    RuleFactory = None
     validation_mask = None
     dy = types.ModuleType("dataframely")
     dy.DataFrame = DyDataFrame

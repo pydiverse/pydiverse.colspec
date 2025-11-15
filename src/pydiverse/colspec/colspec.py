@@ -19,11 +19,12 @@ from .exc import (
     ColumnValidationError,
     ImplementationError,
     RuleValidationError,
+    SchemaError,
     ValidationError,
     colspec_exception,
 )
 from .failure import FailureInfo
-from .optional_dependency import ColExpr, Generator, dag, dy, pa, pdt, pl, sa
+from .optional_dependency import ColExpr, Generator, RuleFactory, dag, dy, pa, pdt, pl, sa
 
 _ORIGINAL_NULL_SUFFIX = "__orig_null__"
 
@@ -193,7 +194,7 @@ class ColSpec(
         dy_schema = convert_to_dy_col_spec(cls)
         try:
             return dy_schema.validate(data, cast=cast)
-        except (dy_exc.ValidationError, dy_exc.ImplementationError) as e:
+        except (dy_exc.ValidationError, dy_exc.SchemaError, dy_exc.ImplementationError) as e:
             raise colspec_exception(e) from e
 
     @classmethod
@@ -220,7 +221,7 @@ class ColSpec(
         try:
             cls.validate(tbl, cast=cast)
             return True
-        except (ValidationError, PlInvalidOperationError):
+        except (ValidationError, SchemaError, PlInvalidOperationError):
             return False
         except Exception as e:  # pragma: no cover
             raise e
@@ -244,7 +245,7 @@ class ColSpec(
         try:
             cls.validate_polars(df, cast=cast)
             return True
-        except (ValidationError, plexc.InvalidOperationError):
+        except (ValidationError, SchemaError, plexc.InvalidOperationError):
             return False
         except Exception as e:  # pragma: no cover
             raise e
@@ -455,7 +456,7 @@ class ColSpec(
 
         try:
             return dy_schema.filter(df, cast=cast)
-        except (dy_exc.ValidationError, dy_exc.ImplementationError) as e:
+        except (dy_exc.ValidationError, dy_exc.SchemaError, dy_exc.ImplementationError) as e:
             raise colspec_exception(e) from e
 
     @classmethod
@@ -502,7 +503,7 @@ def convert_to_dy_col_spec(col_spec: type[ColSpec]) -> type[dy.Schema]:
         raise ImplementationError(
             f"Rules and columns must not be named equally but found {len(failures)} overlaps: {', '.join(failures)}"
         )
-    dy_cols.update(dy_rule_cols)
+    dy_cols.update({name: RuleFactory.from_rule(rule) for name, rule in dy_rule_cols.items()})
     import dataframely.exc as dy_exc
 
     try:

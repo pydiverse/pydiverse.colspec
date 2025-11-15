@@ -8,7 +8,7 @@ import pytest
 
 import pydiverse.colspec as cs
 from pydiverse.colspec import Column
-from pydiverse.colspec.exc import DtypeValidationError
+from pydiverse.colspec.exc import SchemaError
 from pydiverse.colspec.optional_dependency import C, Generator, dy, pdt, pl
 from pydiverse.colspec.testing.factory import create_colspec
 from pydiverse.colspec.testing.rules import evaluate_rules
@@ -214,7 +214,7 @@ def test_args_resolution_valid(column_type: type[Column], kwargs: dict[str, Any]
     class TestColSpec(cs.ColSpec):
         a = column_type(**kwargs)
 
-    with pytest.raises(DtypeValidationError):
+    with pytest.raises(SchemaError):
         # this still tests that there is no ValueError when instantiating
         # dy.Column types
         TestColSpec.validate_polars(pl.DataFrame(dict(a=[])))

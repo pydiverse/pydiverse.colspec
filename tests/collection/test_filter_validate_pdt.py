@@ -38,7 +38,7 @@ class MyCollection(pydiverse.colspec.collection.Collection):
     def equal_primary_keys(self) -> ColExpr:
         return functools.reduce(
             operator.and_,
-            (self.first[key] == self.second[key] for key in self.common_primary_keys()),
+            (self.first[key] == self.second[key] for key in self.common_primary_key()),
         )
 
     @cs.filter()

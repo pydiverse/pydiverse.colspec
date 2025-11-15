@@ -27,8 +27,8 @@ class MyCollection(pydiverse.colspec.collection.Collection):
     second: MySecondColSpec | None
 
 
-def test_common_primary_keys():
-    assert MyCollection.common_primary_keys() == ["a"]
+def test_common_primary_key():
+    assert MyCollection.common_primary_key() == ["a"]
 
 
 def test_members():
