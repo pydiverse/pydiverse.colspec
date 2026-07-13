@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.2 (2026-07-13)
+- support dataframely >= 2.11
+- support pyarrow 24
+- support structlog 26
+
 ## 0.3.1 (2025-11-15)
 - support python 3.14
 - support dataframely >= 2.1

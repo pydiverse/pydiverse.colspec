@@ -1,4 +1,4 @@
-# Copyright (c) QuantCo and pydiverse contributors 2025-2025
+# Copyright (c) QuantCo and pydiverse contributors 2025-2026
 # SPDX-License-Identifier: BSD-3-Clause
 
 import inspect
@@ -597,10 +597,12 @@ class Collection:
 
     @classmethod
     def cast_polars_data(cls, data: Mapping[str, FrameType]) -> Self:
+        import dataframely.exc as dy_exc
+
         DynCollection = convert_collection_to_dy(cls)
         try:
             return cls.from_dy_collection(DynCollection.cast(data))
-        except pl.exceptions.ColumnNotFoundError as e:
+        except (pl.exceptions.ColumnNotFoundError, dy_exc.SchemaError) as e:
             # TODO: improve error message by checking missing and extra columns for
             #  all member tables
             raise ColumnValidationError() from e
@@ -673,11 +675,12 @@ class Collection:
             collection's members are still "lazy". However, they are "shallow-lazy",
             meaning they are obtained by calling ``.collect().lazy()``.
         """
+        import dataframely.exc as dy_exc
         import polars.exceptions as plexc
 
         try:
             dfs = pl.collect_all([lf for lf in self.to_dict().values()])
-        except plexc.PolarsError as e:
+        except (plexc.PolarsError, dy_exc.SchemaError) as e:
             raise ValidationError(str(e)) from e
         return self._init_polars_data({key: dfs[i].lazy() for i, key in enumerate(self.to_dict().keys())})
 

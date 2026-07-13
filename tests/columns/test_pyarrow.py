@@ -1,4 +1,4 @@
-# Copyright (c) QuantCo and pydiverse contributors 2024-2025
+# Copyright (c) QuantCo and pydiverse contributors 2024-2026
 # SPDX-License-Identifier: BSD-3-Clause
 
 import pytest
@@ -31,11 +31,12 @@ def test_equal_to_polars_schema(column_type: type[cs.Column]):
 def fix_field_index_type(field):
     if pa.types.is_dictionary(field.type):
         # somehow the index type can jump around in polars and fixing it to uint32
-        # seems reasonable
+        # seems reasonable. Newer polars also marks enum dictionaries as ordered,
+        # so we normalize the ordered flag to match colspec's canonical form.
         return (
             pa.field(
                 field.name,
-                pa.dictionary(pa.uint32(), field.type.value_type, field.type.ordered),
+                pa.dictionary(pa.uint32(), field.type.value_type, ordered=False),
             )
             .with_nullable(field.nullable)
             .with_metadata(field.metadata)

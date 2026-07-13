@@ -1,4 +1,4 @@
-# Copyright (c) QuantCo and pydiverse contributors 2024-2025
+# Copyright (c) QuantCo and pydiverse contributors 2024-2026
 # SPDX-License-Identifier: BSD-3-Clause
 
 from typing import Any
@@ -91,6 +91,9 @@ def test_non_integer_dtype_fails_polars(dtype: DataTypeClass):
 @pytest.mark.skipif(C is None, reason="pydiverse.transform not installed")
 @pytest.mark.parametrize("dtype", [pl.Boolean, pl.String] + list(FLOAT_DTYPES))
 def test_non_integer_dtype_fails(dtype: DataTypeClass):
+    if dtype in [pl.Int128, pl.UInt128, pl.Float16]:
+        # this type is not supported by pydiverse libraries, yet
+        return
     df = pl.DataFrame(schema={"a": dtype})
     tbl = pdt.Table(df)
     assert not IntegerColSpec.is_valid(tbl)

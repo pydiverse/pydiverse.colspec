@@ -1,4 +1,4 @@
-# Copyright (c) QuantCo and pydiverse contributors 2024-2025
+# Copyright (c) QuantCo and pydiverse contributors 2024-2026
 # SPDX-License-Identifier: BSD-3-Clause
 
 from typing import Any
@@ -6,7 +6,8 @@ from typing import Any
 import pytest
 
 import pydiverse.colspec as cs
-from pydiverse.colspec.optional_dependency import dy, pl, plexc
+from pydiverse.colspec.exc import SchemaError
+from pydiverse.colspec.optional_dependency import dy, pl
 
 
 class MyColSpec(cs.ColSpec):
@@ -33,13 +34,15 @@ def test_cast_valid(df_type: type[pl.DataFrame] | type[pl.LazyFrame], data: dict
 @pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_cast_invalid_schema_eager():
     df = pl.DataFrame({"a": [1]})
-    with pytest.raises(plexc.ColumnNotFoundError):
+    with pytest.raises(SchemaError):
         MyColSpec.cast_polars(df)
 
 
 @pytest.mark.skipif(dy.Column is None, reason="dataframely is required for this test")
 def test_cast_invalid_schema_lazy():
+    import dataframely.exc as dy_exc
+
     lf = pl.LazyFrame({"a": [1]})
     lf = MyColSpec.cast_polars(lf)
-    with pytest.raises(plexc.ColumnNotFoundError):
+    with pytest.raises(dy_exc.SchemaError):
         lf.collect()
