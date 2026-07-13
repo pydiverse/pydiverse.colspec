@@ -5,7 +5,9 @@ set -euo pipefail
 contains_dependency_all=true
 
 while read -r package version; do
-    if [[ $package == "python" ]]; then
+    # python and build/tooling deps are not runtime dependencies and thus
+    # intentionally absent from pyproject.toml's project.dependencies.
+    if [[ $package == "python" || $package == "pip" || $package == "hatchling" ]]; then
         continue
     fi
 
