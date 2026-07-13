@@ -278,8 +278,16 @@ class ColSpec(
 
     @classmethod
     def cast_polars(cls, df: pl.DataFrame | pl.LazyFrame) -> dy.DataFrame[Self] | dy.LazyFrame[Self]:
+        import dataframely.exc as dy_exc
+
         dy_schema = convert_to_dy_col_spec(cls)
-        return dy_schema.cast(df)
+        try:
+            return dy_schema.cast(df)
+        except (dy_exc.ValidationError, dy_exc.SchemaError, dy_exc.ImplementationError) as e:
+            # Missing columns and similar structural mismatches are raised eagerly for
+            # data frames. For lazy frames the error surfaces on collect and cannot be
+            # translated here.
+            raise colspec_exception(e) from e
 
     @classmethod
     def polars_schema(cls) -> pl.Schema:
